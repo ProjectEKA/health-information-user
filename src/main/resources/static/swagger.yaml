@@ -1,0 +1,174 @@
+openapi: 3.0.0
+info:
+  version: 0.0.1
+  title: Health Information User
+  description: >
+    "Health information User" refers to an entity that wishes to consume the
+    services of the Health Data Consent Manager and obtain aggregated health
+    information for providing services to the Customer .
+
+servers:
+  - url: http://localhost:8000
+    description: Dev
+
+tags:
+  - name: discover
+  - name: consent
+
+paths:
+  # consent-manager service
+  /consent-requests:
+    post:
+      tags:
+        - consent
+      summary: Create consent request
+      description: Creates a consent request to get data about a user by HIU user.
+      operationId: createConsentRequest
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRequest'
+      responses:
+        '200':
+          description: Request created in the consent manager
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  consentRequest:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+
+  # discover service
+  /users:
+    get:
+      tags:
+        - discover
+      summary: Search user
+      description: Search users in the respective health information consent manager.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - name: user-id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: <user-id>@<ncg-id>
+            example: batman@ncg
+      responses:
+        '200':
+          description: Successful creation of consent artefact.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSearchRepresentation'
+components:
+  parameters:
+    authorization:
+      name: Authorization
+      in: header
+      required: true
+      description: Bearer token which was issued after successful login.
+      schema:
+        type: string
+    limit:
+      name: limit
+      in: query
+      description: How many items to return at one time (max 5) (recommended to sent always)
+      required: false
+      schema:
+        type: integer
+        format: int32
+    offset:
+      name: offset
+      in: query
+      description: How many items out of line.
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+  schemas:
+    UserSearchRepresentation:
+      type: object
+      properties:
+        limit:
+          type: integer
+        size:
+          type: integer
+        offset:
+          type: integer
+        users:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/UserRepresentation'
+
+    ConsentManagerUserID:
+      type: object
+      properties:
+        id:
+          type: string
+          format: <user-id>@<ncg-id>
+          example: batman@ncg
+
+    UserRepresentation:
+      allOf:
+        - $ref: '#/components/schemas/ConsentManagerUserID'
+        - type: object
+          properties:
+            display:
+              type: string
+
+    HITypeEnum:
+      type: string
+      enum:
+        - HIType1
+        - HIType2
+        - HIType3
+        - HIType4
+        - HIType5
+
+    ConsentRequest:
+      type: object
+      properties:
+        consent:
+          type: object
+          properties:
+            user:
+              allOf:
+                - $ref: '#/components/schemas/ConsentManagerUserID'
+            purpose:
+              type: object
+              properties:
+                code:
+                  type: integer
+                  enum: [100]
+                text:
+                  type: string
+            hitypes:
+              type: array
+              items:
+                $ref: '#/components/schemas/HITypeEnum'
+            duration:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: datetime
+                to:
+                  type: string
+                  format: datetime
+            expiry:
+              type: string
+              format: date-time
