@@ -5,7 +5,7 @@ info:
   description: >
     "Health information User" refers to an entity that wishes to consume the
     services of the Health Data Consent Manager and obtain aggregated health
-    information for providing services to the Customer .
+    information for providing services to the patient .
 
 servers:
   - url: http://localhost:8000
@@ -22,7 +22,7 @@ paths:
       tags:
         - consent
       summary: Create consent request
-      description: Creates a consent request to get data about a user by HIU user.
+      description: Creates a consent request to get data about a patient by HIU user.
       operationId: createConsentRequest
       parameters:
         - $ref: '#/components/parameters/authorization'
@@ -48,18 +48,16 @@ paths:
                         format: uuid
 
   # discover service
-  /users:
+  /patients/{patient-id}:
     get:
       tags:
         - discover
-      summary: Search user
-      description: Search users in the respective health information consent manager.
+      summary: Search patient
+      description: Search patients in the respective health information consent manager.
       parameters:
         - $ref: '#/components/parameters/authorization'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/offset'
-        - name: user-id
-          in: query
+        - name: patient-id
+          in: path
           required: true
           schema:
             type: string
@@ -71,7 +69,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSearchRepresentation'
+                $ref: '#/components/schemas/PatientSearchRepresentation'
 components:
   parameters:
     authorization:
@@ -81,40 +79,15 @@ components:
       description: Bearer token which was issued after successful login.
       schema:
         type: string
-    limit:
-      name: limit
-      in: query
-      description: How many items to return at one time (max 5) (recommended to sent always)
-      required: false
-      schema:
-        type: integer
-        format: int32
-    offset:
-      name: offset
-      in: query
-      description: How many items out of line.
-      required: false
-      schema:
-        type: integer
-        format: int32
 
   schemas:
-    UserSearchRepresentation:
+    PatientSearchRepresentation:
       type: object
       properties:
-        limit:
-          type: integer
-        size:
-          type: integer
-        offset:
-          type: integer
-        users:
-          type: array
-          maxItems: 10
-          items:
-            $ref: '#/components/schemas/UserRepresentation'
+        user:
+          $ref: '#/components/schemas/PatientRepresentation'
 
-    ConsentManagerUserID:
+    ConsentManagerPatientID:
       type: object
       properties:
         id:
@@ -122,9 +95,9 @@ components:
           format: <user-id>@<ncg-id>
           example: batman@ncg
 
-    UserRepresentation:
+    PatientRepresentation:
       allOf:
-        - $ref: '#/components/schemas/ConsentManagerUserID'
+        - $ref: '#/components/schemas/ConsentManagerPatientID'
         - type: object
           properties:
             display:
@@ -145,30 +118,31 @@ components:
         consent:
           type: object
           properties:
-            user:
+            patient:
               allOf:
-                - $ref: '#/components/schemas/ConsentManagerUserID'
+                - $ref: '#/components/schemas/ConsentManagerPatientID'
             purpose:
               type: object
               properties:
                 code:
                   type: integer
                   enum: [100]
-                text:
-                  type: string
             hitypes:
               type: array
               items:
                 $ref: '#/components/schemas/HITypeEnum'
-            duration:
+            permission:
               type: object
               properties:
-                from:
+                dateRange:
+                  type: object
+                  properties:
+                    from:
+                      type: string
+                      format: datetime
+                    to:
+                      type: string
+                      format: datetime
+                dataExpiryAt:
                   type: string
-                  format: datetime
-                to:
-                  type: string
-                  format: datetime
-            expiry:
-              type: string
-              format: date-time
+                  format: date-time
