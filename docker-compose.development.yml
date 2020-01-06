@@ -1,0 +1,6 @@
+version: '3'
+services:
+  hiu:
+    image: "ganesan92/health-information-user:${HIU_IMAGE_TAG}"
+    ports:
+      - "9053:8080"

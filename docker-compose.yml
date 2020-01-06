@@ -1,0 +1,6 @@
+version: '3'
+services:
+  hiu:
+    build: .
+    ports:
+      - "8001:8080"
