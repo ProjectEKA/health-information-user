@@ -84,7 +84,7 @@ components:
     PatientSearchRepresentation:
       type: object
       properties:
-        user:
+        patient:
           $ref: '#/components/schemas/PatientRepresentation'
 
     ConsentManagerPatientID:
