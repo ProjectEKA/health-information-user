@@ -26,6 +26,7 @@ dependencies {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
 	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation group: 'org.jeasy', name: 'easy-random-core', version: '4.1.0'
 }
 
 test {
