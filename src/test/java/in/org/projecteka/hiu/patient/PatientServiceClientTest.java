@@ -18,7 +18,8 @@ import reactor.test.StepVerifier;
 
 import java.util.function.Supplier;
 
-import static in.org.projecteka.hiu.patient.TestBuilders.searchRepresentation;
+import static in.org.projecteka.hiu.patient.PatientRepresentation.from;
+import static in.org.projecteka.hiu.patient.TestBuilders.patient;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -27,7 +28,9 @@ class PatientServiceClientTest {
 
     @Captor
     ArgumentCaptor<ClientRequest> captor;
+
     PatientServiceClient patientServiceClient;
+
     @Mock
     private ExchangeFunction exchangeFunction;
 
@@ -42,10 +45,11 @@ class PatientServiceClientTest {
     }
 
     @Test
-    public void returnPatientWhenUserExists() throws JsonProcessingException {
+    void returnPatientWhenUserExists() throws JsonProcessingException {
         String patientId = "patient-id@ncg";
-        var searchRepresentation = searchRepresentation().build();
-        var response = new ObjectMapper().writeValueAsString(searchRepresentation);
+        var patient = patient().build();
+        var searchRepresentation = new SearchRepresentation(from(patient));
+        var response = new ObjectMapper().writeValueAsString(patient);
         when(exchangeFunction.exchange(captor.capture()))
                 .thenReturn(Mono.just(ClientResponse.create(HttpStatus.OK)
                 .header("Content-Type", "application/json")
@@ -54,6 +58,6 @@ class PatientServiceClientTest {
         Supplier<Mono<SearchRepresentation>> action = () ->  patientServiceClient.patientWith(patientId);
 
         StepVerifier.create(action.get()).expectNext(searchRepresentation).verifyComplete();
-        assertThat(captor.getValue().url().toString()).isEqualTo(format("%s/patients/patient-id@ncg", BASE_URL));
+        assertThat(captor.getValue().url().toString()).isEqualTo(format("%s/users/patient-id@ncg", BASE_URL));
     }
 }

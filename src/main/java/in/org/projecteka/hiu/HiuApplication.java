@@ -18,7 +18,7 @@ public class HiuApplication {
 
 	@Bean
 	public PatientServiceClient patientServiceClient(WebClient.Builder builder,
-													 ConsentManagerServiceProperties properties) {
-		return new PatientServiceClient(builder, properties);
+													 ConsentManagerServiceProperties consentManagerServiceProperties) {
+		return new PatientServiceClient(builder, consentManagerServiceProperties);
 	}
 }

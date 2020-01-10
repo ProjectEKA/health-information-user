@@ -6,7 +6,7 @@ public class TestBuilders {
 
     private static final EasyRandom easyRandom = new EasyRandom();
 
-    static SearchRepresentation.SearchRepresentationBuilder searchRepresentation() {
-        return easyRandom.nextObject(SearchRepresentation.SearchRepresentationBuilder.class);
+    static Patient.PatientBuilder patient() {
+        return easyRandom.nextObject(Patient.PatientBuilder.class);
     }
 }

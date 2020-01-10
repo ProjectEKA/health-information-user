@@ -12,4 +12,8 @@ import lombok.NoArgsConstructor;
 public class PatientRepresentation {
     private String id;
     private String name;
+
+    public static PatientRepresentation from(Patient patient) {
+        return new PatientRepresentation(patient.getIdentifier(), patient.getFirstName());
+    }
 }
