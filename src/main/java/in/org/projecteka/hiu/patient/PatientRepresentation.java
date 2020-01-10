@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PatientRepresentation {
     private String id;
-    private String display;
+    private String name;
 }
