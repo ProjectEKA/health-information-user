@@ -51,6 +51,11 @@ To run
 ./gradlew bootRun
 ```
 
+or if you want to run in dev environment setup
+```
+./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+
 ## Running The Tests
 
 To run the tests
