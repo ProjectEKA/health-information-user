@@ -1,0 +1,12 @@
+hiu:
+  consentmanager:
+    url: http://locahost:8081/
+  centralregistry:
+    url: http://localhost:8082/
+  database:
+    host: localhost
+    port: 5432
+    schema: health_information_user
+    user: postgres
+    password: postgres
+    poolSize: 5
