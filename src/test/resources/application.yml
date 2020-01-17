@@ -2,13 +2,13 @@ hiu:
   id: 10000005
   name: Max Health Care
   consentmanager:
-    url: http://locahost:8081/
+    url: http://consent-manager
   centralregistry:
-    url: http://localhost:8082/
+    url: http://central-registry
   database:
     host: localhost
     port: 5432
-    schema: health_information_user
-    user: postgres
-    password: postgres
+    schema: consent_manager_test
+    user: dummy
+    password: dummy_pwd
     poolSize: 5

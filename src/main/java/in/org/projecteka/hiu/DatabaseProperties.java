@@ -1,15 +1,13 @@
-package in.org.projecteka.hiu.patient;
+package in.org.projecteka.hiu;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties(prefix = "hiu.database")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @AllArgsConstructor
 public class DatabaseProperties {
