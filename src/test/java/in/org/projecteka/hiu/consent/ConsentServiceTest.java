@@ -3,7 +3,7 @@ package in.org.projecteka.hiu.consent;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestDetails;
-import in.org.projecteka.hiu.consent.model.consentManager.ConsentRepresentation;
+import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRepresentation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -20,13 +20,13 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 public class ConsentServiceTest {
     @Mock
-    ConsentManagerClient consentManagerClient;
+    private ConsentManagerClient consentManagerClient;
 
     @Mock
-    ConsentRepository consentRepository;
+    private ConsentRepository consentRepository;
 
     @Mock
-    HiuProperties hiuProperties;
+    private HiuProperties hiuProperties;
 
     @BeforeEach
     public void setUp() {

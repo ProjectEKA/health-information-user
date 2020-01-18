@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.consent.model.consentManager;
+package in.org.projecteka.hiu.consent.model.consentmanager;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @Data
-public class Frequency {
-    private Unit unit;
-    private int value;
+public class ConsentRepresentation {
+    private Consent consent;
 }

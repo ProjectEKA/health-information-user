@@ -5,8 +5,8 @@ import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestDetails;
 import static in.org.projecteka.hiu.consent.Transformer.toConsentManagerConsent;
 
-import in.org.projecteka.hiu.consent.model.consentManager.Consent;
-import in.org.projecteka.hiu.consent.model.consentManager.ConsentRepresentation;
+import in.org.projecteka.hiu.consent.model.consentmanager.Consent;
+import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRepresentation;
 import reactor.core.publisher.Mono;
 
 public class ConsentService {

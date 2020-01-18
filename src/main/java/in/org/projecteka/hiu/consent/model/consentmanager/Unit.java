@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.consent.model.consentManager;
+package in.org.projecteka.hiu.consent.model.consentmanager;
 
 public enum Unit {
     HOUR,

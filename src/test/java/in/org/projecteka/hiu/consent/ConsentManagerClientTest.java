@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
-import in.org.projecteka.hiu.consent.model.consentManager.ConsentRepresentation;
+import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRepresentation;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;

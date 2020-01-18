@@ -3,7 +3,7 @@ package in.org.projecteka.hiu.consent;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.consentManager.ConsentRepresentation;
+import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRepresentation;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;

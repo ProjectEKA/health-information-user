@@ -1,6 +1,7 @@
-package in.org.projecteka.hiu.consent.model.consentManager;
+package in.org.projecteka.hiu.consent.model.consentmanager;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import in.org.projecteka.hiu.consent.model.DateRange;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @Data
-public class ConsentRepresentation {
-    private Consent consent;
+public class Permission {
+    private AccessMode accessMode;
+    private DateRange dateRange;
+    private String dataExpiryAt;
+    private Frequency frequency;
 }

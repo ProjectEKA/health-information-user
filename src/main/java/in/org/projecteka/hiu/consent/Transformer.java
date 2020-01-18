@@ -1,19 +1,13 @@
 package in.org.projecteka.hiu.consent;
 
-import in.org.projecteka.hiu.consent.model.consentManager.AccessMode;
-import in.org.projecteka.hiu.consent.model.consentManager.Consent;
-import in.org.projecteka.hiu.consent.model.consentManager.Frequency;
-import in.org.projecteka.hiu.consent.model.consentManager.HIU;
-import in.org.projecteka.hiu.consent.model.consentManager.Permission;
-import in.org.projecteka.hiu.consent.model.consentManager.Purpose;
-import in.org.projecteka.hiu.consent.model.consentManager.Requester;
-import in.org.projecteka.hiu.consent.model.consentManager.Unit;
-import lombok.SneakyThrows;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
+import in.org.projecteka.hiu.consent.model.consentmanager.AccessMode;
+import in.org.projecteka.hiu.consent.model.consentmanager.Consent;
+import in.org.projecteka.hiu.consent.model.consentmanager.Frequency;
+import in.org.projecteka.hiu.consent.model.consentmanager.HIU;
+import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
+import in.org.projecteka.hiu.consent.model.consentmanager.Purpose;
+import in.org.projecteka.hiu.consent.model.consentmanager.Requester;
+import in.org.projecteka.hiu.consent.model.consentmanager.Unit;
 
 public class Transformer {
 
@@ -22,7 +16,8 @@ public class Transformer {
                                                   String hiuId,
                                                   String hiuName) {
         return new Consent(
-                new Purpose(consent.getPurpose().getCode().getValue(), consent.getPurpose().getCode().name()),
+                new Purpose(consent.getPurpose().getCode().getValue(),
+                        consent.getPurpose().getCode().name()),
                 consent.getPatient(),
                 new HIU(hiuId, hiuName),
                 new Requester(requesterId),
@@ -31,13 +26,5 @@ public class Transformer {
                         consent.getPermission().getDateRange(),
                         consent.getPermission().getDataExpiryAt(),
                         new Frequency(Unit.HOUR, 0)));
-    }
-
-    @SneakyThrows
-    private static Date toDate(String s) {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        return df.parse(s);
     }
 }
