@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @Data
-public class ConsentRepresentation {
+public class ConsentRequest {
     private Consent consent;
 }

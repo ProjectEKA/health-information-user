@@ -1,8 +1,8 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.ConsentRequestDetails;
-import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRepresentation;
+import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import org.jeasy.random.EasyRandom;
 
 public class TestBuilders {
@@ -13,11 +13,11 @@ public class TestBuilders {
         return easyRandom.nextObject(ConsentCreationResponse.ConsentCreationResponseBuilder.class);
     }
 
-    public static ConsentRequestDetails.ConsentRequestDetailsBuilder consentRequestDetails() {
-        return easyRandom.nextObject(ConsentRequestDetails.ConsentRequestDetailsBuilder.class);
+    public static ConsentRequestData.ConsentRequestDataBuilder consentRequestDetails() {
+        return easyRandom.nextObject(ConsentRequestData.ConsentRequestDataBuilder.class);
     }
 
-    public static ConsentRepresentation.ConsentRepresentationBuilder consentRepresentation() {
-        return easyRandom.nextObject(ConsentRepresentation.ConsentRepresentationBuilder.class);
+    public static ConsentRequest.ConsentRequestBuilder consentRepresentation() {
+        return easyRandom.nextObject(ConsentRequest.ConsentRequestBuilder.class);
     }
 }

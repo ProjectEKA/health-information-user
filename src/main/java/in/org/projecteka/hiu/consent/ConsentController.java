@@ -1,7 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.ConsentRequestDetails;
+import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,9 +17,9 @@ public class ConsentController {
     @PostMapping("/consent-requests")
     public Mono<ConsentCreationResponse> createConsentRequest(
             @RequestHeader(value = "Authorization") String authorization,
-            @RequestBody ConsentRequestDetails consentRequestDetails) {
+            @RequestBody ConsentRequestData consentRequestData) {
         String requesterId = TokenUtils.decode(authorization);
-        return consentService.create(requesterId, consentRequestDetails);
+        return consentService.create(requesterId, consentRequestData);
     }
 }
 

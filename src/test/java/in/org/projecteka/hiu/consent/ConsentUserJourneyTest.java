@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
-import static in.org.projecteka.hiu.consent.Transformer.toConsentRequest;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -66,10 +65,7 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
         var consentRequestDetails = consentRequestDetails().build();
-        when(consentRepository.insert(toConsentRequest(
-                consentRequestId,
-                requesterId,
-                consentRequestDetails.getConsent())))
+        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId, requesterId)))
                 .thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
@@ -96,11 +92,7 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
 
-        when(consentRepository.insert(
-                toConsentRequest(
-                        consentRequestId,
-                        "requesterId",
-                        consentRequestDetails.getConsent()))).
+        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId, "requesterId"))).
                 thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
 
         webTestClient

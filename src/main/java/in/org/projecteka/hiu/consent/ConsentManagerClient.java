@@ -3,7 +3,7 @@ package in.org.projecteka.hiu.consent;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRepresentation;
+import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -24,14 +24,14 @@ public class ConsentManagerClient {
     }
 
     public Mono<ConsentCreationResponse> createConsentRequestInConsentManager(
-            ConsentRepresentation consentRepresentation) {
+            ConsentRequest consentRequest) {
         return webClientBuilder
                 .post()
                 .uri("/consent-requests")
                 .header("Authorization",
                         TokenUtils.encodeHIUId(hiuProperties.getId()))
-                .body(Mono.just(consentRepresentation),
-                        ConsentRepresentation.class)
+                .body(Mono.just(consentRequest),
+                        ConsentRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
                         clientResponse -> {
