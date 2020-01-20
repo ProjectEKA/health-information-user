@@ -40,8 +40,9 @@ public class Consent {
                                                                          String hiuName) {
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
-                        getPurpose().getCode().getValue(),
-                        getPurpose().getCode().name()),
+                        getPurpose().getCode().name(),
+                        getPurpose().getCode().getValue()
+                        ),
                 getPatient(),
                 new HIU(hiuId, hiuName),
                 new Requester(requesterId),

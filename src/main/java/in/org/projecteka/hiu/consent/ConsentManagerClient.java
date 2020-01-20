@@ -34,12 +34,7 @@ public class ConsentManagerClient {
                         ConsentRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
-                        clientResponse -> {
-                            System.out.println("Print ==================================");
-                            System.out.println(clientResponse);
-                            System.out.println("Print ==================================");
-                            return Mono.error(creationFailed());
-                        })
+                        clientResponse -> Mono.error(creationFailed()))
                 .bodyToMono(ConsentCreationResponse.class);
     }
 }

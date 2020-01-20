@@ -6,10 +6,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum PurposeType {
-    REFERRAL_SERVICES("Referral Service"),
-    EPISODE_OF_CARE("Episode of care"),
+    REFERRAL_SERVICES("ReferralService"),
+    EPISODE_OF_CARE("EpisodeOfCare"),
     ENCOUNTER("Encounter"),
-    REMOTE_CONSULTING("Remote Consulting");
+    REMOTE_CONSULTING("RemoteConsulting");
 
     private String value;
     PurposeType(String val) {
