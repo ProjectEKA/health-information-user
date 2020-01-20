@@ -14,6 +14,7 @@ import reactor.test.StepVerifier;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.Transformer.toConsentManagerConsent;
+import static in.org.projecteka.hiu.consent.Transformer.toConsentRequest;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -49,7 +50,10 @@ public class ConsentServiceTest {
         when(hiuProperties.getName()).thenReturn("hiuName");
         when(consentManagerClient.createConsentRequestInConsentManager(consentRepresentation))
                 .thenReturn(Mono.just(consentCreationResponse));
-        when(consentRepository.insertToConsentRequest(consentCreationResponse.getId(), consentRequestDetails))
+        when(consentRepository.insertToConsentRequest(toConsentRequest(
+                consentCreationResponse.getId(),
+                "requesterId",
+                consentRequestDetails.getConsent())))
                 .thenReturn(Mono.create(MonoSink::success));
 
         StepVerifier.create(consentService.createConsentRequest("1", consentRequestDetails))

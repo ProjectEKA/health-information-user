@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
+import static in.org.projecteka.hiu.consent.Transformer.toConsentRequest;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -56,6 +57,8 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldCreateConsentRequest() throws JsonProcessingException {
         String consentRequestId = "consent-request-id";
+        String requesterId = "1";
+
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
 
@@ -63,7 +66,11 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
         var consentRequestDetails = consentRequestDetails().build();
-        when(consentRepository.insertToConsentRequest(consentRequestId, consentRequestDetails)).thenReturn(Mono.create(MonoSink::success));
+        when(consentRepository.insertToConsentRequest(toConsentRequest(
+                consentRequestId,
+                requesterId,
+                consentRequestDetails.getConsent())))
+                .thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
                 .post()
@@ -89,7 +96,12 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
 
-        when(consentRepository.insertToConsentRequest(consentRequestId, consentRequestDetails)).thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
+        when(consentRepository.insertToConsentRequest(
+                toConsentRequest(
+                        consentRequestId,
+                        "requesterId",
+                        consentRequestDetails.getConsent()))).
+                thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
 
         webTestClient
                 .post()

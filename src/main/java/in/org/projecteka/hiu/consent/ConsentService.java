@@ -4,6 +4,7 @@ import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestDetails;
 import static in.org.projecteka.hiu.consent.Transformer.toConsentManagerConsent;
+import static in.org.projecteka.hiu.consent.Transformer.toConsentRequest;
 
 import in.org.projecteka.hiu.consent.model.consentmanager.Consent;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRepresentation;
@@ -31,9 +32,14 @@ public class ConsentService {
                 hiuProperties.getId(),
                 hiuProperties.getName());
         return consentManagerClient.createConsentRequestInConsentManager(new ConsentRepresentation(consentWithHIURequesterInfo))
-                .flatMap(consentCreationResponse -> consentRepository.insertToConsentRequest(consentCreationResponse.getId(), consentRequestDetails)
+                .flatMap(consentCreationResponse -> consentRepository.insertToConsentRequest(toConsentRequest(
+                        consentCreationResponse.getId(),
+                        requesterId,
+                        consentRequestDetails.getConsent()))
                         .then(Mono.just(ConsentCreationResponse.builder().id(consentCreationResponse.getId()).build())));
     }
+
+
 
 
 }
