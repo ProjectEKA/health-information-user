@@ -16,5 +16,4 @@ import org.springframework.context.annotation.Configuration;
 public class HiuProperties {
     private String id;
     private String name;
-
 }

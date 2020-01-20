@@ -1,12 +1,8 @@
 package in.org.projecteka.hiu.consent;
 
-
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-
 
 @AllArgsConstructor
-@NoArgsConstructor
 public class ConsentException extends Throwable {
     private ErrorCode code;
     private String message;

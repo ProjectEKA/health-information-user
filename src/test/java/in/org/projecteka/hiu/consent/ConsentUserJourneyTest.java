@@ -66,7 +66,7 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
         var consentRequestDetails = consentRequestDetails().build();
-        when(consentRepository.insertToConsentRequest(toConsentRequest(
+        when(consentRepository.insert(toConsentRequest(
                 consentRequestId,
                 requesterId,
                 consentRequestDetails.getConsent())))
@@ -96,7 +96,7 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
 
-        when(consentRepository.insertToConsentRequest(
+        when(consentRepository.insert(
                 toConsentRequest(
                         consentRequestId,
                         "requesterId",

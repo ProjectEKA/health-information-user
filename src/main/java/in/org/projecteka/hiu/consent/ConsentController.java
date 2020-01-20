@@ -18,8 +18,8 @@ public class ConsentController {
     public Mono<ConsentCreationResponse> createConsentRequest(
             @RequestHeader(value = "Authorization") String authorization,
             @RequestBody ConsentRequestDetails consentRequestDetails) {
-        String requesterId = TokenUtils.readRequesterId(authorization);
-        return consentService.createConsentRequest(requesterId, consentRequestDetails);
+        String requesterId = TokenUtils.decode(authorization);
+        return consentService.create(requesterId, consentRequestDetails);
     }
 }
 

@@ -21,7 +21,6 @@ public class HiuConfiguration {
                 consentManagerServiceProperties);
     }
 
-
     @Bean
     public PgPool dbConnectionPool(DatabaseProperties dbProps) {
         PgConnectOptions connectOptions = new PgConnectOptions()
@@ -44,8 +43,7 @@ public class HiuConfiguration {
             HiuProperties hiuProperties,
             ConsentRepository consentRepository) {
         return new ConsentService(
-                new ConsentManagerClient(builder,
-                        consentManagerServiceProperties, hiuProperties),
+                new ConsentManagerClient(builder, consentManagerServiceProperties, hiuProperties),
                 hiuProperties,
                 consentRepository);
     }

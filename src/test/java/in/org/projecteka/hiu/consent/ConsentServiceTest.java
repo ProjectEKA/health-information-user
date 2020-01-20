@@ -13,7 +13,6 @@ import reactor.test.StepVerifier;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
-import static in.org.projecteka.hiu.consent.Transformer.toConsentManagerConsent;
 import static in.org.projecteka.hiu.consent.Transformer.toConsentRequest;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,23 +39,20 @@ public class ConsentServiceTest {
         ConsentService consentService = new ConsentService(consentManagerClient, hiuProperties, consentRepository);
         ConsentRequestDetails consentRequestDetails = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
-        ConsentRepresentation consentRepresentation = new ConsentRepresentation(toConsentManagerConsent(
-                "1",
-                consentRequestDetails.getConsent(),
-                "hiuId",
-                "hiuName"));
+        ConsentRepresentation consentRepresentation = new ConsentRepresentation(consentRequestDetails.getConsent()
+                .to("1","hiuId","hiuName"));
 
         when(hiuProperties.getId()).thenReturn("hiuId");
         when(hiuProperties.getName()).thenReturn("hiuName");
         when(consentManagerClient.createConsentRequestInConsentManager(consentRepresentation))
                 .thenReturn(Mono.just(consentCreationResponse));
-        when(consentRepository.insertToConsentRequest(toConsentRequest(
+        when(consentRepository.insert(toConsentRequest(
                 consentCreationResponse.getId(),
                 "requesterId",
                 consentRequestDetails.getConsent())))
                 .thenReturn(Mono.create(MonoSink::success));
 
-        StepVerifier.create(consentService.createConsentRequest("1", consentRequestDetails))
+        StepVerifier.create(consentService.create("1", consentRequestDetails))
                 .expectNext(consentCreationResponse).expectComplete();
         verify(consentManagerClient).createConsentRequestInConsentManager(consentRepresentation);
     }

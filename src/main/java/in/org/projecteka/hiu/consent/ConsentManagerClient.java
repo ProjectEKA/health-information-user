@@ -12,29 +12,34 @@ import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
 import static java.util.function.Predicate.not;
 
 public class ConsentManagerClient {
-    private final WebClient.Builder webClientBuilder;
-    private final ConsentManagerServiceProperties consentManagerServiceProperties;
+    private final WebClient webClientBuilder;
     private HiuProperties hiuProperties;
 
-
     public ConsentManagerClient(WebClient.Builder webClientBuilder,
-                                ConsentManagerServiceProperties consentManagerServiceProperties, HiuProperties hiuProperties) {
-        this.webClientBuilder = webClientBuilder;
-        this.consentManagerServiceProperties = consentManagerServiceProperties;
+                                ConsentManagerServiceProperties consentManagerServiceProperties,
+                                HiuProperties hiuProperties) {
+        this.webClientBuilder =
+                webClientBuilder.baseUrl(consentManagerServiceProperties.getUrl()).build();
         this.hiuProperties = hiuProperties;
     }
 
-    public Mono<ConsentCreationResponse> createConsentRequestInConsentManager(ConsentRepresentation consentRepresentation) {
-        return webClientBuilder.build()
+    public Mono<ConsentCreationResponse> createConsentRequestInConsentManager(
+            ConsentRepresentation consentRepresentation) {
+        return webClientBuilder
                 .post()
-                .uri(String.format("%s/consent-requests", consentManagerServiceProperties.getUrl()))
+                .uri("/consent-requests")
                 .header("Authorization",
                         TokenUtils.encodeHIUId(hiuProperties.getId()))
                 .body(Mono.just(consentRepresentation),
                         ConsentRepresentation.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
-                        clientResponse -> Mono.error(creationFailed()))
+                        clientResponse -> {
+                            System.out.println("Print ==================================");
+                            System.out.println(clientResponse);
+                            System.out.println("Print ==================================");
+                            return Mono.error(creationFailed());
+                        })
                 .bodyToMono(ConsentCreationResponse.class);
     }
 }
