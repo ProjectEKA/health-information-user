@@ -40,12 +40,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  consentRequest:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
+                  id:
+                    type: string
+                    format: uuid
 
   # discover service
   /patients/{patient-id}:
@@ -111,6 +108,7 @@ components:
         - HIType3
         - HIType4
         - HIType5
+      example: "DiagnosticReport"
 
     ConsentRequest:
       type: object
@@ -125,8 +123,8 @@ components:
               type: object
               properties:
                 code:
-                  type: integer
-                  enum: [100]
+                  type: string
+                  example: "ReferralService"
             hitypes:
               type: array
               items:
