@@ -6,8 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum HIType {
-
-    ONDITION("Condition"),
+    CONDITION("Condition"),
     OBSERVATION("Observation"),
     DIAGNOSTIC_REPORT("DiagnosticReport"),
     MEDICATION_REQUEST("MedicationRequest");
