@@ -53,7 +53,7 @@ public class Consent {
     }
 
     public ConsentRequest toConsentRequest(String id, String requesterId) {
-        return new in.org.projecteka.hiu.consent.model.ConsentRequest(id,
+        return new ConsentRequest(id,
                 requesterId,
                 getPatient(),
                 getPurpose(),
