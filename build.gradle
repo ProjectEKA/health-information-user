@@ -28,6 +28,8 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+	testImplementation("com.squareup.okhttp3:okhttp:4.3.1")
+	testImplementation "com.squareup.okhttp3:mockwebserver:4.3.1"
 	testImplementation 'io.projectreactor:reactor-test'
 	testImplementation group: 'org.jeasy', name: 'easy-random-core', version: '4.1.0'
 }
