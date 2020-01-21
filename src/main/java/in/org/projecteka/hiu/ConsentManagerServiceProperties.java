@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.patient;
+package in.org.projecteka.hiu;
 
 import lombok.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;

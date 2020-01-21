@@ -1,4 +1,8 @@
+server:
+  port: 8003
 hiu:
+  id: ${HIU_ID}
+  name: ${HIU_NAME}
   consentmanager:
     url: ${CONSENT_MANAGEMENT_URL}
   centralregistry:

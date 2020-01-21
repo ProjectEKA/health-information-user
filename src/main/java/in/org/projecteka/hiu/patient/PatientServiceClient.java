@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.patient;
 
+import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
