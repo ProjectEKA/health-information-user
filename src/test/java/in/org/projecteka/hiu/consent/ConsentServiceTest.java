@@ -39,15 +39,16 @@ public class ConsentServiceTest {
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
         ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()
-                .to("1","hiuId","hiuName"));
+                .to("1","hiuId","hiuName", "localhost:8080"));
 
         when(hiuProperties.getId()).thenReturn("hiuId");
         when(hiuProperties.getName()).thenReturn("hiuName");
+        when(hiuProperties.getCallBackUrl()).thenReturn("localhost:8080");
         when(consentManagerClient.createConsentRequestInConsentManager(consentRequest))
                 .thenReturn(Mono.just(consentCreationResponse));
         when(consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
                 consentCreationResponse.getId(),
-                "requesterId" )))
+                "requesterId", "localhost:8080")))
                 .thenReturn(Mono.create(MonoSink::success));
 
         StepVerifier.create(consentService.create("1", consentRequestData))

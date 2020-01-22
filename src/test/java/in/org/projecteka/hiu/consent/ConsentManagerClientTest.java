@@ -27,7 +27,7 @@ public class ConsentManagerClientTest {
         WebClient.Builder webClientBuilder = WebClient.builder();
         ConsentManagerServiceProperties consentManagerServiceProperties =
                 new ConsentManagerServiceProperties(mockWebServer.url("").toString());
-        HiuProperties hiuProperties = new HiuProperties("10000005", "Max Health Care");
+        HiuProperties hiuProperties = new HiuProperties("10000005", "Max Health Care", "localhost:8080");
         consentManagerClient = new ConsentManagerClient(webClientBuilder, consentManagerServiceProperties, hiuProperties);
 
     }

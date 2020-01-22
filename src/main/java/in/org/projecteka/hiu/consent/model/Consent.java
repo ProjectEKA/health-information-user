@@ -23,7 +23,6 @@ import static in.org.projecteka.hiu.consent.model.consentmanager.Frequency.ONE_H
 @NoArgsConstructor
 @Data
 public class Consent {
-    private static final String CALL_BACK_URL = "http://hiu-dev.projecteka.in/";
     private Patient patient;
     private Purpose purpose;
     private List<HIType> hiTypes;
@@ -38,7 +37,8 @@ public class Consent {
 
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
-                                                                         String hiuName) {
+                                                                         String hiuName,
+                                                                         String callBackUrl) {
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
                         getPurpose().getCode().name(),
@@ -51,10 +51,10 @@ public class Consent {
                         getPermission().getDateRange(),
                         getPermission().getDataExpiryAt(),
                         ONE_HOUR),
-                CALL_BACK_URL);
+                callBackUrl);
     }
 
-    public ConsentRequest toConsentRequest(String id, String requesterId) {
+    public ConsentRequest toConsentRequest(String id, String requesterId, String callBackUrl) {
         return new ConsentRequest(id,
                 requesterId,
                 getPatient(),
@@ -63,7 +63,7 @@ public class Consent {
                 getPermission(),
                 ConsentStatus.REQUESTED,
                 getCurrentDate(),
-                CALL_BACK_URL
+                callBackUrl
         );
     }
 }
