@@ -1,16 +1,16 @@
 server:
   port: 8003
 hiu:
-  id: ${HIU_ID}
-  name: ${HIU_NAME}
+  id: 10000005
+  name: Max Health Care
   consentmanager:
-    url: ${CONSENT_MANAGEMENT_URL}
+    url: http://localhost:8002
   centralregistry:
-    url: ${CENTRAL_REGISTRY_URL}
+    url: ${Client_Registry_Url}
   database:
-    host: ${POSTGRES_HOST}
-    port: ${POSTGRES_PORT}
-    schema: ${CONSENT_MANAGER_DB_NAME}
-    user: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
-    poolSize: ${DB_CONNECTION_POOL_SIZE}
+    host: localhost
+    port: 5432
+    schema: health_information_user
+    user: postgres
+    password: welcome
+    poolSize: 5

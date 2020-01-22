@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import static in.org.projecteka.hiu.consent.model.consentmanager.Frequency.ZERO_HOUR;
+import static in.org.projecteka.hiu.consent.model.consentmanager.Frequency.ONE_HOUR;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
@@ -50,7 +50,7 @@ public class Consent {
                 new in.org.projecteka.hiu.consent.model.consentmanager.Permission(AccessMode.VIEW,
                         getPermission().getDateRange(),
                         getPermission().getDataExpiryAt(),
-                        ZERO_HOUR),
+                        ONE_HOUR),
                 CALL_BACK_URL);
     }
 
