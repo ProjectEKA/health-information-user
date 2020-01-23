@@ -23,12 +23,15 @@ public class ConsentService {
         var consentRequest = consentRequestData.getConsent().to(
                 requesterId,
                 hiuProperties.getId(),
-                hiuProperties.getName());
+                hiuProperties.getName(),
+                hiuProperties.getCallBackUrl());
         return consentManagerClient.createConsentRequestInConsentManager(
                 new ConsentRequest(consentRequest))
                 .flatMap(consentCreationResponse ->
-                        consentRepository.insert(consentRequestData.getConsent().toConsentRequest(consentCreationResponse.getId(),
-                                requesterId))
+                        consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
+                                consentCreationResponse.getId(),
+                                requesterId,
+                                hiuProperties.getCallBackUrl()))
                                 .thenReturn(ConsentCreationResponse.builder().id(consentCreationResponse.getId()).build()));
     }
 }

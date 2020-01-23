@@ -3,6 +3,7 @@ server:
 hiu:
   id: ${HIU_ID}
   name: ${HIU_NAME}
+  callbackurl: ${CALL_BACK_URL}
   consentmanager:
     url: ${CONSENT_MANAGEMENT_URL}
   centralregistry:

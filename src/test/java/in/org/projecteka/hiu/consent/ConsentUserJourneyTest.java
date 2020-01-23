@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient(timeout = "300000")
+@AutoConfigureWebTestClient
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
     private static MockWebServer consentManagerServer = new MockWebServer();
@@ -57,6 +57,7 @@ public class ConsentUserJourneyTest {
     public void shouldCreateConsentRequest() throws JsonProcessingException {
         String consentRequestId = "consent-request-id";
         String requesterId = "1";
+        String callBackUrl = "localhost:8080";
 
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
@@ -65,7 +66,10 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
         var consentRequestDetails = consentRequestDetails().build();
-        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId, requesterId)))
+        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(
+                consentRequestId,
+                requesterId,
+                callBackUrl)))
                 .thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
@@ -92,7 +96,7 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
 
-        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId, "requesterId"))).
+        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId, "requesterId", "localhost:8080"))).
                 thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
 
         webTestClient

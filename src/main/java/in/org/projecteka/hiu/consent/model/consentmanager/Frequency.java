@@ -12,5 +12,5 @@ import lombok.Data;
 public class Frequency {
     private Unit unit;
     private int value;
-    public static Frequency ZERO_HOUR = new Frequency(Unit.HOUR, 0);
+    public static Frequency ONE_HOUR = new Frequency(Unit.HOUR, 1);
 }

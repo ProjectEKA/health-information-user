@@ -1,6 +1,7 @@
 hiu:
   id: 10000005
   name: Max Health Care
+  callbackurl: localhost:8080
   consentmanager:
     url: http://consent-manager
   centralregistry:
