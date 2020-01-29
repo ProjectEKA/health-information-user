@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.patient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
+import in.org.projecteka.hiu.HiuProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,7 +43,10 @@ class PatientServiceClientTest {
         MockitoAnnotations.initMocks(this);
         WebClient.Builder webClientBuilder = WebClient.builder()
                 .exchangeFunction(exchangeFunction);
-        patientServiceClient = new PatientServiceClient(webClientBuilder, new ConsentManagerServiceProperties(BASE_URL));
+        patientServiceClient = new PatientServiceClient(
+                webClientBuilder,
+                new ConsentManagerServiceProperties(BASE_URL),
+                new HiuProperties("", "random", ""));
     }
 
     @Test
