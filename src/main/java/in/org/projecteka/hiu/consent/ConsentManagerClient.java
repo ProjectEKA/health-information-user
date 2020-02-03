@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
+import static in.org.projecteka.hiu.consent.ConsentException.fetchConsentArtefactFailed;
 import static java.util.function.Predicate.not;
 
 public class ConsentManagerClient {
@@ -36,5 +38,17 @@ public class ConsentManagerClient {
                 .onStatus(not(HttpStatus::is2xxSuccessful),
                         clientResponse -> Mono.error(creationFailed()))
                 .bodyToMono(ConsentCreationResponse.class);
+    }
+
+    public Mono<ConsentArtefactResponse> getConsentArtefact(String consentId) {
+        return webClientBuilder
+                .get()
+                .uri(String.format("/consent-artefacts/%s/", consentId))
+                .header("Authorization",
+                        TokenUtils.encodeHIUId(hiuProperties.getId()))
+                .retrieve()
+                .onStatus(not(HttpStatus::is2xxSuccessful),
+                        clientResponse -> Mono.error(fetchConsentArtefactFailed()))
+                .bodyToMono(ConsentArtefactResponse.class);
     }
 }

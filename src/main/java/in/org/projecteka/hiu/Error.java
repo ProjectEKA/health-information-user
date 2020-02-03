@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.consent.model.consentmanager;
+package in.org.projecteka.hiu;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -8,11 +8,12 @@ import lombok.NoArgsConstructor;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
-@NoArgsConstructor
 @Builder
+@NoArgsConstructor
 @Data
-public class Frequency {
-    private Unit unit;
-    private int value;
-    public static Frequency ONE_HOUR = new Frequency(Unit.HOUR, 1);
+public class Error {
+    private ErrorCode code;
+    private String message;
 }
+
+
