@@ -28,7 +28,7 @@ public class ConsentController {
             @RequestHeader(value = "Authorization") String authorization,
             @RequestBody ConsentNotificationRequest consentNotificationRequest) {
         String requesterId = TokenUtils.decode(authorization);
-        return consentService.fetchConsentArtefact(requesterId, consentNotificationRequest);
+        return consentService.handleNotification(requesterId, consentNotificationRequest);
     }
 }
 

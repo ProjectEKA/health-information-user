@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.consent;
 
-import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
@@ -41,12 +40,15 @@ public class ConsentService {
                                 .thenReturn(ConsentCreationResponse.builder().id(consentCreationResponse.getId()).build()));
     }
 
-    public Mono<Void> fetchConsentArtefact(String consentManagerId,
-                                           ConsentNotificationRequest consentNotificationRequest) {
+    public Mono<Void> handleNotification(String consentManagerId,
+                                         ConsentNotificationRequest consentNotificationRequest) {
         return validateRequest(consentNotificationRequest.getConsentRequestId())
-                .flatMap(consentRequest -> validateConsentManager(consentManagerId, consentRequest)
-                        .thenMany(fetchAndStoreConsentArtefacts(consentNotificationRequest))
-                        .then());
+                .flatMap(consentRequest -> {
+                    boolean validConsentManager = isValidConsentManager(consentManagerId, consentRequest);
+                    return validConsentManager
+                            ? fetchAndStoreConsentArtefacts(consentNotificationRequest).then()
+                            : Mono.error(invalidConsentManager());
+                });
     }
 
     private Flux<Void> fetchAndStoreConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {
@@ -59,13 +61,11 @@ public class ConsentService {
     }
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> validateRequest(String consentRequestId) {
-        return consentRepository.get(consentRequestId)
-                .switchIfEmpty(Mono.error(consentRequestNotFound()));
+        return consentRepository.get(consentRequestId).switchIfEmpty(Mono.error(consentRequestNotFound()));
     }
 
-    private Mono<Void> validateConsentManager(String consentManagerId, in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
-        boolean validConsentManager = consentRequest.getPatient().getId().contains(consentManagerId);
-        if (validConsentManager) return Mono.empty();
-        return Mono.error(invalidConsentManager());
+    private boolean isValidConsentManager(String consentManagerId,
+                                          in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
+        return consentRequest.getPatient().getId().contains(consentManagerId);
     }
 }

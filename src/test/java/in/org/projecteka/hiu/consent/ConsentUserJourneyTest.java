@@ -185,7 +185,7 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldReturn404OnNotificationWhenConsentRequestCouldNotBeFetched() {
+    public void shouldReturn500OnNotificationWhenConsentRequestCouldNotBeFetched() {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)

@@ -14,20 +14,19 @@ import static in.org.projecteka.hiu.consent.ConsentException.fetchConsentArtefac
 import static java.util.function.Predicate.not;
 
 public class ConsentManagerClient {
-    private final WebClient webClientBuilder;
+    private final WebClient webClient;
     private HiuProperties hiuProperties;
 
-    public ConsentManagerClient(WebClient.Builder webClientBuilder,
+    public ConsentManagerClient(WebClient.Builder webClient,
                                 ConsentManagerServiceProperties consentManagerServiceProperties,
                                 HiuProperties hiuProperties) {
-        this.webClientBuilder =
-                webClientBuilder.baseUrl(consentManagerServiceProperties.getUrl()).build();
+        this.webClient = webClient.baseUrl(consentManagerServiceProperties.getUrl()).build();
         this.hiuProperties = hiuProperties;
     }
 
     public Mono<ConsentCreationResponse> createConsentRequestInConsentManager(
             ConsentRequest consentRequest) {
-        return webClientBuilder
+        return webClient
                 .post()
                 .uri("/consent-requests")
                 .header("Authorization",
@@ -41,7 +40,7 @@ public class ConsentManagerClient {
     }
 
     public Mono<ConsentArtefactResponse> getConsentArtefact(String consentId) {
-        return webClientBuilder
+        return webClient
                 .get()
                 .uri(String.format("/consents/%s/", consentId))
                 .header("Authorization",
