@@ -13,6 +13,8 @@ import reactor.core.publisher.Mono;
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 public class ConsentRepository {
+    private final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
+            "consent_artefact (consent_artefact) VALUES ($1)";
     private PgPool dbClient;
 
     public ConsentRepository(PgPool pgPool) {
@@ -63,11 +65,9 @@ public class ConsentRepository {
     }
 
     public Mono<Void> insertConsentArtefact(ConsentArtefact consentArtefact) {
-        final String INSERT_CONSENT_REQUEST_QUERY = "INSERT INTO " +
-                "consent_artefact (consent_artefact) VALUES ($1)";
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
-                        INSERT_CONSENT_REQUEST_QUERY,
+                        INSERT_CONSENT_ARTEFACT_QUERY,
                         Tuple.of(JsonObject.mapFrom(consentArtefact)),
                         handler -> {
                             if (handler.failed())

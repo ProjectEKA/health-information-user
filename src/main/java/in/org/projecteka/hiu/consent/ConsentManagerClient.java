@@ -43,7 +43,7 @@ public class ConsentManagerClient {
     public Mono<ConsentArtefactResponse> getConsentArtefact(String consentId) {
         return webClientBuilder
                 .get()
-                .uri(String.format("/consent-artefacts/%s/", consentId))
+                .uri(String.format("/consents/%s/", consentId))
                 .header("Authorization",
                         TokenUtils.encodeHIUId(hiuProperties.getId()))
                 .retrieve()
