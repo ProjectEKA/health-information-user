@@ -32,7 +32,7 @@ public class ConsentService {
                 hiuProperties.getId(),
                 hiuProperties.getName(),
                 hiuProperties.getCallBackUrl());
-        return consentManagerClient.createConsentRequestInConsentManager(
+        return consentManagerClient.createConsentRequest(
                 new ConsentRequest(consentRequest))
                 .flatMap(consentCreationResponse ->
                         consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
