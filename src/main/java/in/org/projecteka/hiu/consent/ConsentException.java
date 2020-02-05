@@ -17,8 +17,14 @@ public class ConsentException extends Throwable {
         return new ConsentException(ErrorCode.FETCH_CONSENT_ARTEFACT_FAILED, failedToCreateRequest);
     }
 
+    public static ConsentException failedToInitiateDataFlowRequest() {
+        final String failedToInitiateDataFlowRequest = "Failed to initiate data flow request";
+        return new ConsentException(ErrorCode.FAILED_TO_INITIATE_DATAFLOW_REQUEST, failedToInitiateDataFlowRequest);
+    }
+
     private enum ErrorCode {
         CREATION_FAILED,
-        FETCH_CONSENT_ARTEFACT_FAILED
+        FETCH_CONSENT_ARTEFACT_FAILED,
+        FAILED_TO_INITIATE_DATAFLOW_REQUEST
     }
 }
