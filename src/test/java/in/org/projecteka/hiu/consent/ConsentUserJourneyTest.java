@@ -2,7 +2,11 @@ package in.org.projecteka.hiu.consent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
+import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +22,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import okhttp3.mockwebserver.MockWebServer;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
@@ -26,8 +29,15 @@ import reactor.core.publisher.MonoSink;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactPatient;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactReference;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentNotificationRequest;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
+import static java.util.Collections.singletonList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -109,6 +119,154 @@ public class ConsentUserJourneyTest {
                 .exchange()
                 .expectStatus()
                 .is5xxServerError();
+    }
+
+    @Test
+    public void shouldCreateConsentArtefacts() throws JsonProcessingException {
+        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse().build();
+        var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consentArtefactResponse);
+
+        consentManagerServer.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody(consentArtefactResponseJson));
+
+        String consentRequestId = "consent-request-id-1";
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .consentRequestId(consentRequestId)
+                .consents(singletonList(consentArtefactReference().build()))
+                .build();
+        ConsentRequest consentRequest = consentRequest()
+                .id(consentRequestId)
+                .patient(consentArtefactPatient().id("5@ncg").build())
+                .build();
+
+        when(consentRepository.get(eq(consentRequestId)))
+                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
+
+        when(consentRepository.insertConsentArtefact(eq(consentArtefactResponse.getConsentDetail())))
+                .thenReturn(Mono.create(MonoSink::success));
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isOk();
+    }
+
+    @Test
+    public void shouldReturn404OnNotificationWhenConsentRequestNotFound() {
+        String consentRequestId = "consent-request-id-1";
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .consentRequestId(consentRequestId)
+                .consents(singletonList(consentArtefactReference().build()))
+                .build();
+
+        when(consentRepository.get(eq(consentRequestId)))
+                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(null)));
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .is4xxClientError();
+    }
+
+    @Test
+    public void shouldReturn500OnNotificationWhenConsentRequestCouldNotBeFetched() {
+        String consentRequestId = "consent-request-id-1";
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .consentRequestId(consentRequestId)
+                .consents(singletonList(consentArtefactReference().build()))
+                .build();
+
+        when(consentRepository.get(eq(consentRequestId)))
+                .thenReturn(Mono.error(new Exception("Failed to fetch consent request")));
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .is5xxServerError();
+    }
+
+    @Test
+    public void shouldReturn500OnNotificationWhenConsentArtefactCouldNotBeInserted() throws JsonProcessingException {
+        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse().build();
+        var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consentArtefactResponse);
+
+        consentManagerServer.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody(consentArtefactResponseJson));
+
+        String consentRequestId = "consent-request-id-1";
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .consentRequestId(consentRequestId)
+                .consents(singletonList(consentArtefactReference().build()))
+                .build();
+        ConsentRequest consentRequest = consentRequest()
+                .id(consentRequestId)
+                .patient(consentArtefactPatient().id("5@ncg").build())
+                .build();
+
+        when(consentRepository.get(eq(consentRequestId)))
+                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
+
+        when(consentRepository.insertConsentArtefact(eq(consentArtefactResponse.getConsentDetail())))
+                .thenReturn(Mono.error(new Exception("Failed to insert to consent artefact")));
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .is5xxServerError();
+    }
+
+    @Test
+    public void shouldReturn400WhenConsentManagerIsInvalid() {
+
+        String consentRequestId = "consent-request-id-1";
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .consentRequestId(consentRequestId)
+                .consents(singletonList(consentArtefactReference().build()))
+                .build();
+        ConsentRequest consentRequest = consentRequest()
+                .id(consentRequestId)
+                .patient(consentArtefactPatient().id("5@ncg").build())
+                .build();
+
+        when(consentRepository.get(eq(consentRequestId)))
+                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "abcd")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
     }
 
     public static class ContextInitializer
