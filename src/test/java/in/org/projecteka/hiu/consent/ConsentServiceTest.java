@@ -48,7 +48,7 @@ public class ConsentServiceTest {
         when(hiuProperties.getId()).thenReturn("hiuId");
         when(hiuProperties.getName()).thenReturn("hiuName");
         when(hiuProperties.getCallBackUrl()).thenReturn("localhost:8080");
-        when(consentManagerClient.createConsentRequestInConsentManager(consentRequest))
+        when(consentManagerClient.createConsentRequest(consentRequest))
                 .thenReturn(Mono.just(consentCreationResponse));
         when(consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
                 consentCreationResponse.getId(),
@@ -57,6 +57,6 @@ public class ConsentServiceTest {
 
         StepVerifier.create(consentService.create("1", consentRequestData))
                 .expectNext(consentCreationResponse).expectComplete();
-        verify(consentManagerClient).createConsentRequestInConsentManager(consentRequest);
+        verify(consentManagerClient).createConsentRequest(consentRequest);
     }
 }

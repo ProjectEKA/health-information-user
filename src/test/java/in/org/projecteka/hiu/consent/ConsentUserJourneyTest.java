@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
+import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
@@ -123,7 +124,9 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldCreateConsentArtefacts() throws JsonProcessingException {
-        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse().build();
+        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse()
+                .status(ConsentStatus.GRANTED)
+                .build();
         var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consentArtefactResponse);
 
         consentManagerServer.enqueue(new MockResponse()
@@ -133,7 +136,7 @@ public class ConsentUserJourneyTest {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().build()))
+                .consents(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
                 .build();
         ConsentRequest consentRequest = consentRequest()
                 .id(consentRequestId)
@@ -143,7 +146,8 @@ public class ConsentUserJourneyTest {
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
 
-        when(consentRepository.insertConsentArtefact(eq(consentArtefactResponse.getConsentDetail())))
+        when(consentRepository.insertConsentArtefact(
+                eq(consentArtefactResponse.getConsentDetail()), eq(consentArtefactResponse.getStatus())))
                 .thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
@@ -206,7 +210,9 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldReturn500OnNotificationWhenConsentArtefactCouldNotBeInserted() throws JsonProcessingException {
-        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse().build();
+        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse()
+                .status(ConsentStatus.GRANTED)
+                .build();
         var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consentArtefactResponse);
 
         consentManagerServer.enqueue(new MockResponse()
@@ -216,7 +222,7 @@ public class ConsentUserJourneyTest {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().build()))
+                .consents(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
                 .build();
         ConsentRequest consentRequest = consentRequest()
                 .id(consentRequestId)
@@ -226,7 +232,8 @@ public class ConsentUserJourneyTest {
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
 
-        when(consentRepository.insertConsentArtefact(eq(consentArtefactResponse.getConsentDetail())))
+        when(consentRepository.insertConsentArtefact(
+                eq(consentArtefactResponse.getConsentDetail()), eq(consentArtefactResponse.getStatus())))
                 .thenReturn(Mono.error(new Exception("Failed to insert to consent artefact")));
 
         webTestClient
@@ -243,7 +250,6 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldReturn400WhenConsentManagerIsInvalid() {
-
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)

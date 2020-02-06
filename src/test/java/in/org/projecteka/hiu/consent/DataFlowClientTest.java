@@ -44,7 +44,7 @@ public class DataFlowClientTest {
                 .setBody(consentCreationResponseJson));
 
 
-        StepVerifier.create(consentManagerClient.createConsentRequestInConsentManager(consentRepresentation))
+        StepVerifier.create(consentManagerClient.createConsentRequest(consentRepresentation))
                 .assertNext(
                         response -> {
                             assertThat(response.getId()).isEqualTo(consentCreationResponse.getId());
