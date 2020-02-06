@@ -27,6 +27,9 @@ public class ConsentServiceTest {
     @Mock
     private HiuProperties hiuProperties;
 
+    @Mock
+    private DataFlowRequestPublisher dataFlowRequestPublisher;
+
     @BeforeEach
     public void setUp() {
         initMocks(this);
@@ -35,7 +38,8 @@ public class ConsentServiceTest {
 
     @Test
     public void shouldCreateConsentRequest() {
-        ConsentService consentService = new ConsentService(consentManagerClient, hiuProperties, consentRepository);
+        ConsentService consentService = new ConsentService(consentManagerClient, hiuProperties, consentRepository,
+                dataFlowRequestPublisher);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
         ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()

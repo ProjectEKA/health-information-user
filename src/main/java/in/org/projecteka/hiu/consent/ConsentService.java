@@ -6,10 +6,6 @@ import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
-import in.org.projecteka.hiu.consent.model.consentmanager.dataflow.Consent;
-import in.org.projecteka.hiu.consent.model.consentmanager.dataflow.DataFlowRequestResponse;
-import in.org.projecteka.hiu.consent.model.consentmanager.dataflow.HIDataRange;
-import in.org.projecteka.hiu.consent.model.consentmanager.dataflow.Request;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -20,13 +16,16 @@ public class ConsentService {
     private final ConsentManagerClient consentManagerClient;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
+    private final DataFlowRequestPublisher dataFlowRequestPublisher;
 
     public ConsentService(ConsentManagerClient consentManagerClient,
                           HiuProperties hiuProperties,
-                          ConsentRepository consentRepository) {
+                          ConsentRepository consentRepository,
+                          DataFlowRequestPublisher dataFlowRequestPublisher) {
         this.consentManagerClient = consentManagerClient;
         this.hiuProperties = hiuProperties;
         this.consentRepository = consentRepository;
+        this.dataFlowRequestPublisher = dataFlowRequestPublisher;
     }
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
@@ -54,20 +53,13 @@ public class ConsentService {
                         return fetchConsentArtefacts(consentNotificationRequest)
                                 .flatMap(consentArtefactResponse ->
                                         consentRepository.insertConsentArtefact(consentArtefactResponse.getConsentDetail())
-                                                .then(initiateDataFlowRequest(consentArtefactResponse))).then();
+                                                .then(dataFlowRequestPublisher.broadcastDataFlowRequest(
+                                                        consentArtefactResponse.getConsentDetail().getConsentId(),
+                                                        consentArtefactResponse.getSignature(),
+                                                        hiuProperties.getCallBackUrl()))).then();
                     } else
                         return Mono.error(invalidConsentManager());
                 });
-    }
-
-    private Mono<DataFlowRequestResponse> initiateDataFlowRequest(ConsentArtefactResponse consentArtefactResponse) {
-        return consentManagerClient.initiateDataFlowRequest(Request.builder()
-                .consent(Consent.builder().
-                        id(consentArtefactResponse.getConsentDetail().getConsentId())
-                        .digitalSignature(consentArtefactResponse.getSignature())
-                        .build())
-                .callBackUrl(hiuProperties.getCallBackUrl())
-                .build());
     }
 
     private Flux<ConsentArtefactResponse> fetchConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {

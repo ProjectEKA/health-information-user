@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.consent.model.consentmanager.dataflow;
+package in.org.projecteka.hiu.dataflow.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

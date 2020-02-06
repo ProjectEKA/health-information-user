@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRepresentation;
 
-public class ConsentManagerClientTest {
+public class DataFlowClientTest {
     private ConsentManagerClient consentManagerClient;
     private MockWebServer mockWebServer;
 

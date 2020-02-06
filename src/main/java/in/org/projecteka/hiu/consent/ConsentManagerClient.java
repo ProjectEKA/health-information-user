@@ -5,14 +5,11 @@ import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
-import in.org.projecteka.hiu.consent.model.consentmanager.dataflow.DataFlowRequestResponse;
-import in.org.projecteka.hiu.consent.model.consentmanager.dataflow.Request;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
-import static in.org.projecteka.hiu.consent.ConsentException.failedToInitiateDataFlowRequest;
 import static in.org.projecteka.hiu.consent.ConsentException.fetchConsentArtefactFailed;
 import static java.util.function.Predicate.not;
 
@@ -52,16 +49,5 @@ public class ConsentManagerClient {
                 .onStatus(not(HttpStatus::is2xxSuccessful),
                         clientResponse -> Mono.error(fetchConsentArtefactFailed()))
                 .bodyToMono(ConsentArtefactResponse.class);
-    }
-
-    public Mono<DataFlowRequestResponse> initiateDataFlowRequest(Request request) {
-        return webClient
-                .post()
-                .uri("/health-information/request")
-                .header("Authorization", TokenUtils.encodeHIUId(hiuProperties.getId()))
-                .body(Mono.just(request), Request.class)
-                .retrieve()
-                .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> Mono.error(failedToInitiateDataFlowRequest()))
-                .bodyToMono(DataFlowRequestResponse.class);
     }
 }

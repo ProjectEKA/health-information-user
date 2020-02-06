@@ -8,7 +8,8 @@ import java.util.Arrays;
 public enum ErrorCode {
     INVALID_CONSENT_MANAGER(1001),
     UNKNOWN_ERROR(1002),
-    CONSENT_REQUEST_NOT_FOUND(1003);
+    CONSENT_REQUEST_NOT_FOUND(1003),
+    QUEUE_NOT_FOUND(1004);
 
     private int value;
     ErrorCode(int val) {

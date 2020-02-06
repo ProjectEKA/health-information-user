@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.consent.model.consentmanager.dataflow;
+package in.org.projecteka.hiu.dataflow.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Request {
+public class DataFlowRequest {
     private Consent consent;
     private HIDataRange hiDataRange;
     private String callBackUrl;
