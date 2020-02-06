@@ -234,7 +234,7 @@ public class ConsentUserJourneyTest {
 
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()), eq(consentArtefactResponse.getStatus())))
-                .thenReturn(Mono.error(new Exception("Failed to insert to consent artefact")));
+                .thenReturn(Mono.error(new Exception("Failed to insert consent artefact")));
 
         webTestClient
                 .post()
@@ -249,7 +249,7 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldReturn400WhenConsentManagerIsInvalid() {
+    public void shouldReturn401WhenConsentManagerIsInvalid() {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
