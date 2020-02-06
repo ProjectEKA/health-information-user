@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Data
@@ -14,6 +15,8 @@ import java.util.List;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConsentNotificationRequest {
+    @NotNull
     private String consentRequestId;
+    @NotNull
     private List<ConsentArtefactReference> consents;
 }
