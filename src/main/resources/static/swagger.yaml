@@ -167,6 +167,14 @@ components:
                 dataExpiryAt:
                   type: string
                   format: date-time
+    ConsentStatus:
+      type: string
+      enum:
+        - REQUESTED
+        - EXPIRED
+        - DENIED
+        - GRANTED
+        - REVOKED
 
     ConsentArtefactReference:
       type: object
@@ -174,6 +182,9 @@ components:
         id:
           type: string
           example: '<consent-artefact-id>'
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+
     ConsentArtefactNotification:
       type: object
       properties:
