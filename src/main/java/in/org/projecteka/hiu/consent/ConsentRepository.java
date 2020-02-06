@@ -80,7 +80,7 @@ public class ConsentRepository {
                                 LocalDateTime.now()),
                         handler -> {
                             if (handler.failed())
-                                monoSink.error(dbOperationFailure("Failed to fetch consent request"));
+                                monoSink.error(dbOperationFailure("Failed to insert consent artefact"));
                             else
                                 monoSink.success();
                         }

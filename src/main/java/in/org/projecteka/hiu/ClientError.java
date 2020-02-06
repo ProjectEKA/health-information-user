@@ -33,9 +33,9 @@ public class ClientError extends Throwable {
 
     public static ClientError dbOperationFailure(String message) {
         return new ClientError(
-                HttpStatus.NOT_FOUND,
+                HttpStatus.INTERNAL_SERVER_ERROR,
                 new ErrorRepresentation(new Error(
-                        ErrorCode.CONSENT_REQUEST_NOT_FOUND,
+                        ErrorCode.UNKNOWN_ERROR,
                         message)));
     }
 }
