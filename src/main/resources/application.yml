@@ -15,3 +15,7 @@ hiu:
     user: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     poolSize: ${DB_CONNECTION_POOL_SIZE}
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
