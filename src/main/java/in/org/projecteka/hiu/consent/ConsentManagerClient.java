@@ -24,7 +24,7 @@ public class ConsentManagerClient {
         this.hiuProperties = hiuProperties;
     }
 
-    public Mono<ConsentCreationResponse> createConsentRequestInConsentManager(
+    public Mono<ConsentCreationResponse> createConsentRequest(
             ConsentRequest consentRequest) {
         return webClient
                 .post()

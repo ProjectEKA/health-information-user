@@ -57,10 +57,10 @@ class PatientServiceClientTest {
         var response = new ObjectMapper().writeValueAsString(patient);
         when(exchangeFunction.exchange(captor.capture()))
                 .thenReturn(Mono.just(ClientResponse.create(HttpStatus.OK)
-                .header("Content-Type", "application/json")
-                .body(response).build()));
+                        .header("Content-Type", "application/json")
+                        .body(response).build()));
 
-        Supplier<Mono<SearchRepresentation>> action = () ->  patientServiceClient.patientWith(patientId);
+        Supplier<Mono<SearchRepresentation>> action = () -> patientServiceClient.patientWith(patientId);
 
         StepVerifier.create(action.get()).expectNext(searchRepresentation).verifyComplete();
         assertThat(captor.getValue().url().toString()).isEqualTo(format("%s/users/patient-id@ncg", BASE_URL));
