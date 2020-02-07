@@ -2,10 +2,12 @@ package in.org.projecteka.hiu.consent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
@@ -38,6 +40,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.consentNotificationRequ
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static java.util.Collections.singletonList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +56,16 @@ public class ConsentUserJourneyTest {
 
     @MockBean
     private ConsentRepository consentRepository;
+    
+    @MockBean
+    private DataFlowRequestListener dataFlowRequestListener;
+
+    @MockBean
+    private DestinationsConfig destinationsConfig;
+
+    @MockBean
+    private DataFlowRequestPublisher dataFlowRequestPublisher;
+
 
     @AfterAll
     public static void tearDown() throws IOException {
@@ -145,7 +158,8 @@ public class ConsentUserJourneyTest {
 
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
-
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), anyString(), anyString()))
+                .thenReturn(Mono.empty());
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()), eq(consentArtefactResponse.getStatus())))
                 .thenReturn(Mono.create(MonoSink::success));

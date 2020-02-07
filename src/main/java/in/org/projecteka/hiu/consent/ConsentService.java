@@ -17,13 +17,16 @@ public class ConsentService {
     private final ConsentManagerClient consentManagerClient;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
+    private final DataFlowRequestPublisher dataFlowRequestPublisher;
 
     public ConsentService(ConsentManagerClient consentManagerClient,
                           HiuProperties hiuProperties,
-                          ConsentRepository consentRepository) {
+                          ConsentRepository consentRepository,
+                          DataFlowRequestPublisher dataFlowRequestPublisher) {
         this.consentManagerClient = consentManagerClient;
         this.hiuProperties = hiuProperties;
         this.consentRepository = consentRepository;
+        this.dataFlowRequestPublisher = dataFlowRequestPublisher;
     }
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
@@ -70,7 +73,11 @@ public class ConsentService {
         return consentManagerClient.getConsentArtefact(consentArtefactReference.getId())
                 .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
                         consentArtefactResponse.getConsentDetail(),
-                        consentArtefactResponse.getStatus()))
+                        consentArtefactResponse.getStatus())
+                        .then(dataFlowRequestPublisher.broadcastDataFlowRequest(
+                                consentArtefactResponse.getConsentDetail().getConsentId(),
+                                consentArtefactResponse.getSignature(),
+                                hiuProperties.getCallBackUrl())))
                 .then();
     }
 

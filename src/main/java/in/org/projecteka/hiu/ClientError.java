@@ -38,4 +38,12 @@ public class ClientError extends Throwable {
                         ErrorCode.UNKNOWN_ERROR,
                         message)));
     }
+
+    public static ClientError queueNotFound() {
+        return new ClientError(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.QUEUE_NOT_FOUND,
+                        "Queue not found")));
+    }
 }
