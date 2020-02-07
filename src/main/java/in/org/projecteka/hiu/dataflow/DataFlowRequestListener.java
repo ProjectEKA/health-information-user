@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 
 import javax.annotation.PostConstruct;
 
@@ -21,7 +20,6 @@ import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 public class DataFlowRequestListener {
     private MessageListenerContainerFactory messageListenerContainerFactory;
     private DestinationsConfig destinationsConfig;
-    private Jackson2JsonMessageConverter converter;
     private DataFlowClient dataFlowClient;
     private DataFlowRequestRepository dataFlowRequestRepository;
 

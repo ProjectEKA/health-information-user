@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import org.springframework.amqp.core.AmqpTemplate;
 import reactor.core.publisher.Mono;
 
+import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 
 @AllArgsConstructor
@@ -21,7 +22,7 @@ public class DataFlowRequestPublisher {
                 destinationsConfig.getQueues().get(DATA_FLOW_REQUEST_QUEUE);
 
         if (destinationInfo == null) {
-            return Mono.error(new Exception("Queue doesn't exists"));
+            throw queueNotFound();
         }
 
         return Mono.create(monoSink -> {

@@ -150,12 +150,10 @@ public class HiuConfiguration {
     @Bean
     public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
                                                            DestinationsConfig destinationsConfig,
-                                                           Jackson2JsonMessageConverter jackson2JsonMessageConverter,
                                                            DataFlowClient dataFlowClient,
                                                            DataFlowRequestRepository dataFlowRequestRepository) {
         return new DataFlowRequestListener(messageListenerContainerFactory,
                 destinationsConfig,
-                jackson2JsonMessageConverter,
                 dataFlowClient, dataFlowRequestRepository);
     }
 }
