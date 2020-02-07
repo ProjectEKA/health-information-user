@@ -15,7 +15,7 @@ public class DataFlowRequestRepository {
         this.dbClient = pgPool;
     }
 
-    public Mono<Void> addDataFlowRequest(String transactionId, DataFlowRequest dataFlowRequest) {
+    public Mono<Void> add(String transactionId, DataFlowRequest dataFlowRequest) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         INSERT_TO_DATA_FLOW_REQUEST,

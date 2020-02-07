@@ -44,9 +44,7 @@ public class DataFlowRequestListener {
             DataFlowRequest.builder().build();
             dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
                     .flatMap(dataFlowRequestResponse ->
-                            dataFlowRequestRepository.addDataFlowRequest(
-                                    dataFlowRequestResponse.getTransactionId(),
-                                    dataFlowRequest))
+                            dataFlowRequestRepository.add(dataFlowRequestResponse.getTransactionId(), dataFlowRequest))
                     .block();
         };
         mlc.setupMessageListener(messageListener);
