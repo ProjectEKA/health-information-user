@@ -161,7 +161,9 @@ public class ConsentUserJourneyTest {
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), anyString(), anyString()))
                 .thenReturn(Mono.empty());
         when(consentRepository.insertConsentArtefact(
-                eq(consentArtefactResponse.getConsentDetail()), eq(consentArtefactResponse.getStatus())))
+                eq(consentArtefactResponse.getConsentDetail()),
+                eq(consentArtefactResponse.getStatus()),
+                eq(consentRequestId)))
                 .thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
@@ -247,7 +249,9 @@ public class ConsentUserJourneyTest {
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
 
         when(consentRepository.insertConsentArtefact(
-                eq(consentArtefactResponse.getConsentDetail()), eq(consentArtefactResponse.getStatus())))
+                eq(consentArtefactResponse.getConsentDetail()),
+                eq(consentArtefactResponse.getStatus()),
+                eq(consentRequestId)))
                 .thenReturn(Mono.error(new Exception("Failed to insert consent artefact")));
 
         webTestClient

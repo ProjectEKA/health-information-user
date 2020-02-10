@@ -18,7 +18,8 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 public class ConsentRepository {
     private final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
-            "consent_artefact (consent_artefact, consent_artefact_id, status, date_created) VALUES ($1, $2, $3, $4)";
+            "consent_artefact (consent_request_id, consent_artefact, consent_artefact_id, status, date_created)" +
+            " VALUES ($1, $2, $3, $4, $5)";
     private final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
             "consent_artefact set status=$1, date_modified=$2 where consent_artefact_id=$3";
     private PgPool dbClient;
@@ -70,11 +71,14 @@ public class ConsentRepository {
         );
     }
 
-    public Mono<Void> insertConsentArtefact(ConsentArtefact consentArtefact, ConsentStatus status) {
+    public Mono<Void> insertConsentArtefact(ConsentArtefact consentArtefact,
+                                            ConsentStatus status,
+                                            String consentRequestId) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         INSERT_CONSENT_ARTEFACT_QUERY,
-                        Tuple.of(JsonObject.mapFrom(consentArtefact),
+                        Tuple.of(consentRequestId,
+                                JsonObject.mapFrom(consentArtefact),
                                 consentArtefact.getConsentId(),
                                 status.toString(),
                                 LocalDateTime.now()),
