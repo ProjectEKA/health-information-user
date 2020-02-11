@@ -13,7 +13,7 @@
 
 ## Build Status
 
-[![Build](https://github.com/ProjectEKA/health-information-user/workflows/HIU%20master%20build/badge.svg)](https://github.com/ProjectEKA/hip-service/actions)
+[![Build](https://github.com/ProjectEKA/health-information-user/workflows/HIU%20master%20build/badge.svg)](https://github.com/ProjectEKA/health-information-user/actions)
 
 ## :+1: Code Style
 
