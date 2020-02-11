@@ -14,6 +14,7 @@ servers:
 tags:
   - name: discover
   - name: consent
+  - name: notification
 
 paths:
   # consent-manager service
@@ -67,6 +68,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PatientSearchRepresentation'
+  # notification service
+  /consent/notification/:
+    post:
+      tags:
+        - notification
+      summary: Consent notification
+      description: Call back url from consent manager when consent artefact gets created.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentArtefactNotification'
+
+      responses:
+        '200':
+          description: Notification successful.
+        '400':
+          description: Unauthorized.
+
 components:
   parameters:
     authorization:
@@ -144,3 +167,31 @@ components:
                 dataExpiryAt:
                   type: string
                   format: date-time
+    ConsentStatus:
+      type: string
+      enum:
+        - REQUESTED
+        - EXPIRED
+        - DENIED
+        - GRANTED
+        - REVOKED
+
+    ConsentArtefactReference:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '<consent-artefact-id>'
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+
+    ConsentArtefactNotification:
+      type: object
+      properties:
+        consentRequestId:
+          type: string
+          example: '<consent-request-id>'
+        consentArtefacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentArtefactReference'
