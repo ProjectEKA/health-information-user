@@ -24,7 +24,7 @@ public class DataFlowRequestListener {
     private MessageListenerContainerFactory messageListenerContainerFactory;
     private DestinationsConfig destinationsConfig;
     private DataFlowClient dataFlowClient;
-    private DataFlowRequestRepository dataFlowRequestRepository;
+    private DataFlowRepository dataFlowRepository;
 
     @PostConstruct
     @SneakyThrows
@@ -46,7 +46,7 @@ public class DataFlowRequestListener {
             logger.info("Initiating data flow request to consent manager");
             dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
                     .flatMap(dataFlowRequestResponse ->
-                            dataFlowRequestRepository.add(dataFlowRequestResponse.getTransactionId(), dataFlowRequest))
+                            dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(), dataFlowRequest))
                     .block();
         };
         mlc.setupMessageListener(messageListener);

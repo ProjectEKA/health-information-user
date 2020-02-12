@@ -6,7 +6,8 @@ import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
-import in.org.projecteka.hiu.dataflow.DataFlowRequestRepository;
+import in.org.projecteka.hiu.dataflow.DataFlowRepository;
+import in.org.projecteka.hiu.dataflow.DataFlowService;
 import in.org.projecteka.hiu.patient.PatientServiceClient;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
@@ -143,17 +144,22 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowRequestRepository dataFlowRequestRepository(PgPool pgPool) {
-        return new DataFlowRequestRepository(pgPool);
+    public DataFlowRepository dataFlowRequestRepository(PgPool pgPool) {
+        return new DataFlowRepository(pgPool);
     }
 
     @Bean
     public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
                                                            DestinationsConfig destinationsConfig,
                                                            DataFlowClient dataFlowClient,
-                                                           DataFlowRequestRepository dataFlowRequestRepository) {
+                                                           DataFlowRepository dataFlowRepository) {
         return new DataFlowRequestListener(messageListenerContainerFactory,
                 destinationsConfig,
-                dataFlowClient, dataFlowRequestRepository);
+                dataFlowClient, dataFlowRepository);
+    }
+
+    @Bean
+    public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository) {
+        return new DataFlowService(dataFlowRepository);
     }
 }
