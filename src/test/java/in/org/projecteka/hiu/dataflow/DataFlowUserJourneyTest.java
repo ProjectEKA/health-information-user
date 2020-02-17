@@ -59,6 +59,7 @@ public class DataFlowUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/data/notification")
+                .header("Authorization", "AuthToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
