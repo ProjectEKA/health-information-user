@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.dataflow;
 
+import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -34,6 +35,12 @@ public class DataFlowUserJourneyTest {
 
     @MockBean
     private DataFlowRepository dataFlowRepository;
+
+    @MockBean
+    private DestinationsConfig destinationsConfig;
+
+    @MockBean
+    private DataFlowRequestListener dataFlowRequestListener;
 
     @AfterAll
     public static void tearDown() throws IOException {
