@@ -8,7 +8,6 @@ import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Tuple;
 import reactor.core.publisher.Mono;
 
-import java.util.LinkedList;
 import java.util.List;
 
 public class DataFlowRepository {
@@ -48,10 +47,6 @@ public class DataFlowRepository {
     public Mono<Void> addDataResponse(String transactionId, List<Entry> entries) {
         return Mono.create(monoSink ->
                 {
-                    JsonArray entryElements = new JsonArray();
-                    entryElements.add("string");
-                    entryElements.add("tw password");
-                    entryElements.add("random");
                     dbClient.preparedQuery(
                             INSERT_TO_DATA_FLOW_RESPONSE,
                             Tuple.of(transactionId, reformatJsonArray(entries)),
