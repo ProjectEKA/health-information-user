@@ -6,7 +6,7 @@ import reactor.core.publisher.Mono;
 
 @AllArgsConstructor
 public class DataFlowService {
-    DataFlowRepository dataFlowRepository;
+    private DataFlowRepository dataFlowRepository;
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest) {
         return dataFlowRepository.addDataResponse(dataNotificationRequest.getTransactionId(),
