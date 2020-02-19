@@ -1,11 +1,12 @@
 package in.org.projecteka.hiu.patient;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 public class PatientSearchException extends Throwable {
     private enum ErrorCode {
         NotFound,
