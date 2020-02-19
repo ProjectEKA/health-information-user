@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'io.vertx:vertx-pg-client:3.8.4'
+	implementation 'io.vertx:vertx-pg-client:3.8.5'
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 	implementation 'log4j:log4j:1.2.17'
 	implementation 'org.springframework:spring-context-support'
