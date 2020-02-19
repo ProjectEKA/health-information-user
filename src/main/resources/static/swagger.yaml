@@ -241,7 +241,7 @@ components:
           type: integer
         offset:
           type: integer
-        data:
+        entries:
           type: array
           items:
             $ref: '#/components/schemas/Entry'
@@ -252,7 +252,7 @@ components:
         - hipName
         - status
         - content
-        - meadia
+        - media
         - checksum
       properties:
         hipId:
@@ -261,6 +261,7 @@ components:
           type: string
         status:
           type: string
+          enum: [REQUESTED, COMPLETED]
         content:
           type: string
           description: content is a FHIR bundle
