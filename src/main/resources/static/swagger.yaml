@@ -89,7 +89,28 @@ paths:
           description: Notification successful.
         '400':
           description: Unauthorized.
-
+  /health-information/fetch/{consent-request-id}/:
+    get:
+      tags:
+        - data flow
+      summary: Get health information for a granted consent request.
+      description: This API can be used to fetch the health information for a consent request once the request is granted by the patient.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - name: consent-request-id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthInformation'
 components:
   parameters:
     authorization:
@@ -99,6 +120,22 @@ components:
       description: Bearer token which was issued after successful login.
       schema:
         type: string
+    limit:
+      name: limit
+      in: query
+      description: How many items to return at one time (max 100) (recommended to sent always)
+      required: false
+      schema:
+        type: integer
+        format: int32
+    offset:
+      name: offset
+      in: query
+      description: How many items out of line.
+      required: false
+      schema:
+        type: integer
+        format: int32
 
   schemas:
     PatientSearchRepresentation:
@@ -195,3 +232,40 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ConsentArtefactReference'
+    HealthInformation:
+      type: object
+      properties:
+        limit:
+          type: integer
+        size:
+          type: integer
+        offset:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+    Entry:
+      type: object
+      required:
+        - hipId
+        - hipName
+        - status
+        - content
+        - media
+        - checksum
+      properties:
+        hipId:
+          type: string
+        hipName:
+          type: string
+        status:
+          type: string
+          enum: [REQUESTED, COMPLETED]
+        content:
+          type: string
+          description: content is a FHIR bundle
+        meadia:
+          type: string
+        checksum:
+          type: string
