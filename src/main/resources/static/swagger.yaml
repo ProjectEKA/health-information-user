@@ -244,43 +244,26 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/HealthInformationRepresentation'
-    HealthInformationRepresentation:
-      type: object
-      properties:
-        1234:
-          allOf:
-            - $ref: '#/components/schemas/DataEntry'
-        7896:
-          allOf:
-            - $ref: '#/components/schemas/DataEntry'
-
-
-    DataEntry:
-      type: object
-      required:
-        - name
-        - status
-        - entries
-      properties:
-        name:
-          type: string
-        status:
-          type: string
-        entries:
-          type: array
-          items:
             $ref: '#/components/schemas/Entry'
     Entry:
       type: object
       required:
+        - hipId
+        - hipName
+        - status
         - content
         - meadia
         - checksum
       properties:
+        hipId:
+          type: string
+        hipName:
+          type: string
+        status:
+          type: string
         content:
           type: string
-          description: content is a FHIR bundle.
+          description: content is a FHIR bundle
         meadia:
           type: string
         checksum:
