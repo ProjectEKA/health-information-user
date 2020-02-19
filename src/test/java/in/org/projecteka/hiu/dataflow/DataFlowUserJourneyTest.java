@@ -59,10 +59,6 @@ public class DataFlowUserJourneyTest {
         dataFlowServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json"));
 
-        when(dataFlowRepository.addDataResponse(dataNotificationRequest.getTransactionId(),
-                dataNotificationRequest.getEntries()))
-                .thenReturn(Mono.create(MonoSink::success));
-
         webTestClient
                 .post()
                 .uri("/data/notification")

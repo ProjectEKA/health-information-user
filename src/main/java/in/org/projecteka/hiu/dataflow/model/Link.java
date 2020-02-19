@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @NoArgsConstructor
-public class Entry {
-    private String content;
+public class Link {
+    private String href;
     private String media;
-    private String checksum;
-    private Link link;
 }
