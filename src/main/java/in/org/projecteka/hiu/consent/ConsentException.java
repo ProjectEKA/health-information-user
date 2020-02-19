@@ -1,8 +1,10 @@
 package in.org.projecteka.hiu.consent;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 @AllArgsConstructor
+@Getter
 public class ConsentException extends Throwable {
     private ErrorCode code;
     private String message;
@@ -19,12 +21,12 @@ public class ConsentException extends Throwable {
 
     public static ConsentException failedToInitiateDataFlowRequest() {
         final String failedToInitiateDataFlowRequest = "Failed to initiate data flow request";
-        return new ConsentException(ErrorCode.FAILED_TO_INITIATE_DATAFLOW_REQUEST, failedToInitiateDataFlowRequest);
+        return new ConsentException(ErrorCode.FAILED_TO_INITIATE_DATA_FLOW_REQUEST, failedToInitiateDataFlowRequest);
     }
 
     private enum ErrorCode {
         CREATION_FAILED,
         FETCH_CONSENT_ARTEFACT_FAILED,
-        FAILED_TO_INITIATE_DATAFLOW_REQUEST
+        FAILED_TO_INITIATE_DATA_FLOW_REQUEST
     }
 }

@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.consent;
 
-import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
@@ -13,7 +12,7 @@ import reactor.test.StepVerifier;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
-import static org.mockito.Mockito.verify;
+import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -25,9 +24,6 @@ public class ConsentServiceTest {
     private ConsentRepository consentRepository;
 
     @Mock
-    private HiuProperties hiuProperties;
-
-    @Mock
     private DataFlowRequestPublisher dataFlowRequestPublisher;
 
     @BeforeEach
@@ -35,28 +31,28 @@ public class ConsentServiceTest {
         initMocks(this);
     }
 
-
     @Test
     public void shouldCreateConsentRequest() {
-        ConsentService consentService = new ConsentService(consentManagerClient, hiuProperties, consentRepository,
+        String requesterId = "1";
+        var hiuProperties = hiuProperties().build();
+        ConsentService consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties,
+                consentRepository,
                 dataFlowRequestPublisher);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
         ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()
-                .to("1","hiuId","hiuName", "localhost:8080"));
+                .to(requesterId, hiuProperties.getId(), hiuProperties.getName(), hiuProperties.getCallBackUrl()));
 
-        when(hiuProperties.getId()).thenReturn("hiuId");
-        when(hiuProperties.getName()).thenReturn("hiuName");
-        when(hiuProperties.getCallBackUrl()).thenReturn("localhost:8080");
-        when(consentManagerClient.createConsentRequest(consentRequest))
-                .thenReturn(Mono.just(consentCreationResponse));
+        when(consentManagerClient.createConsentRequest(consentRequest)).thenReturn(Mono.just(consentCreationResponse));
         when(consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
                 consentCreationResponse.getId(),
-                "requesterId", "localhost:8080")))
+                requesterId, hiuProperties.getCallBackUrl())))
                 .thenReturn(Mono.create(MonoSink::success));
 
-        StepVerifier.create(consentService.create("1", consentRequestData))
-                .expectNext(consentCreationResponse).expectComplete();
-        verify(consentManagerClient).createConsentRequest(consentRequest);
+        StepVerifier.create(consentService.create(requesterId, consentRequestData))
+                .expectNext(consentCreationResponse)
+                .verifyComplete();
     }
 }

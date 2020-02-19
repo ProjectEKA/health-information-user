@@ -11,6 +11,5 @@ public class TokenUtils {
     public static String encodeHIUId(String id){
         Base64.Encoder encoder = Base64.getEncoder();
         return new String(encoder.encode(id.getBytes()));
-
     }
 }

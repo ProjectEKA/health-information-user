@@ -1,6 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
-import in.org.projecteka.hiu.consent.model.ConsentArtefact;
+import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
@@ -20,10 +20,6 @@ public class TestBuilders {
 
     public static ConsentNotificationRequest.ConsentNotificationRequestBuilder consentNotificationRequest() {
         return easyRandom.nextObject(ConsentNotificationRequest.ConsentNotificationRequestBuilder.class);
-    }
-
-    public static ConsentArtefact.ConsentArtefactBuilder consentArtefact() {
-        return easyRandom.nextObject(ConsentArtefact.ConsentArtefactBuilder.class);
     }
 
     public static ConsentArtefactResponse.ConsentArtefactResponseBuilder consentArtefactResponse() {
@@ -48,5 +44,9 @@ public class TestBuilders {
 
     public static ConsentRequest.ConsentRequestBuilder consentRepresentation() {
         return easyRandom.nextObject(ConsentRequest.ConsentRequestBuilder.class);
+    }
+
+    public static HiuProperties.HiuPropertiesBuilder hiuProperties() {
+        return easyRandom.nextObject(HiuProperties.HiuPropertiesBuilder.class);
     }
 }
