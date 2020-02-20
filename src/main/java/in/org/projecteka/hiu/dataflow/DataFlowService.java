@@ -9,9 +9,6 @@ import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Map;
-
 @AllArgsConstructor
 public class DataFlowService {
     private DataFlowRepository dataFlowRepository;
@@ -30,20 +27,16 @@ public class DataFlowService {
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return dataFlowRepository.getConsentDetails(consentRequestId)
-                .flatMapMany(consentDetails -> fetchDataEntries(consentDetails, requesterId));
-    }
-
-    private Flux<DataEntry> fetchDataEntries(List<Map<String, String>> consentDetails, String requesterId) {
-        return Flux.fromIterable(consentDetails)
-                .flatMap(consentDetail -> {
-                    if (consentDetail.get("requester").equals(requesterId))
-                        return dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
-                                .flatMapMany(transactionId -> getDataEntries(
-                                        transactionId,
-                                        consentDetail.get("hipId"),
-                                        consentDetail.get("hipName")));
-                    return Flux.error(ClientError.unauthorized());
-                });
+                .flatMapMany(consentDetails -> Flux.fromIterable(consentDetails)
+                        .flatMap(consentDetail -> {
+                            if (consentDetail.get("requester").equals(requesterId))
+                                return dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
+                                        .flatMapMany(transactionId -> getDataEntries(
+                                                transactionId,
+                                                consentDetail.get("hipId"),
+                                                consentDetail.get("hipName")));
+                            return Flux.error(ClientError.unauthorizedRequester());
+                        }));
     }
 
     private Flux<DataEntry> getDataEntries(String transactionId, String hipId, String hipName) {

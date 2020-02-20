@@ -142,7 +142,7 @@ public class DataFlowUserJourneyTest {
         consentDetails.add(consentDetailsMap);
 
         var errorResponse = new ErrorRepresentation(new Error(
-                ErrorCode.UNAUTHORIZED,
+                ErrorCode.UNAUTHORIZED_REQUESTER,
                 "Requester is not authorized to perform this action"));
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
 

@@ -10,7 +10,7 @@ public enum ErrorCode {
     UNKNOWN_ERROR(1002),
     CONSENT_REQUEST_NOT_FOUND(1003),
     QUEUE_NOT_FOUND(1004),
-    UNAUTHORIZED(1005);
+    UNAUTHORIZED_REQUESTER(1005);
 
     private int value;
     ErrorCode(int val) {

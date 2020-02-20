@@ -47,11 +47,11 @@ public class ClientError extends Throwable {
                         "Queue not found")));
     }
 
-    public static ClientError unauthorized() {
+    public static ClientError unauthorizedRequester() {
         return new ClientError(
                 HttpStatus.UNAUTHORIZED,
                 new ErrorRepresentation(new Error(
-                        ErrorCode.UNAUTHORIZED,
+                        ErrorCode.UNAUTHORIZED_REQUESTER,
                         "Requester is not authorized to perform this action")));
     }
 }
