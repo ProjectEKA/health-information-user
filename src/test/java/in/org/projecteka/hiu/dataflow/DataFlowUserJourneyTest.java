@@ -11,7 +11,6 @@ import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataflow.model.Status;
-import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -35,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static in.org.projecteka.hiu.dataflow.TestBuilders.dataNotificationRequest;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
 import static org.mockito.Mockito.when;
 
@@ -72,10 +70,15 @@ public class DataFlowUserJourneyTest {
 
     @Test
     public void shouldNotifyDataFlowResponse() {
-        DataNotificationRequest dataNotificationRequest = dataNotificationRequest().build();
+        Entry entry = entry().build();
+        entry.setLink(null);
+        List<Entry> entries = new ArrayList<>();
+        entries.add(entry);
+        String transactionId = "transactionId";
+        DataNotificationRequest dataNotificationRequest =
+                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
 
-        dataFlowServer.enqueue(
-                new MockResponse().setHeader("Content-Type", "application/json"));
+        when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
 
         webTestClient
                 .post()
