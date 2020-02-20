@@ -8,6 +8,8 @@ import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
+import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
+import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.patient.PatientServiceClient;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
@@ -149,6 +151,11 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public HealthInformationRepository healthInformationRepository(PgPool pgPool) {
+        return new HealthInformationRepository(pgPool);
+    }
+
+    @Bean
     public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
                                                            DestinationsConfig destinationsConfig,
                                                            DataFlowClient dataFlowClient,
@@ -159,7 +166,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository) {
-        return new DataFlowService(dataFlowRepository);
+    public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository, HealthInformationRepository healthInformationRepository) {
+        return new DataFlowService(dataFlowRepository, healthInformationRepository);
     }
 }

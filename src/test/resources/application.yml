@@ -4,6 +4,9 @@ hiu:
   callbackurl: localhost:8080
   consentmanager:
     url: http://consent-manager
+  dataflowservice:
+    defaultPageSize: 20
+    maxPageSize: 100
   centralregistry:
     url: http://central-registry
   database:
