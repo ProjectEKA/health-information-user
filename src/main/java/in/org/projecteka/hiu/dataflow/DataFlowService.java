@@ -29,15 +29,14 @@ public class DataFlowService {
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return consentRepository.getConsentDetails(consentRequestId)
-                .flatMap(consentDetail -> {
-                    if (consentDetail.get("requester").equals(requesterId))
-                        return dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
+                .filter(consentDetail -> consentDetail.get("requester").equals(requesterId))
+                .flatMap(consentDetail ->
+                        dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
                                 .flatMapMany(transactionId -> getDataEntries(
                                         transactionId,
                                         consentDetail.get("hipId"),
-                                        consentDetail.get("hipName")));
-                    return Flux.error(ClientError.unauthorizedRequester());
-                });
+                                        consentDetail.get("hipName")))
+                ).switchIfEmpty(Flux.error(ClientError.unauthorizedRequester()));
     }
 
     private Flux<DataEntry> getDataEntries(String transactionId, String hipId, String hipName) {

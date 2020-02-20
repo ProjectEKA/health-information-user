@@ -111,14 +111,14 @@ public class ConsentRepository {
                         fluxSink.error(new Exception("Failed to get consent id from consent request Id"));
                     } else {
                         StreamSupport.stream(handler.result().spliterator(), false)
-                                .map(row -> putConsentDetails(row))
+                                .map(this::toConsentDetail)
                                 .forEach(fluxSink::next);
                         fluxSink.complete();
                     }
                 }));
     }
 
-    private Map<String, String> putConsentDetails(Row row) {
+    private Map<String, String> toConsentDetail(Row row) {
         Map<String, String> map = new HashMap<>();
         map.put("consentId", row.getString(0));
         map.put("hipId", row.getString(1));
