@@ -6,6 +6,7 @@ import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
+import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
@@ -51,6 +52,9 @@ public class DataFlowUserJourneyTest {
 
     @MockBean
     private HealthInformationRepository healthInformationRepository;
+
+    @MockBean
+    private ConsentRepository consentRepository;
 
     @MockBean
     private DestinationsConfig destinationsConfig;
@@ -112,7 +116,7 @@ public class DataFlowUserJourneyTest {
         List<DataEntry> dataEntries = new ArrayList<>();
         dataEntries.add(dataEntry);
 
-        when(dataFlowRepository.getConsentDetails(consentRequestId)).thenReturn(Mono.just(consentDetails));
+        when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
         when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
         when(healthInformationRepository.getHealthInformation(transactionId)).thenReturn(Flux.just(entry));
 
@@ -149,7 +153,7 @@ public class DataFlowUserJourneyTest {
                 "Requester is not authorized to perform this action"));
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
 
-        when(dataFlowRepository.getConsentDetails(consentRequestId)).thenReturn(Mono.just(consentDetails));
+        when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
 
         webTestClient
                 .get()

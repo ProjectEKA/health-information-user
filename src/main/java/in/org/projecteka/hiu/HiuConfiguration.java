@@ -169,7 +169,8 @@ public class HiuConfiguration {
 
     @Bean
     public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
-                                           HealthInformationRepository healthInformationRepository) {
-        return new DataFlowService(dataFlowRepository, healthInformationRepository);
+                                           HealthInformationRepository healthInformationRepository,
+                                           ConsentRepository consentRepository) {
+        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository);
     }
 }

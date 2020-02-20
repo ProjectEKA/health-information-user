@@ -30,22 +30,14 @@ public class DataFlowController {
     public Mono<HealthInformation> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @RequestHeader(value = "Authorization") String authorization,
-            @RequestParam(defaultValue = "-1") int limit,
+            @RequestParam(defaultValue = "${hiu.dataflowservice.defaultPageSize}") int limit,
             @RequestParam(defaultValue = "0") int offset) {
-        int pageSize = getPageSize(limit);
         String requesterId = TokenUtils.decode(authorization);
         return dataFlowService.fetchHealthInformation(consentRequestId, requesterId).collectList()
-                .flatMap(dataEntries -> Mono.just(HealthInformation.builder()
+                .map(dataEntries -> HealthInformation.builder()
                         .size(dataEntries.size())
-                        .limit(pageSize)
+                        .limit(Math.min(limit, dataFlowServiceProperties.getMaxPageSize()))
                         .offset(offset)
-                        .entries(dataEntries).build()));
-    }
-
-    private int getPageSize(int limit) {
-        if (limit < 0) {
-            return dataFlowServiceProperties.getDefaultPageSize();
-        }
-        return Math.min(limit, dataFlowServiceProperties.getMaxPageSize());
+                        .entries(dataEntries).build());
     }
 }

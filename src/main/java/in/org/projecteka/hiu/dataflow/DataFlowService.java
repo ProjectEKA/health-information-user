@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.ClientError;
+import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 public class DataFlowService {
     private DataFlowRepository dataFlowRepository;
     private HealthInformationRepository healthInformationRepository;
+    private ConsentRepository consentRepository;
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest) {
         return Flux.fromIterable(dataNotificationRequest.getEntries())
@@ -26,17 +28,16 @@ public class DataFlowService {
     }
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
-        return dataFlowRepository.getConsentDetails(consentRequestId)
-                .flatMapMany(consentDetails -> Flux.fromIterable(consentDetails)
-                        .flatMap(consentDetail -> {
-                            if (consentDetail.get("requester").equals(requesterId))
-                                return dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
-                                        .flatMapMany(transactionId -> getDataEntries(
-                                                transactionId,
-                                                consentDetail.get("hipId"),
-                                                consentDetail.get("hipName")));
-                            return Flux.error(ClientError.unauthorizedRequester());
-                        }));
+        return consentRepository.getConsentDetails(consentRequestId)
+                .flatMap(consentDetail -> {
+                    if (consentDetail.get("requester").equals(requesterId))
+                        return dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
+                                .flatMapMany(transactionId -> getDataEntries(
+                                        transactionId,
+                                        consentDetail.get("hipId"),
+                                        consentDetail.get("hipName")));
+                    return Flux.error(ClientError.unauthorizedRequester());
+                });
     }
 
     private Flux<DataEntry> getDataEntries(String transactionId, String hipId, String hipName) {
