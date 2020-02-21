@@ -26,6 +26,7 @@ dependencies {
 	compile group: 'org.springframework', name: 'spring-context-support', version: '5.2.3.RELEASE'
 	compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.2'
 	compileOnly 'org.projectlombok:lombok'
+	compile group: 'org.bouncycastle', name: 'bcprov-jdk16', version: '1.45'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'

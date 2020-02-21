@@ -14,4 +14,5 @@ import java.util.List;
 public class DataNotificationRequest {
     private String transactionId;
     private List<Entry> entries;
+    private KeyMaterial keyMaterial;
 }

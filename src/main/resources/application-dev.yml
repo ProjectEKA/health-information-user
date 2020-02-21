@@ -1,16 +1,17 @@
 hiu:
   id: 10000005
   name: Max Health Care
+  callbackurl: http://localhost:8003/
   consentmanager:
-    url: http://locahost:8081/
+    url: http://localhost:9000/
   centralregistry:
-    url: http://localhost:8082/
+    url: http://localhost:8080/
   database:
     host: localhost
     port: 5432
     schema: health_information_user
     user: postgres
-    password: postgres
+    password: welcome
     poolSize: 5
 spring:
   rabbitmq:

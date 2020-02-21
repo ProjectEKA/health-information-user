@@ -13,10 +13,10 @@ import reactor.core.publisher.Mono;
 public class DataFlowController {
     private DataFlowService dataFlowService;
 
-    @PostMapping("/data/notification")
+    @PostMapping("data/notification")
     public Mono<Void> dataNotification(
             @RequestHeader(value = "Authorization") String authorization,
-            @RequestBody DataNotificationRequest dataNotificationRequest) {
+            @RequestBody DataNotificationRequest dataNotificationRequest) throws Exception {
         return dataFlowService.handleNotification(dataNotificationRequest);
     }
 }
