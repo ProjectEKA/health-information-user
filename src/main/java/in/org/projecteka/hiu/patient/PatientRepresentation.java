@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.patient;
 
+import in.org.projecteka.hiu.clients.Patient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

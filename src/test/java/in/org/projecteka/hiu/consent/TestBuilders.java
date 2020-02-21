@@ -49,4 +49,12 @@ public class TestBuilders {
     public static HiuProperties.HiuPropertiesBuilder hiuProperties() {
         return easyRandom.nextObject(HiuProperties.HiuPropertiesBuilder.class);
     }
+
+    public static in.org.projecteka.hiu.clients.Patient.PatientBuilder patient() {
+        return easyRandom.nextObject(in.org.projecteka.hiu.clients.Patient.PatientBuilder.class);
+    }
+
+    public static String randomString() {
+        return easyRandom.nextObject(String.class);
+    }
 }

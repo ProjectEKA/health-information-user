@@ -126,4 +126,24 @@ public class ConsentRepository {
         map.put("requester", row.getString(3));
         return map;
     }
+
+    public Flux<ConsentRequest> requestsFrom(String requesterId) {
+        final String CONSENT_REQUEST_BY_REQUESTER_ID =
+                "select consent_request FROM consent_request where consent_request ->> 'requesterId' = $1";
+        return Flux.create(fluxSink -> dbClient.preparedQuery(
+                CONSENT_REQUEST_BY_REQUESTER_ID,
+                Tuple.of(requesterId),
+                handler -> {
+                    if (handler.failed())
+                        fluxSink.error(dbOperationFailure("Failed to fetch consent requests"));
+                    else {
+                        StreamSupport.stream(handler.result().spliterator(), false)
+                                .map(row -> (JsonObject) row.getValue("consent_request"))
+                                .map(json -> json.mapTo(ConsentRequest.class))
+                                .forEach(fluxSink::next);
+                        fluxSink.complete();
+                    }
+                }
+        ));
+    }
 }

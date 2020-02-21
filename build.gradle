@@ -1,7 +1,7 @@
 plugins {
-	id 'org.springframework.boot' version '2.2.4.RELEASE'
-	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
-	id 'java'
+    id 'org.springframework.boot' version '2.2.4.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'java'
 }
 
 group = 'in.org.projecteka'
@@ -9,32 +9,33 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'io.vertx:vertx-pg-client:3.8.5'
-	implementation 'org.springframework.boot:spring-boot-starter-amqp'
-	implementation 'log4j:log4j:1.2.17'
-	implementation 'org.springframework:spring-context-support'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation('org.springframework.boot:spring-boot-starter-test') {
-		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
-	}
-	testImplementation "com.squareup.okhttp3:okhttp:4.4.0"
-	testImplementation "com.squareup.okhttp3:mockwebserver:4.4.0"
-	testImplementation 'io.projectreactor:reactor-test'
-	testImplementation 'org.jeasy:easy-random-core:4.1.0'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'io.vertx:vertx-pg-client:3.8.5'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'log4j:log4j:1.2.17'
+    implementation 'org.springframework:spring-context-support'
+    implementation 'io.vavr:vavr:0.10.2'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation "com.squareup.okhttp3:okhttp:4.4.0"
+    testImplementation "com.squareup.okhttp3:mockwebserver:4.4.0"
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.jeasy:easy-random-core:4.1.0'
 }
 
 test {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
