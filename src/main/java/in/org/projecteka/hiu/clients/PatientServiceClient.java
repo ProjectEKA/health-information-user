@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.patient;
+package in.org.projecteka.hiu.clients;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
@@ -8,9 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import static in.org.projecteka.hiu.patient.PatientRepresentation.from;
-import static in.org.projecteka.hiu.patient.PatientSearchException.notFound;
-import static in.org.projecteka.hiu.patient.PatientSearchException.unknown;
+import static in.org.projecteka.hiu.clients.PatientSearchException.notFound;
+import static in.org.projecteka.hiu.clients.PatientSearchException.unknown;
 import static java.lang.String.format;
 import static java.util.function.Predicate.not;
 
@@ -26,7 +25,7 @@ public class PatientServiceClient {
         this.hiuProperties = hiuProperties;
     }
 
-    public Mono<SearchRepresentation> patientWith(String id) {
+    public Mono<Patient> patientWith(String id) {
         return builder.
                 get()
                 .uri(format("/users/%s", id))
@@ -35,7 +34,6 @@ public class PatientServiceClient {
                 .onStatus(httpStatus -> httpStatus == HttpStatus.NOT_FOUND,
                         clientResponse -> Mono.error(notFound()))
                 .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> Mono.error(unknown()))
-                .bodyToMono(Patient.class)
-                .map(patient -> new SearchRepresentation(from(patient)));
+                .bodyToMono(Patient.class);
     }
 }

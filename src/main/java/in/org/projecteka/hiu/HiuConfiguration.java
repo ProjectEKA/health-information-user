@@ -9,7 +9,8 @@ import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
-import in.org.projecteka.hiu.patient.PatientServiceClient;
+import in.org.projecteka.hiu.clients.PatientServiceClient;
+
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -73,12 +74,14 @@ public class HiuConfiguration {
             ConsentManagerServiceProperties consentManagerServiceProperties,
             HiuProperties hiuProperties,
             ConsentRepository consentRepository,
-            DataFlowRequestPublisher dataFlowRequestPublisher) {
+            DataFlowRequestPublisher dataFlowRequestPublisher,
+            PatientServiceClient patientServiceClient) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties, hiuProperties),
                 hiuProperties,
                 consentRepository,
-                dataFlowRequestPublisher);
+                dataFlowRequestPublisher,
+                patientServiceClient);
     }
 
     @Bean
