@@ -6,18 +6,26 @@ import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.StreamSupport;
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
 public class ConsentRepository {
+    private static final String SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT = "SELECT consent_artefact_id, " +
+            "consent_artefact -> 'hip' ->> 'id' as hipId, consent_artefact -> 'hip' ->> 'name' as hipName, " +
+            "consent_artefact -> 'requester' ->> 'name' as requester FROM " +
+            "consent_artefact WHERE consent_request_id=$1";
     private final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
             "consent_artefact (consent_request_id, consent_artefact, consent_artefact_id, status, date_created)" +
             " VALUES ($1, $2, $3, $4, $5)";
@@ -93,5 +101,29 @@ public class ConsentRepository {
                             else
                                 monoSink.success();
                         }));
+    }
+
+    public Flux<Map<String, String>> getConsentDetails(String consentRequestId) {
+        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT,
+                Tuple.of(consentRequestId),
+                handler -> {
+                    if (handler.failed()) {
+                        fluxSink.error(new Exception("Failed to get consent id from consent request Id"));
+                    } else {
+                        StreamSupport.stream(handler.result().spliterator(), false)
+                                .map(this::toConsentDetail)
+                                .forEach(fluxSink::next);
+                        fluxSink.complete();
+                    }
+                }));
+    }
+
+    private Map<String, String> toConsentDetail(Row row) {
+        Map<String, String> map = new HashMap<>();
+        map.put("consentId", row.getString(0));
+        map.put("hipId", row.getString(1));
+        map.put("hipName", row.getString(2));
+        map.put("requester", row.getString(3));
+        return map;
     }
 }

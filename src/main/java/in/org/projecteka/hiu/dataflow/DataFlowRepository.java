@@ -7,11 +7,14 @@ import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Tuple;
 import reactor.core.publisher.Mono;
 
+
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
             "data_flow_request) VALUES ($1, $2)";
     private static final String INSERT_HEALTH_INFORMATION = "INSERT INTO health_information " +
             "(transaction_id, health_information) VALUES ($1, $2)";
+    private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
+            "data_flow_request WHERE data_flow_request -> 'consent' ->> 'id' = $1";
     private PgPool dbClient;
 
     public DataFlowRepository(PgPool pgPool) {
@@ -45,4 +48,18 @@ public class DataFlowRepository {
                         })
         );
     }
+
+    public Mono<String> getTransactionId(String consentArtefactId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST,
+                Tuple.of(consentArtefactId),
+                handler -> {
+                    if (handler.failed()) {
+                        monoSink.error(new Exception("Failed to get transaction Id from consent Id"));
+                    } else {
+                        monoSink.success(handler.result().iterator().next().getString(0));
+                    }
+                }));
+    }
+
+
 }

@@ -5,9 +5,10 @@ import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
-import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
+import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
+import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.patient.PatientServiceClient;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
@@ -20,6 +21,7 @@ import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
@@ -29,7 +31,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 
 import java.util.HashMap;
 
@@ -61,7 +62,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowRequestPublisher dataFlowRequestPublisher(AmqpTemplate amqpTemplate, DestinationsConfig destinationsConfig) {
+    public DataFlowRequestPublisher dataFlowRequestPublisher(AmqpTemplate amqpTemplate,
+                                                             DestinationsConfig destinationsConfig) {
         return new DataFlowRequestPublisher(amqpTemplate, destinationsConfig);
     }
 
@@ -85,7 +87,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    // This exception handler needs to be given highest priority compared to DefaultErrorWebExceptionHandler, hence order = -2.
+    // This exception handler needs to be given highest priority compared to DefaultErrorWebExceptionHandler, hence
+    // order = -2.
     @Order(-2)
     public ClientErrorExceptionHandler clientErrorExceptionHandler(ErrorAttributes errorAttributes,
                                                                    ResourceProperties resourceProperties,
@@ -101,7 +104,8 @@ public class HiuConfiguration {
     @Bean
     public DestinationsConfig destinationsConfig(AmqpAdmin amqpAdmin) {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
-        queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo("exchange", DATA_FLOW_REQUEST_QUEUE));
+        queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
+                DATA_FLOW_REQUEST_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
         destinationsConfig.getQueues()
@@ -149,6 +153,11 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public HealthInformationRepository healthInformationRepository(PgPool pgPool) {
+        return new HealthInformationRepository(pgPool);
+    }
+
+    @Bean
     public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
                                                            DestinationsConfig destinationsConfig,
                                                            DataFlowClient dataFlowClient,
@@ -159,7 +168,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository) {
-        return new DataFlowService(dataFlowRepository);
+    public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
+                                           HealthInformationRepository healthInformationRepository,
+                                           ConsentRepository consentRepository) {
+        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository);
     }
 }

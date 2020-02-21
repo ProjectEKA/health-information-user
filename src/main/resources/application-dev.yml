@@ -3,6 +3,9 @@ hiu:
   name: Max Health Care
   consentmanager:
     url: http://locahost:8081/
+  dataflowservice:
+    defaultPageSize: 20
+    maxPageSize: 100
   centralregistry:
     url: http://localhost:8082/
   database:
