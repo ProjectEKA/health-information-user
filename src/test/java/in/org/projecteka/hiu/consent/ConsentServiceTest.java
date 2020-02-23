@@ -1,12 +1,13 @@
 package in.org.projecteka.hiu.consent;
 
+import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
-import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.Permission;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+import in.org.projecteka.hiu.patient.PatientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -14,6 +15,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
+
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
@@ -37,6 +41,9 @@ public class ConsentServiceTest {
     @Mock
     private PatientServiceClient patientServiceClient;
 
+    @Mock
+    Cache<String, Optional<Patient>> cache;
+
     @BeforeEach
     public void setUp() {
         initMocks(this);
@@ -44,7 +51,7 @@ public class ConsentServiceTest {
 
     @Test
     public void shouldCreateConsentRequest() {
-        String requesterId = "1";
+        String requesterId = randomString();
         var hiuProperties = hiuProperties().build();
         ConsentService consentService = new ConsentService(
                 consentManagerClient,
@@ -76,15 +83,20 @@ public class ConsentServiceTest {
                 hiuProperties().build(),
                 consentRepository,
                 dataFlowRequestPublisher,
-                patientServiceClient);
+                new PatientService(patientServiceClient, cache));
         Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
-        var consentRequest = consentRequest().createdDate("2020-06-02T10:15:02Z").permission(permission).build();
         Patient patient = patient().build();
+        var consentRequest = consentRequest()
+                .createdDate("2020-06-02T10:15:02Z")
+                .patient(new in.org.projecteka.hiu.consent.model.Patient(patient.getIdentifier()))
+                .permission(permission)
+                .build();
+        when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
         when(consentRepository.requestsFrom(requesterId)).thenReturn(Flux.just(consentRequest));
         when(patientServiceClient.patientWith(consentRequest.getPatient().getId()))
                 .thenReturn(Mono.just(patient));
 
-        Flux<ConsentRequestRepresentation> consents = consentService.requestsFrom(requesterId);
+        var consents = consentService.requestsFrom(requesterId);
 
         StepVerifier.create(consents)
                 .expectNextCount(1)

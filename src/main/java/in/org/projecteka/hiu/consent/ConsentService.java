@@ -1,7 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
-import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
@@ -10,6 +9,7 @@ import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 
+import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,7 +25,7 @@ public class ConsentService {
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
-    private final PatientServiceClient client;
+    private final PatientService patientService;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
@@ -56,7 +56,8 @@ public class ConsentService {
         return Flux.fromIterable(consentNotificationRequest.getConsents())
                 .flatMap(consentArtefactReference ->
                         consentArtefactReference.getStatus() == ConsentStatus.GRANTED
-                        ? insertConsentArtefact(consentArtefactReference, consentNotificationRequest.getConsentRequestId())
+                        ? insertConsentArtefact(consentArtefactReference,
+                                consentNotificationRequest.getConsentRequestId())
                         : updateConsentArtefactStatus(consentArtefactReference));
     }
 
@@ -90,7 +91,7 @@ public class ConsentService {
     public Flux<ConsentRequestRepresentation> requestsFrom(String requestId) {
         return consentRepository.requestsFrom(requestId)
                 .flatMap(consentRequest ->
-                        client.patientWith(consentRequest.getPatient().getId())
+                        patientService.patientWith(consentRequest.getPatient().getId())
                                 .map(patient -> of(patient, consentRequest)))
                 .map(patientConsentRequest ->
                         toConsentRequestRepresentation(patientConsentRequest._1, patientConsentRequest._2));

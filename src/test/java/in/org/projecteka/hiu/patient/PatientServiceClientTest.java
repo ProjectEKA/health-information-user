@@ -22,7 +22,6 @@ import reactor.test.StepVerifier;
 
 import java.util.function.Supplier;
 
-import static in.org.projecteka.hiu.patient.PatientRepresentation.from;
 import static in.org.projecteka.hiu.patient.TestBuilders.patient;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
