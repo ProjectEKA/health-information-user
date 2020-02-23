@@ -24,7 +24,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'log4j:log4j:1.2.17'
     implementation 'org.springframework:spring-context-support'
-    implementation 'io.vavr:vavr:0.10.2'
     implementation 'com.google.guava:guava:28.2-jre'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

@@ -24,7 +24,7 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 public class ConsentRepository {
     private static final String SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT = "SELECT consent_artefact_id, " +
             "consent_artefact -> 'hip' ->> 'id' as hipId, consent_artefact -> 'hip' ->> 'name' as hipName, " +
-            "consent_artefact -> 'requester' ->> 'name' as requester FROM " +
+            "consent_artefact -> 'requester' ->> 'name' as requester, status FROM " +
             "consent_artefact WHERE consent_request_id=$1";
     private final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
             "consent_artefact (consent_request_id, consent_artefact, consent_artefact_id, status, date_created)" +
@@ -124,6 +124,7 @@ public class ConsentRepository {
         map.put("hipId", row.getString(1));
         map.put("hipName", row.getString(2));
         map.put("requester", row.getString(3));
+        map.put("status", row.getString(4));
         return map;
     }
 

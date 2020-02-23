@@ -15,7 +15,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
-import static io.vavr.Tuple.of;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.invalidConsentManager;
 
@@ -52,6 +51,25 @@ public class ConsentService {
                                            : Mono.error(invalidConsentManager()));
     }
 
+    public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
+        return consentRepository.requestsFrom(requesterId)
+                .flatMap(consentRequest ->
+                        Mono.zip(patientService.patientWith(consentRequest.getPatient().getId()),
+                                mergeArtefactWith(consentRequest)))
+                .map(patientConsentRequest ->
+                        toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2()));
+    }
+
+    private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeArtefactWith(
+            in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
+        return consentRepository.getConsentDetails(consentRequest.getId())
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get("status")))
+                .switchIfEmpty(Mono.just(ConsentStatus.REQUESTED))
+                .map(status -> consentRequest.toBuilder().status(status).build());
+    }
+
     private Flux<Void> upsertConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {
         return Flux.fromIterable(consentNotificationRequest.getConsents())
                 .flatMap(consentArtefactReference ->
@@ -86,14 +104,5 @@ public class ConsentService {
     private boolean isValidConsentManager(String consentManagerId,
                                           in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
         return consentRequest.getPatient().getId().contains(consentManagerId);
-    }
-
-    public Flux<ConsentRequestRepresentation> requestsFrom(String requestId) {
-        return consentRepository.requestsFrom(requestId)
-                .flatMap(consentRequest ->
-                        patientService.patientWith(consentRequest.getPatient().getId())
-                                .map(patient -> of(patient, consentRequest)))
-                .map(patientConsentRequest ->
-                        toConsentRequestRepresentation(patientConsentRequest._1, patientConsentRequest._2));
     }
 }
