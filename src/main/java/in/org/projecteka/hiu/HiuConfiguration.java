@@ -1,5 +1,9 @@
 package in.org.projecteka.hiu;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
@@ -10,6 +14,7 @@ import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.patient.PatientService;
 
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
@@ -34,6 +39,8 @@ import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class HiuConfiguration {
@@ -75,13 +82,32 @@ public class HiuConfiguration {
             HiuProperties hiuProperties,
             ConsentRepository consentRepository,
             DataFlowRequestPublisher dataFlowRequestPublisher,
-            PatientServiceClient patientServiceClient) {
+            PatientService patientService) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties, hiuProperties),
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
-                patientServiceClient);
+                patientService);
+    }
+
+    @Bean
+    public PatientService patientService(PatientServiceClient patientServiceClient,
+                                         Cache<String, Optional<Patient>> cache) {
+        return new PatientService(patientServiceClient, cache);
+    }
+
+    @Bean
+    public Cache<String, Optional<Patient>> cache() {
+        return CacheBuilder
+                .newBuilder()
+                .maximumSize(50)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build(new CacheLoader<>() {
+                    public Optional<Patient> load(String key) {
+                        return Optional.empty();
+                    }
+                });
     }
 
     @Bean
