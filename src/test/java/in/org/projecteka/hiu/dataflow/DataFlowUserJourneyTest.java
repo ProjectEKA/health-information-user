@@ -13,6 +13,7 @@ import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataflow.model.Status;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -69,6 +70,9 @@ public class DataFlowUserJourneyTest {
 
     @MockBean
     private DataAvailabilityPublisher dataAvailabilityPublisher;
+
+    @MockBean
+    private DataAvailabilityListener dataAvailabilityListener;
 
     @AfterAll
     public static void tearDown() throws IOException {

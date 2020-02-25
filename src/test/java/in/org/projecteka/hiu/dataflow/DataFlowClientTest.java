@@ -34,9 +34,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
 import static in.org.projecteka.hiu.dataflow.Utils.toDate;
@@ -155,35 +154,18 @@ public class DataFlowClientTest {
     }
 
 
-    @Test
-    public void shouldTestFluxError() {
-//        Flux.just(1, 2, 3, 4, 5, 7, 9).filter(e -> {
-//            return e % 2 == 0;
-//        }).collectList().flatMap(ls -> {
-//            return ls.size() > 0 ? Mono.error(new RuntimeException("Invalid")) : Mono.just(true);
-//        }).doOnNext(e -> {
-//            System.out.println("result:" + e);
-//        }).doOnError(e -> {
-//            System.out.println("error:" + e);
-//        }).subscribe();
-
-        Collection<Integer> integers = Arrays.asList(1, 2, 3, 4, 5, 8, 9, 11, 17, 15)
-                .parallelStream()
-                .filter(e -> { return isEven(e) || isPrime(e); })
-                .collect(Collectors.toList());
-        System.out.println(integers);
+    public void shouldTestDataFlow() {
+        //DataFlowRequest dataFlowRequest = dataFlowRequest().build();
+        //System.out.println(JsonObject.mapFrom(dataFlowRequest).encode());
+        //{"consent":{"id":"eOMtThyhVNLWUZNRcBaQKxI","digitalSignature":"yedUsFwdkelQbxeTeQOvaScfqIOOmaa"},"hiDataRange":{"from":1718717044570,"to":1887692020498},"callBackUrl":"JxkyvRnL"}
+        //jsonObject.mapTo()
+        //JsonObject jsonObject = new JsonObject("{\"consent\":{\"id\":\"eOMtThyhVNLWUZNRcBaQKxI\",\"digitalSignature\":\"yedUsFwdkelQbxeTeQOvaScfqIOOmaa\"},\"hiDataRange\":{\"from\":1718717044570,\"to\":1887692020498},\"callBackUrl\":\"JxkyvRnL\"}");
+        //DataFlowRequest dataFlowRequest = jsonObject.mapTo(DataFlowRequest.class);
+        //System.out.println(dataFlowRequest.getConsent().getId());
+        Map<String, String> contentRef = new HashMap<>();
+        contentRef.put("transactionId", "123456");
+        contentRef.put("pathToFile", "/tmp/test.json");
 
     }
 
-    private boolean isEven(Integer e) {
-        return (e & 1) ==0;
-    }
-
-    private boolean isPrime(int n) {
-        for(int i=2; 2*i<n; i++) {
-            if(n%i==0)
-                return false;
-        }
-        return true;
-    }
 }

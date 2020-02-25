@@ -3,8 +3,6 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
-import in.org.projecteka.hiu.consent.model.dataflow.Consent;
-import in.org.projecteka.hiu.consent.model.dataflow.DataFlowRequest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -13,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
+import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
 
 @AllArgsConstructor
 public class DataAvailabilityPublisher {
@@ -25,10 +23,10 @@ public class DataAvailabilityPublisher {
     @SneakyThrows
     public Mono<Void> broadcastDataAvailability(Map<String, String> contentRef) {
         DestinationsConfig.DestinationInfo destinationInfo =
-                destinationsConfig.getQueues().get(DATA_FLOW_REQUEST_QUEUE);
+                destinationsConfig.getQueues().get(DATA_FLOW_PROCESS_QUEUE);
 
         if (destinationInfo == null) {
-            logger.info(DATA_FLOW_REQUEST_QUEUE + " not found");
+            logger.info(String.format("Queue %s not found",DATA_FLOW_PROCESS_QUEUE));
             throw ClientError.queueNotFound();
         }
 

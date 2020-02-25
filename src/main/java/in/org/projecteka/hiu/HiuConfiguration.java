@@ -16,6 +16,7 @@ import in.org.projecteka.hiu.dataflow.DataFlowService;
 import in.org.projecteka.hiu.dataflow.DataFlowServiceProperties;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.patient.PatientService;
 
 import io.vertx.pgclient.PgConnectOptions;
@@ -214,5 +215,11 @@ public class HiuConfiguration {
     public DataAvailabilityPublisher dataAvailabilityPublisher(AmqpTemplate amqpTemplate,
                                                               DestinationsConfig destinationsConfig) {
         return new DataAvailabilityPublisher(amqpTemplate, destinationsConfig);
+    }
+
+    @Bean
+    public DataAvailabilityListener dataAvailabilityListener(MessageListenerContainerFactory messageListenerContainerFactory,
+                                                             DestinationsConfig destinationsConfig) {
+        return new DataAvailabilityListener(messageListenerContainerFactory, destinationsConfig);
     }
 }
