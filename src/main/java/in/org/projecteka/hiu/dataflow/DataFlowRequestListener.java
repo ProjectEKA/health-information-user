@@ -83,7 +83,7 @@ public class DataFlowRequestListener {
         var dataFlowKeyMaterial = DataFlowRequestKeyMaterial.builder()
                 .privateKey(privateKey)
                 .publicKey(publicKey)
-                .randomKey("")
+                .randomKey(CryptoHelper.generateRandomKey())
                 .build();
         return dataFlowKeyMaterial;
     }
@@ -91,17 +91,13 @@ public class DataFlowRequestListener {
     private KeyMaterial keyMaterial(DataFlowRequestKeyMaterial dataFlowKeyMaterial) {
         logger.info("Creating KeyMaterials");
         return KeyMaterial.builder()
-                .cryptoAlg("ECDH")
-                .curve("prime192v1")
+                .cryptoAlg(CryptoHelper.ALGORITHM)
+                .curve(CryptoHelper.CURVE)
                 .dhPublicKey(KeyStructure.builder()
                         .expiry("")
                         .keyValue(dataFlowKeyMaterial.getPublicKey())
                         .parameters("").build())
-                .randomKey(KeyStructure.builder()
-                        .expiry("")
-                        .keyValue(dataFlowKeyMaterial.getRandomKey())
-                        .parameters("")
-                        .build())
+                .randomKey(dataFlowKeyMaterial.getRandomKey())
                 .build();
     }
 
