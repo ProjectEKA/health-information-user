@@ -17,4 +17,5 @@ import org.springframework.context.annotation.Configuration;
 public class DataFlowServiceProperties {
     private int maxPageSize;
     private int defaultPageSize;
+    private String localStoragePath;
 }

@@ -4,6 +4,8 @@ import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import io.vertx.core.json.JsonObject;
 import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
 import reactor.core.publisher.Mono;
 
@@ -15,6 +17,8 @@ public class DataFlowRepository {
             "(transaction_id, health_information) VALUES ($1, $2)";
     private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
             "data_flow_request WHERE data_flow_request -> 'consent' ->> 'id' = $1";
+    private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION_ID
+            = "SELECT data_flow_request FROM data_flow_request WHERE transaction_id =$1";
     private PgPool dbClient;
 
     public DataFlowRepository(PgPool pgPool) {
@@ -62,4 +66,23 @@ public class DataFlowRepository {
     }
 
 
+    public Mono<DataFlowRequest> retrieveDataFlowRequest(String transactionId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION_ID,
+                Tuple.of(transactionId),
+                handler -> {
+                    if (handler.failed()) {
+                        monoSink.error(new Exception("Failed to identify data flow request for transaction Id"));
+                    } else {
+                        RowSet<Row> results = handler.result();
+                        if (results.iterator().hasNext()) {
+                            Row row = results.iterator().next();
+                            JsonObject jsonObject = (JsonObject) row.getValue("data_flow_request");
+                            DataFlowRequest request = jsonObject.mapTo(DataFlowRequest.class);
+                            monoSink.success(request);
+                        } else {
+                            monoSink.error(new Exception("Failed to identify data flow request for transaction Id"));
+                        }
+                    }
+                }));
+    }
 }

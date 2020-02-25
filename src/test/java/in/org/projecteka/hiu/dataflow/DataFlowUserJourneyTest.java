@@ -8,6 +8,7 @@ import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
@@ -24,6 +25,8 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -36,11 +39,13 @@ import java.util.List;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
+@ActiveProfiles("dev")
 public class DataFlowUserJourneyTest {
     private static MockWebServer dataFlowServer = new MockWebServer();
 
@@ -62,6 +67,9 @@ public class DataFlowUserJourneyTest {
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
 
+    @MockBean
+    private DataAvailabilityPublisher dataAvailabilityPublisher;
+
     @AfterAll
     public static void tearDown() throws IOException {
         dataFlowServer.shutdown();
@@ -76,6 +84,7 @@ public class DataFlowUserJourneyTest {
     public void shouldNotifyDataFlowResponse() {
         Entry entry = entry().build();
         entry.setLink(null);
+        entry.setContent("Some Dummy Content XYZ 1");
         List<Entry> entries = new ArrayList<>();
         entries.add(entry);
         String transactionId = "transactionId";
@@ -83,11 +92,13 @@ public class DataFlowUserJourneyTest {
                 DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
 
         when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
+        when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(new DataFlowRequest()));
+        when(dataAvailabilityPublisher.broadcastDataAvailability(any())).thenReturn(Mono.empty());
 
         webTestClient
                 .post()
                 .uri("/data/notification")
-                .header("Authorization", "AuthToken")
+                .header("Authorization", "R2FuZXNoQG5jZw==")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -162,6 +173,37 @@ public class DataFlowUserJourneyTest {
                 .header("Authorization", "MQ==")
                 .exchange()
                 .expectStatus().isUnauthorized()
+                .expectBody()
+                .json(errorResponseJson);
+    }
+
+
+    @Test
+    public void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
+        Entry entry = new Entry();
+        entry.setLink(null);
+        List<Entry> entries = new ArrayList<>();
+        entries.add(entry);
+        String transactionId = "transactionId";
+        DataNotificationRequest dataNotificationRequest =
+                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
+
+        when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
+
+        var errorResponse = new ErrorRepresentation(new Error(
+                ErrorCode.INVALID_DATA_FLOW_ENTRY,
+                "Entry must either have content or provide a link."));
+        var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
+
+        webTestClient
+                .post()
+                .uri("/data/notification")
+                .header("Authorization", "R2FuZXNoQG5jZw==")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(dataNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .json(errorResponseJson);
     }

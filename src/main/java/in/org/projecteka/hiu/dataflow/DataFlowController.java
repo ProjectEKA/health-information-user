@@ -23,7 +23,8 @@ public class DataFlowController {
     public Mono<Void> dataNotification(
             @RequestHeader(value = "Authorization") String authorization,
             @RequestBody DataNotificationRequest dataNotificationRequest) {
-        return dataFlowService.handleNotification(dataNotificationRequest);
+        String requesterId = TokenUtils.decode(authorization);
+        return dataFlowService.handleNotification(dataNotificationRequest, requesterId);
     }
 
     @GetMapping("/health-information/fetch/{consent-request-id}")

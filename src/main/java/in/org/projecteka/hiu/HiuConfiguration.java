@@ -8,10 +8,12 @@ import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
+import in.org.projecteka.hiu.dataflow.DataFlowServiceProperties;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.patient.PatientService;
@@ -45,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class HiuConfiguration {
     public static final String DATA_FLOW_REQUEST_QUEUE = "data-flow-request-queue";
+    public static final String DATA_FLOW_PROCESS_QUEUE = "data-flow-process-queue";
 
     @Bean
     public PatientServiceClient patientServiceClient(
@@ -135,6 +138,8 @@ public class HiuConfiguration {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
         queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
                 DATA_FLOW_REQUEST_QUEUE));
+        queues.put(DATA_FLOW_PROCESS_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
+                DATA_FLOW_PROCESS_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
         destinationsConfig.getQueues()
@@ -199,7 +204,15 @@ public class HiuConfiguration {
     @Bean
     public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
                                            HealthInformationRepository healthInformationRepository,
-                                           ConsentRepository consentRepository) {
-        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository);
+                                           ConsentRepository consentRepository,
+                                           DataAvailabilityPublisher dataAvailabilityPublisher,
+                                           DataFlowServiceProperties properties) {
+        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository, dataAvailabilityPublisher, properties);
+    }
+
+    @Bean
+    public DataAvailabilityPublisher dataAvailabilityPublisher(AmqpTemplate amqpTemplate,
+                                                              DestinationsConfig destinationsConfig) {
+        return new DataAvailabilityPublisher(amqpTemplate, destinationsConfig);
     }
 }

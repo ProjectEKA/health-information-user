@@ -9,6 +9,7 @@ hiu:
   dataflowservice:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}
     maxPageSize: ${MAX_PAGE_SIZE}
+    localStoragePath: ${LOCAL_STORAGE_PATH}
   centralregistry:
     url: ${CENTRAL_REGISTRY_URL}
   database:

@@ -1,5 +1,7 @@
 package in.org.projecteka.hiu.dataflow;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
@@ -10,12 +12,31 @@ import in.org.projecteka.hiu.dataflow.model.HIDataRange;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Composition;
+import org.hl7.fhir.r4.model.Encounter;
+import org.hl7.fhir.r4.model.Medication;
+import org.hl7.fhir.r4.model.MedicationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
 import static in.org.projecteka.hiu.dataflow.Utils.toDate;
@@ -64,5 +85,105 @@ public class DataFlowClientTest {
                 "/request");
         assertThat(recordedRequest.getBody().readUtf8())
                 .isEqualTo(new ObjectMapper().writeValueAsString(dataFlowRequest));
+    }
+
+    @Test
+    public void shouldTestFHIRResourceParsing() {
+        FhirContext fhirContext = FhirContext.forR4();
+        IParser iParser = fhirContext.newJsonParser();
+
+        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("sample_bundle.json");
+        Reader reader = new InputStreamReader(resourceAsStream);
+        Bundle bundle = (Bundle) iParser.parseResource(reader);
+        //readEncounter(bundle);
+        Bundle.BundleEntryComponent bundleEntryComponent = bundle.getEntry().get(1);
+        MedicationRequest medicationRequest = (MedicationRequest) bundleEntryComponent.getResource();
+        Medication med = (Medication) medicationRequest.getMedicationReference().getResource();
+        System.out.println("Medication:" + med.getCode().getCoding().get(0).getDisplay());
+
+
+        StepVerifier.create(serializeAndNotifyProcessor(fhirContext.newJsonParser().encodeResourceToString(bundle)))
+                .expectNext(true)
+                .verifyComplete();
+        //Mono<Boolean> booleanMono = serializeAndNotifyProcessor(bundle);
+
+
+        //System.out.println(resource.getResourceType());
+
+    }
+
+    private void readEncounter(Bundle bundle) {
+        Bundle.BundleEntryComponent bundleEntryComponent = bundle.getEntry().get(0);
+        Composition composition = (Composition) bundleEntryComponent.getResource();
+        Encounter encounter = (Encounter) composition.getEncounter().getResource();
+        System.out.println("Status:" + encounter.getStatus());
+    }
+
+    private Mono<Boolean> serializeAndNotifyProcessor(String dataNotificationRequest) {
+        return Mono.create(monoSink -> {
+            byte[] bytes = contentFromRequest(dataNotificationRequest);
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            Path pathToFile = Paths.get("/tmp/", "SampleFile.txt");
+            AsynchronousFileChannel channel = null;
+            try {
+                channel = AsynchronousFileChannel.open(pathToFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            } catch (IOException e) {
+                monoSink.error(e);
+            }
+            channel.write(byteBuffer, 0, byteBuffer, new CompletionHandler<Integer, ByteBuffer>() {
+                @Override
+                public void completed(Integer result, ByteBuffer attachment) {
+                    monoSink.success(true);
+                }
+                @Override
+                public void failed(Throwable exc, ByteBuffer attachment) {
+                    monoSink.error(exc);
+                }
+            });
+        });
+    }
+
+
+    private byte[] contentFromRequest(String dataNotificationRequest) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.writeValueAsBytes(dataNotificationRequest);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    @Test
+    public void shouldTestFluxError() {
+//        Flux.just(1, 2, 3, 4, 5, 7, 9).filter(e -> {
+//            return e % 2 == 0;
+//        }).collectList().flatMap(ls -> {
+//            return ls.size() > 0 ? Mono.error(new RuntimeException("Invalid")) : Mono.just(true);
+//        }).doOnNext(e -> {
+//            System.out.println("result:" + e);
+//        }).doOnError(e -> {
+//            System.out.println("error:" + e);
+//        }).subscribe();
+
+        Collection<Integer> integers = Arrays.asList(1, 2, 3, 4, 5, 8, 9, 11, 17, 15)
+                .parallelStream()
+                .filter(e -> { return isEven(e) || isPrime(e); })
+                .collect(Collectors.toList());
+        System.out.println(integers);
+
+    }
+
+    private boolean isEven(Integer e) {
+        return (e & 1) ==0;
+    }
+
+    private boolean isPrime(int n) {
+        for(int i=2; 2*i<n; i++) {
+            if(n%i==0)
+                return false;
+        }
+        return true;
     }
 }
