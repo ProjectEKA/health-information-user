@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.dataflow;
 
-import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.Entry;
@@ -10,7 +9,6 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
 import reactor.core.publisher.Mono;
-
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 

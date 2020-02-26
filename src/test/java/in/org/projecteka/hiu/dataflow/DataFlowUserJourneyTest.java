@@ -8,7 +8,12 @@ import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.cryptohelper.CryptoHelper;
-import in.org.projecteka.hiu.dataflow.model.*;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.Entry;
+import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
+import in.org.projecteka.hiu.dataflow.model.DataEntry;
+import in.org.projecteka.hiu.dataflow.model.HealthInformation;
+import in.org.projecteka.hiu.dataflow.model.Status;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -32,7 +37,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static in.org.projecteka.hiu.dataflow.TestBuilders.*;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
