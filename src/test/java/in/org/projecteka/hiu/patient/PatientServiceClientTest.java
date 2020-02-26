@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.clients.Patient;
+import in.org.projecteka.hiu.clients.PatientServiceClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -20,7 +22,6 @@ import reactor.test.StepVerifier;
 
 import java.util.function.Supplier;
 
-import static in.org.projecteka.hiu.patient.PatientRepresentation.from;
 import static in.org.projecteka.hiu.patient.TestBuilders.patient;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,18 +52,17 @@ class PatientServiceClientTest {
 
     @Test
     void returnPatientWhenUserExists() throws JsonProcessingException {
-        String patientId = "patient-id@ncg";
+        String patientId = "consentArtefactPatient-id@ncg";
         var patient = patient().build();
-        var searchRepresentation = new SearchRepresentation(from(patient));
         var response = new ObjectMapper().writeValueAsString(patient);
         when(exchangeFunction.exchange(captor.capture()))
                 .thenReturn(Mono.just(ClientResponse.create(HttpStatus.OK)
                         .header("Content-Type", "application/json")
                         .body(response).build()));
 
-        Supplier<Mono<SearchRepresentation>> action = () -> patientServiceClient.patientWith(patientId);
+        Supplier<Mono<Patient>> action = () -> patientServiceClient.patientWith(patientId);
 
-        StepVerifier.create(action.get()).expectNext(searchRepresentation).verifyComplete();
-        assertThat(captor.getValue().url().toString()).isEqualTo(format("%s/users/patient-id@ncg", BASE_URL));
+        StepVerifier.create(action.get()).expectNext(patient).verifyComplete();
+        assertThat(captor.getValue().url().toString()).isEqualTo(format("%s/users/consentArtefactPatient-id@ncg", BASE_URL));
     }
 }

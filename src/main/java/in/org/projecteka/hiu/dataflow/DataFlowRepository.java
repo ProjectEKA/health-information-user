@@ -4,7 +4,6 @@ import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.Entry;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
@@ -12,7 +11,6 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
@@ -25,19 +23,15 @@ public class DataFlowRepository {
             "key_pairs) VALUES ($1, $2)";
     private static final String GET_KEY_FOR_ID = "SELECT key_pairs " +
             "FROM data_flow_request_keys WHERE transaction_id = $1";;
+    private static final String INSERT_HEALTH_INFORMATION = "INSERT INTO health_information " +
+            "(transaction_id, health_information) VALUES ($1, $2)";
+    private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
+            "data_flow_request WHERE data_flow_request -> 'consent' ->> 'id' = $1";
+
     private PgPool dbClient;
 
     public DataFlowRepository(PgPool pgPool) {
         this.dbClient = pgPool;
-    }
-
-    private static JsonArray reformatJsonArray(List<Entry> entries) {
-        JsonArray entryElements = new JsonArray();
-        for (var entry : entries) {
-            JsonObject jsonObject = JsonObject.mapFrom(entry);
-            entryElements.add(jsonObject);
-        }
-        return entryElements;
     }
 
     public Mono<Void> addDataRequest(String transactionId, DataFlowRequest dataFlowRequest) {
@@ -54,19 +48,17 @@ public class DataFlowRepository {
         );
     }
 
-    public Mono<Void> addDataResponse(String transactionId, List<Entry> entries) {
+    public Mono<Void> insertHealthInformation(String transactionId, Entry entry) {
         return Mono.create(monoSink ->
-                {
-                    dbClient.preparedQuery(
-                            INSERT_TO_DATA_FLOW_RESPONSE,
-                            Tuple.of(transactionId, reformatJsonArray(entries)),
-                            handler -> {
-                                if (handler.failed())
-                                    monoSink.error(new Exception("Failed to insert to data flow response"));
-                                else
-                                    monoSink.success();
-                            });
-                }
+                dbClient.preparedQuery(
+                        INSERT_HEALTH_INFORMATION,
+                        Tuple.of(transactionId, JsonObject.mapFrom(entry)),
+                        handler -> {
+                            if (handler.failed())
+                                monoSink.error(new Exception("Failed to insert health information"));
+                            else
+                                monoSink.success();
+                        })
         );
     }
 
@@ -104,5 +96,17 @@ public class DataFlowRepository {
                         }
                 )
         );
+    }
+
+    public Mono<String> getTransactionId(String consentArtefactId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST,
+                Tuple.of(consentArtefactId),
+                handler -> {
+                    if (handler.failed()) {
+                        monoSink.error(new Exception("Failed to get transaction Id from consent Id"));
+                    } else {
+                        monoSink.success(handler.result().iterator().next().getString(0));
+                    }
+                }));
     }
 }

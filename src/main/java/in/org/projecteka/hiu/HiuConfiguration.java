@@ -1,14 +1,22 @@
 package in.org.projecteka.hiu;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
-import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
+import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
-import in.org.projecteka.hiu.patient.PatientServiceClient;
+import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
+import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.dataflow.cryptohelper.CryptoHelper;
+import in.org.projecteka.hiu.patient.PatientService;
+
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -20,6 +28,7 @@ import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
@@ -29,9 +38,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class HiuConfiguration {
@@ -61,7 +71,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowRequestPublisher dataFlowRequestPublisher(AmqpTemplate amqpTemplate, DestinationsConfig destinationsConfig) {
+    public DataFlowRequestPublisher dataFlowRequestPublisher(AmqpTemplate amqpTemplate,
+                                                             DestinationsConfig destinationsConfig) {
         return new DataFlowRequestPublisher(amqpTemplate, destinationsConfig);
     }
 
@@ -71,12 +82,33 @@ public class HiuConfiguration {
             ConsentManagerServiceProperties consentManagerServiceProperties,
             HiuProperties hiuProperties,
             ConsentRepository consentRepository,
-            DataFlowRequestPublisher dataFlowRequestPublisher) {
+            DataFlowRequestPublisher dataFlowRequestPublisher,
+            PatientService patientService) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties, hiuProperties),
                 hiuProperties,
                 consentRepository,
-                dataFlowRequestPublisher);
+                dataFlowRequestPublisher,
+                patientService);
+    }
+
+    @Bean
+    public PatientService patientService(PatientServiceClient patientServiceClient,
+                                         Cache<String, Optional<Patient>> cache) {
+        return new PatientService(patientServiceClient, cache);
+    }
+
+    @Bean
+    public Cache<String, Optional<Patient>> cache() {
+        return CacheBuilder
+                .newBuilder()
+                .maximumSize(50)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build(new CacheLoader<>() {
+                    public Optional<Patient> load(String key) {
+                        return Optional.empty();
+                    }
+                });
     }
 
     @Bean
@@ -85,7 +117,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    // This exception handler needs to be given highest priority compared to DefaultErrorWebExceptionHandler, hence order = -2.
+    // This exception handler needs to be given highest priority compared to DefaultErrorWebExceptionHandler, hence
+    // order = -2.
     @Order(-2)
     public ClientErrorExceptionHandler clientErrorExceptionHandler(ErrorAttributes errorAttributes,
                                                                    ResourceProperties resourceProperties,
@@ -101,7 +134,8 @@ public class HiuConfiguration {
     @Bean
     public DestinationsConfig destinationsConfig(AmqpAdmin amqpAdmin) {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
-        queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo("exchange", DATA_FLOW_REQUEST_QUEUE));
+        queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
+                DATA_FLOW_REQUEST_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
         destinationsConfig.getQueues()
@@ -149,17 +183,33 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
-                                                           DestinationsConfig destinationsConfig,
-                                                           DataFlowClient dataFlowClient,
-                                                           DataFlowRepository dataFlowRepository) {
-        return new DataFlowRequestListener(messageListenerContainerFactory,
-                destinationsConfig,
-                dataFlowClient, dataFlowRepository);
+    public HealthInformationRepository healthInformationRepository(PgPool pgPool) {
+        return new HealthInformationRepository(pgPool);
     }
 
     @Bean
-    public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository) {
-        return new DataFlowService(dataFlowRepository);
+    public CryptoHelper cryptoHelper(){
+        return new CryptoHelper();
     }
+
+    @Bean
+    public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
+                                                           DestinationsConfig destinationsConfig,
+                                                           DataFlowClient dataFlowClient,
+                                                           DataFlowRepository dataFlowRepository,
+                                                           CryptoHelper cryptoHelper) {
+        return new DataFlowRequestListener(messageListenerContainerFactory,
+                destinationsConfig,
+                dataFlowClient, dataFlowRepository, cryptoHelper);
+    }
+
+    @Bean
+    public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
+                                           HealthInformationRepository healthInformationRepository,
+                                           ConsentRepository consentRepository,
+                                           CryptoHelper cryptoHelper) {
+        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository, cryptoHelper);
+    }
+
+
 }

@@ -35,6 +35,7 @@ public class DataFlowRequestListener {
     private DestinationsConfig destinationsConfig;
     private DataFlowClient dataFlowClient;
     private DataFlowRepository dataFlowRepository;
+    private CryptoHelper cryptoHelper;
 
     @PostConstruct
     @SneakyThrows
@@ -77,13 +78,13 @@ public class DataFlowRequestListener {
     }
 
     private DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial() throws Exception {
-        var keyPair = CryptoHelper.generateKeyPair();
-        var privateKey = CryptoHelper.getBase64String(CryptoHelper.savePrivateKey(keyPair.getPrivate()));
-        var publicKey = CryptoHelper.getBase64String(CryptoHelper.savePublicKey(keyPair.getPublic()));
+        var keyPair = cryptoHelper.generateKeyPair();
+        var privateKey = cryptoHelper.getBase64String(CryptoHelper.savePrivateKey(keyPair.getPrivate()));
+        var publicKey = cryptoHelper.getBase64String(cryptoHelper.savePublicKey(keyPair.getPublic()));
         var dataFlowKeyMaterial = DataFlowRequestKeyMaterial.builder()
                 .privateKey(privateKey)
                 .publicKey(publicKey)
-                .randomKey(CryptoHelper.generateRandomKey())
+                .randomKey(cryptoHelper.generateRandomKey())
                 .build();
         return dataFlowKeyMaterial;
     }
@@ -97,7 +98,7 @@ public class DataFlowRequestListener {
                         .expiry("")
                         .keyValue(dataFlowKeyMaterial.getPublicKey())
                         .parameters("").build())
-                .randomKey(dataFlowKeyMaterial.getRandomKey())
+                .nonce(dataFlowKeyMaterial.getRandomKey())
                 .build();
     }
 

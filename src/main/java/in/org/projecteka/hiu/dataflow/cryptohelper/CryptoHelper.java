@@ -5,7 +5,6 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
 import org.bouncycastle.crypto.params.HKDFParameters;
-import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.interfaces.ECPrivateKey;
 import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -13,11 +12,8 @@ import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPrivateKeySpec;
 
 import javax.crypto.KeyAgreement;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.spec.ECGenParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
@@ -27,14 +23,18 @@ public class CryptoHelper {
     public static final String CURVE = "curve25519";
     public static final String PROVIDER = BouncyCastleProvider.PROVIDER_NAME;
 
-    public static String generateRandomKey() {
+    public CryptoHelper(){
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
+    public String generateRandomKey() {
         byte[] salt = new byte[32];
         SecureRandom random = new SecureRandom();
         random.nextBytes(salt);
         return getBase64String(salt);
     }
 
-    public static byte [] savePublicKey (PublicKey key) throws Exception
+    public byte [] savePublicKey (PublicKey key) throws Exception
     {
         ECPublicKey eckey = (ECPublicKey)key;
         return eckey.getQ().getEncoded(false);
@@ -46,7 +46,7 @@ public class CryptoHelper {
         return eckey.getD().toByteArray();
     }
 
-    public static KeyPair generateKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+    public KeyPair generateKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         Security.addProvider(new BouncyCastleProvider());
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(CryptoHelper.ALGORITHM, CryptoHelper.PROVIDER);
         X9ECParameters ecParameters = CustomNamedCurves.getByName(CryptoHelper.CURVE);
@@ -57,7 +57,7 @@ public class CryptoHelper {
         return keyPairGenerator.generateKeyPair();
     }
 
-    private static PrivateKey loadPrivateKey (byte [] data) throws Exception
+    private PrivateKey loadPrivateKey (byte [] data) throws Exception
     {
         X9ECParameters ecP = CustomNamedCurves.getByName(CryptoHelper.CURVE);
         ECParameterSpec params=new ECParameterSpec(ecP.getCurve(), ecP.getG(),
@@ -67,7 +67,7 @@ public class CryptoHelper {
         return kf.generatePrivate(privateKeySpec);
     }
 
-    private static PublicKey loadPublicKey (byte [] data) throws Exception
+    private PublicKey loadPublicKey (byte [] data) throws Exception
     {
         KeyFactory ecKeyFac = KeyFactory.getInstance(CryptoHelper.ALGORITHM, CryptoHelper.PROVIDER);
         X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(data);
@@ -75,7 +75,7 @@ public class CryptoHelper {
         return publicKey2;
     }
 
-    private static String doECDH (byte[] dataPrv, byte[] dataPub) throws Exception
+    private String doECDH (byte[] dataPrv, byte[] dataPub) throws Exception
     {
         KeyAgreement ka = KeyAgreement.getInstance(CryptoHelper.ALGORITHM, CryptoHelper.PROVIDER);
         ka.init(loadPrivateKey(dataPrv));
@@ -84,11 +84,11 @@ public class CryptoHelper {
         return getBase64String(secret);
     }
 
-    public static String decrypt(String receiverPrivateKey,
-                                 String senderPublicKey,
-                                 String randomKeySender,
-                                 String randomKeyReceiver,
-                                 String encryptedMessage) throws Exception {
+    public String decrypt(String receiverPrivateKey,
+                          String senderPublicKey,
+                          String randomKeySender,
+                          String randomKeyReceiver,
+                          String encryptedMessage) throws Exception {
         String sharedKey = doECDH(getBytesForBase64String(receiverPrivateKey)
                 , getBytesForBase64String(senderPublicKey));
         byte[] xorOfRandoms = xorOfRandom(randomKeySender, randomKeyReceiver);
@@ -104,7 +104,7 @@ public class CryptoHelper {
         return AesGcmDecryptor.decrypt(getBytesForBase64String(encryptedMessage), aesKey, iv);
     }
 
-    private static byte [] xorOfRandom(String randomKeySender, String randomKeyReceiver)
+    private byte [] xorOfRandom(String randomKeySender, String randomKeyReceiver)
     {
         byte[] randomSender = getBytesForBase64String(randomKeySender);
         byte[] randomReceiver = getBytesForBase64String(randomKeyReceiver);
@@ -116,12 +116,12 @@ public class CryptoHelper {
         return out;
     }
 
-    public static String getBase64String(byte[] value){
+    public String getBase64String(byte[] value){
 
         return new String(org.bouncycastle.util.encoders.Base64.encode(value));
     }
 
-    public static byte[] getBytesForBase64String(String value){
+    public byte[] getBytesForBase64String(String value){
         return org.bouncycastle.util.encoders.Base64.decode(value);
     }
 

@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @AllArgsConstructor
-@Data
 @Builder
 @NoArgsConstructor
-public class Entry {
-    private String content;
-    private String media;
-    private String checksum;
-    private Link link;
+@Data
+public class HealthInformation {
+    private int size;
+    private int limit;
+    private int offset;
+    private List<DataEntry> entries;
 }

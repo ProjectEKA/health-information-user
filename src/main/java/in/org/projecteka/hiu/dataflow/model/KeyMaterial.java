@@ -9,5 +9,5 @@ public class KeyMaterial {
     private String cryptoAlg;
     private String curve;
     private KeyStructure dhPublicKey;
-    private String randomKey;
+    private String nonce;
 }

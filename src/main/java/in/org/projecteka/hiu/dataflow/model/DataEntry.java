@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @NoArgsConstructor
-public class Entry {
-    private String content;
-    private String media;
-    private String checksum;
-    private Link link;
+public class DataEntry {
+    private String hipId;
+    private String hipName;
+    private Status status;
+    private Entry entry;
 }

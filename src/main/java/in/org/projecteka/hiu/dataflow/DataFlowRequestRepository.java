@@ -10,8 +10,6 @@ import reactor.core.publisher.Mono;
 public class DataFlowRequestRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
             "data_flow_request) VALUES ($1, $2)";
-    private static final String INSERT_TO_DATA_FLOW_REQUEST_KEYS = "INSERT INTO data_flow_request_keys (transaction_id, " +
-            "key_pairs) VALUES ($1, $2)";
     private PgPool dbClient;
 
     public DataFlowRequestRepository(PgPool pgPool) {
@@ -23,20 +21,6 @@ public class DataFlowRequestRepository {
                 dbClient.preparedQuery(
                         INSERT_TO_DATA_FLOW_REQUEST,
                         Tuple.of(transactionId, JsonObject.mapFrom(dataFlowRequest)),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(new Exception("Failed to insert to data flow request"));
-                            else
-                                monoSink.success();
-                        })
-        );
-    }
-
-    public Mono<Void> addKeys(String transactionId, DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial) {
-        return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_TO_DATA_FLOW_REQUEST_KEYS,
-                        Tuple.of(transactionId, JsonObject.mapFrom(dataFlowRequestKeyMaterial)),
                         handler -> {
                             if (handler.failed())
                                 monoSink.error(new Exception("Failed to insert to data flow request"));

@@ -1,9 +1,16 @@
 package in.org.projecteka.hiu.dataflow;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.DestinationsConfig;
-import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
-import okhttp3.mockwebserver.MockResponse;
+import in.org.projecteka.hiu.Error;
+import in.org.projecteka.hiu.ErrorCode;
+import in.org.projecteka.hiu.ErrorRepresentation;
+import in.org.projecteka.hiu.consent.ConsentRepository;
+import in.org.projecteka.hiu.dataflow.cryptohelper.CryptoHelper;
+import in.org.projecteka.hiu.dataflow.model.*;
 import okhttp3.mockwebserver.MockWebServer;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,12 +23,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static in.org.projecteka.hiu.dataflow.TestBuilders.dataNotificationRequest;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -37,10 +48,19 @@ public class DataFlowUserJourneyTest {
     private DataFlowRepository dataFlowRepository;
 
     @MockBean
+    private HealthInformationRepository healthInformationRepository;
+
+    @MockBean
+    private ConsentRepository consentRepository;
+
+    @MockBean
     private DestinationsConfig destinationsConfig;
 
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
+
+    @MockBean
+    private CryptoHelper cryptoHelper;
 
     @AfterAll
     public static void tearDown() throws IOException {
@@ -53,16 +73,21 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldNotifyDataFlowResponse() {
-        DataNotificationRequest dataNotificationRequest = dataNotificationRequest().build();
-
-        dataFlowServer.enqueue(
-                new MockResponse().setHeader("Content-Type", "application/json"));
-
-        when(dataFlowRepository.addDataResponse(dataNotificationRequest.getTransactionId(),
-                dataNotificationRequest.getEntries()))
-                .thenReturn(Mono.create(MonoSink::success));
-
+    public void shouldNotifyDataFlowResponse() throws Exception {
+        Entry entry = entry().build();
+        entry.setLink(null);
+        List<Entry> entries = new ArrayList<>();
+        entries.add(entry);
+        String transactionId = "transactionId";
+        KeyMaterial keyMaterial = keyMaterial().build();
+        DataNotificationRequest dataNotificationRequest =
+                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).keyMaterial(keyMaterial).build();
+        var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
+        when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
+        when(dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId()))
+                .thenReturn(Mono.just(savedKeyMaterial));
+        when(cryptoHelper.decrypt(savedKeyMaterial.getPrivateKey(),keyMaterial.getDhPublicKey().getKeyValue(),
+                keyMaterial.getNonce(), savedKeyMaterial.getRandomKey(), entry.getContent())).thenReturn(entry.getContent());
         webTestClient
                 .post()
                 .uri("/data/notification")
@@ -73,5 +98,75 @@ public class DataFlowUserJourneyTest {
                 .exchange()
                 .expectStatus()
                 .isOk();
+    }
+
+    @Test
+    public void shouldFetchHealthInformation() {
+        String consentRequestId = "consentRequestId";
+        String consentId = "consentId";
+        String transactionId = "transactionId";
+        String hipId = "10000005";
+        String hipName = "Max health care";
+        List<Map<String, String>> consentDetails = new ArrayList<>();
+        Map<String, String> consentDetailsMap = new HashMap<>();
+        consentDetailsMap.put("consentId", consentId);
+        consentDetailsMap.put("hipId", hipId);
+        consentDetailsMap.put("hipName", hipName);
+        consentDetailsMap.put("requester", "1");
+        consentDetails.add(consentDetailsMap);
+        Entry entry = entry().build();
+        DataEntry dataEntry =
+                DataEntry.builder().hipId(hipId).hipName(hipName).status(Status.COMPLETED).entry(entry).build();
+        List<DataEntry> dataEntries = new ArrayList<>();
+        dataEntries.add(dataEntry);
+
+        when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
+        when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
+        when(healthInformationRepository.getHealthInformation(transactionId)).thenReturn(Flux.just(entry));
+
+        webTestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
+                        .queryParam("limit", "20").build())
+                .header("Authorization", "MQ==")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(HealthInformation.class)
+                .value(HealthInformation::getLimit, Matchers.is(20))
+                .value(HealthInformation::getOffset, Matchers.is(0))
+                .value(HealthInformation::getSize, Matchers.is(1))
+                .value(HealthInformation::getEntries, Matchers.is(dataEntries));
+    }
+
+    @Test
+    public void shouldThrowUnauthorized() throws JsonProcessingException {
+        String consentRequestId = "consentRequestId";
+        String consentId = "consentId";
+        String hipId = "10000005";
+        String hipName = "Max health care";
+        List<Map<String, String>> consentDetails = new ArrayList<>();
+        Map<String, String> consentDetailsMap = new HashMap<>();
+        consentDetailsMap.put("consentId", consentId);
+        consentDetailsMap.put("hipId", hipId);
+        consentDetailsMap.put("hipName", hipName);
+        consentDetailsMap.put("requester", "2");
+        consentDetails.add(consentDetailsMap);
+
+        var errorResponse = new ErrorRepresentation(new Error(
+                ErrorCode.UNAUTHORIZED_REQUESTER,
+                "Requester is not authorized to perform this action"));
+        var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
+
+        when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
+
+        webTestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
+                        .queryParam("limit", "20").build())
+                .header("Authorization", "MQ==")
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .json(errorResponseJson);
     }
 }

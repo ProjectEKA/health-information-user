@@ -1,22 +1,20 @@
-package in.org.projecteka.hiu;
+package in.org.projecteka.hiu.dataflow;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-
 @Configuration
-@ConfigurationProperties(prefix = "hiu")
-@Data
+@ConfigurationProperties(prefix = "hiu.dataflowservice")
+@Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @AllArgsConstructor
-@Builder
-public class HiuProperties {
-    private String id;
-    private String name;
-    private String callBackUrl;
+public class DataFlowServiceProperties {
+    private int maxPageSize;
+    private int defaultPageSize;
 }

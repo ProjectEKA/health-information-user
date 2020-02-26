@@ -6,6 +6,9 @@ hiu:
   callbackurl: ${CALL_BACK_URL}
   consentmanager:
     url: ${CONSENT_MANAGEMENT_URL}
+  dataflowservice:
+    defaultPageSize: ${DEFAULT_PAGE_SIZE}
+    maxPageSize: ${MAX_PAGE_SIZE}
   centralregistry:
     url: ${CENTRAL_REGISTRY_URL}
   database:

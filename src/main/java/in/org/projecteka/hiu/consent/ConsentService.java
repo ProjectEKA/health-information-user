@@ -5,29 +5,26 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+
+import in.org.projecteka.hiu.patient.PatientService;
+import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.invalidConsentManager;
 
+@AllArgsConstructor
 public class ConsentService {
     private final ConsentManagerClient consentManagerClient;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
-
-    public ConsentService(ConsentManagerClient consentManagerClient,
-                          HiuProperties hiuProperties,
-                          ConsentRepository consentRepository,
-                          DataFlowRequestPublisher dataFlowRequestPublisher) {
-        this.consentManagerClient = consentManagerClient;
-        this.hiuProperties = hiuProperties;
-        this.consentRepository = consentRepository;
-        this.dataFlowRequestPublisher = dataFlowRequestPublisher;
-    }
+    private final PatientService patientService;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
@@ -35,38 +32,55 @@ public class ConsentService {
                 hiuProperties.getId(),
                 hiuProperties.getName(),
                 hiuProperties.getCallBackUrl());
-        return consentManagerClient.createConsentRequest(
-                new ConsentRequest(consentRequest))
+        return consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest))
                 .flatMap(consentCreationResponse ->
-                        consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
-                                consentCreationResponse.getId(),
-                                requesterId,
-                                hiuProperties.getCallBackUrl()))
-                                .thenReturn(ConsentCreationResponse.builder().id(consentCreationResponse.getId()).build()));
+                        consentRepository
+                                .insert(consentRequestData.getConsent().toConsentRequest(
+                                        consentCreationResponse.getId(),
+                                        requesterId,
+                                        hiuProperties.getCallBackUrl()))
+                                .thenReturn(consentCreationResponse.getId()))
+                .map(ConsentCreationResponse::new);
     }
 
     public Mono<Void> handleNotification(String consentManagerId,
                                          ConsentNotificationRequest consentNotificationRequest) {
         return validateRequest(consentNotificationRequest.getConsentRequestId())
-                .flatMap(consentRequest -> {
-                    boolean validConsentManager = isValidConsentManager(consentManagerId, consentRequest);
-                    return validConsentManager
-                            ? insertOrUpdateConsentArtefacts(consentNotificationRequest).then()
-                            : Mono.error(invalidConsentManager());
-                });
+                .flatMap(consentRequest -> isValidConsentManager(consentManagerId, consentRequest)
+                                           ? upsertConsentArtefacts(consentNotificationRequest).then()
+                                           : Mono.error(invalidConsentManager()));
     }
 
-    private Flux<Void> insertOrUpdateConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {
+    public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
+        return consentRepository.requestsFrom(requesterId)
+                .flatMap(consentRequest ->
+                        Mono.zip(patientService.patientWith(consentRequest.getPatient().getId()),
+                                mergeArtefactWith(consentRequest)))
+                .map(patientConsentRequest ->
+                        toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2()));
+    }
+
+    private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeArtefactWith(
+            in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
+        return consentRepository.getConsentDetails(consentRequest.getId())
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get("status")))
+                .switchIfEmpty(Mono.just(ConsentStatus.REQUESTED))
+                .map(status -> consentRequest.toBuilder().status(status).build());
+    }
+
+    private Flux<Void> upsertConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {
         return Flux.fromIterable(consentNotificationRequest.getConsents())
                 .flatMap(consentArtefactReference ->
                         consentArtefactReference.getStatus() == ConsentStatus.GRANTED
-                                ? insertConsentArtefact(consentArtefactReference, consentNotificationRequest.getConsentRequestId())
-                                : updateConsentArtefactStatus(consentArtefactReference));
+                        ? insertConsentArtefact(consentArtefactReference,
+                                consentNotificationRequest.getConsentRequestId())
+                        : updateConsentArtefactStatus(consentArtefactReference));
     }
 
     private Mono<Void> updateConsentArtefactStatus(ConsentArtefactReference consentArtefactReference) {
-        return consentRepository.updateStatus(consentArtefactReference)
-                .then();
+        return consentRepository.updateStatus(consentArtefactReference).then();
     }
 
     private Mono<Void> insertConsentArtefact(ConsentArtefactReference consentArtefactReference,
