@@ -15,8 +15,6 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
             "data_flow_request) VALUES ($1, $2)";
-    private static final String INSERT_TO_DATA_FLOW_RESPONSE = "INSERT INTO data_flow_response (transaction_id, " +
-            "data_flow_response) VALUES ($1, $2)";
     private static final String INSERT_TO_DATA_FLOW_REQUEST_KEYS = "INSERT INTO data_flow_request_keys (transaction_id, " +
             "key_pairs) VALUES ($1, $2)";
     private static final String GET_KEY_FOR_ID = "SELECT key_pairs " +

@@ -81,8 +81,8 @@ public class CryptoHelper {
     {
         KeyFactory ecKeyFac = KeyFactory.getInstance(CryptoHelper.ALGORITHM, CryptoHelper.PROVIDER);
         X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(data);
-        PublicKey publicKey2 = ecKeyFac.generatePublic(x509EncodedKeySpec);
-        return publicKey2;
+        PublicKey publicKey = ecKeyFac.generatePublic(x509EncodedKeySpec);
+        return publicKey;
     }
 
     private String doECDH (byte[] dataPrv, byte[] dataPub) throws Exception
@@ -111,7 +111,7 @@ public class CryptoHelper {
         byte[] aesKey = new byte[32];
         hkdfBytesGenerator.generateBytes(aesKey, 0, 32);
 
-        return AesGcmDecryptor.decrypt(getBytesForBase64String(encryptedMessage), aesKey, iv);
+        return AesUtil.decrypt(getBytesForBase64String(encryptedMessage), aesKey, iv);
     }
 
     private byte [] xorOfRandom(String randomKeySender, String randomKeyReceiver)

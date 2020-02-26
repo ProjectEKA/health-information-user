@@ -8,10 +8,8 @@ import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.nio.charset.Charset;
-import java.security.SecureRandom;
 
-public class AesGcmDecryptor {
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+public class AesUtil {
     public static int MacBitSize = 128;
     public static String decrypt(byte[] encryptedBytes, byte[] key, byte[] iv) {
         String decryptedData = "";
