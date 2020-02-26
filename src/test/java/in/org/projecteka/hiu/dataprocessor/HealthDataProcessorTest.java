@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.dataprocessor;
 
+import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -15,11 +16,12 @@ class HealthDataProcessorTest {
 
     @Test
     public void shouldDeserializeDataNotificationRequestFromFile() throws IOException {
-        Path filePath = Paths.get("src","test","resources", "sample_data_flow_notification.json");
+        //Path filePath = Paths.get("src","test","resources", "sample_data_flow_notification.json");
+        Path filePath = Paths.get("src","test","resources", "Transaction123456.json");
         String absolutePath = filePath.toFile().getAbsolutePath();
         HealthDataProcessor processor = new HealthDataProcessor();
-        processor.process("123456", absolutePath);
-
+        DataAvailableMessage message = new DataAvailableMessage("123456", absolutePath);
+        processor.process(message);
     }
 
 }

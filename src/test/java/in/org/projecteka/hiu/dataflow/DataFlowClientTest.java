@@ -8,6 +8,8 @@ import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
+import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
+import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HIDataRange;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -34,10 +36,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
 import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -91,23 +96,18 @@ public class DataFlowClientTest {
         FhirContext fhirContext = FhirContext.forR4();
         IParser iParser = fhirContext.newJsonParser();
 
-        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("sample_bundle.json");
+        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("sample_diagnostic_report_with_pdf_attachment.json");
         Reader reader = new InputStreamReader(resourceAsStream);
         Bundle bundle = (Bundle) iParser.parseResource(reader);
-        //readEncounter(bundle);
-        Bundle.BundleEntryComponent bundleEntryComponent = bundle.getEntry().get(1);
-        MedicationRequest medicationRequest = (MedicationRequest) bundleEntryComponent.getResource();
-        Medication med = (Medication) medicationRequest.getMedicationReference().getResource();
-        System.out.println("Medication:" + med.getCode().getCoding().get(0).getDisplay());
 
-
-        StepVerifier.create(serializeAndNotifyProcessor(fhirContext.newJsonParser().encodeResourceToString(bundle)))
-                .expectNext(true)
-                .verifyComplete();
-        //Mono<Boolean> booleanMono = serializeAndNotifyProcessor(bundle);
-
-
-        //System.out.println(resource.getResourceType());
+        List<Entry> entries = new ArrayList<>();
+        Entry entry = new Entry();
+        entry.setContent(iParser.encodeResourceToString(bundle));
+        entry.setMedia("application/fhir+json");
+        entries.add(entry);
+        DataNotificationRequest dataNotificationRequest =
+                DataNotificationRequest.builder().transactionId("123456").entries(entries).build();
+        FileUtils.serializeDataToFile(dataNotificationRequest, Paths.get("/tmp/hiu/data/Transaction123456.json")).subscribe();
 
     }
 
@@ -118,54 +118,6 @@ public class DataFlowClientTest {
         System.out.println("Status:" + encounter.getStatus());
     }
 
-    private Mono<Boolean> serializeAndNotifyProcessor(String dataNotificationRequest) {
-        return Mono.create(monoSink -> {
-            byte[] bytes = contentFromRequest(dataNotificationRequest);
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            Path pathToFile = Paths.get("/tmp/", "SampleFile.txt");
-            AsynchronousFileChannel channel = null;
-            try {
-                channel = AsynchronousFileChannel.open(pathToFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            } catch (IOException e) {
-                monoSink.error(e);
-            }
-            channel.write(byteBuffer, 0, byteBuffer, new CompletionHandler<Integer, ByteBuffer>() {
-                @Override
-                public void completed(Integer result, ByteBuffer attachment) {
-                    monoSink.success(true);
-                }
-                @Override
-                public void failed(Throwable exc, ByteBuffer attachment) {
-                    monoSink.error(exc);
-                }
-            });
-        });
-    }
 
-
-    private byte[] contentFromRequest(String dataNotificationRequest) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.writeValueAsBytes(dataNotificationRequest);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
-    public void shouldTestDataFlow() {
-        //DataFlowRequest dataFlowRequest = dataFlowRequest().build();
-        //System.out.println(JsonObject.mapFrom(dataFlowRequest).encode());
-        //{"consent":{"id":"eOMtThyhVNLWUZNRcBaQKxI","digitalSignature":"yedUsFwdkelQbxeTeQOvaScfqIOOmaa"},"hiDataRange":{"from":1718717044570,"to":1887692020498},"callBackUrl":"JxkyvRnL"}
-        //jsonObject.mapTo()
-        //JsonObject jsonObject = new JsonObject("{\"consent\":{\"id\":\"eOMtThyhVNLWUZNRcBaQKxI\",\"digitalSignature\":\"yedUsFwdkelQbxeTeQOvaScfqIOOmaa\"},\"hiDataRange\":{\"from\":1718717044570,\"to\":1887692020498},\"callBackUrl\":\"JxkyvRnL\"}");
-        //DataFlowRequest dataFlowRequest = jsonObject.mapTo(DataFlowRequest.class);
-        //System.out.println(dataFlowRequest.getConsent().getId());
-        Map<String, String> contentRef = new HashMap<>();
-        contentRef.put("transactionId", "123456");
-        contentRef.put("pathToFile", "/tmp/test.json");
-
-    }
 
 }

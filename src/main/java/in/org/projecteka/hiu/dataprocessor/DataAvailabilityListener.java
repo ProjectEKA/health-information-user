@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -13,7 +14,6 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
 
-import java.util.HashMap;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
@@ -40,13 +40,11 @@ public class DataAvailabilityListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            HashMap requestObject = deserializeMessage(message);
-            String transactionId = (String) requestObject.get("transactionId");
-            String pathToFile = (String) requestObject.get("pathToFile");
-            logger.info(String.format("Received notification of data availability for transaction id : %s", transactionId));
-            logger.info(String.format("Processing data from file : %s", pathToFile));
+            DataAvailableMessage dataAvailableMessage = deserializeMessage(message);
+            logger.info(String.format("Received notification of data availability for transaction id : %s", dataAvailableMessage.getTransactionId()));
+            logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
             try {
-                new HealthDataProcessor().process(transactionId, pathToFile);
+                new HealthDataProcessor().process(dataAvailableMessage);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -56,8 +54,8 @@ public class DataAvailabilityListener {
     }
 
     @SneakyThrows
-    private HashMap deserializeMessage(Message msg) {
+    private DataAvailableMessage deserializeMessage(Message msg) {
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(msg.getBody(), HashMap.class);
+        return mapper.readValue(msg.getBody(), DataAvailableMessage.class);
     }
 }
