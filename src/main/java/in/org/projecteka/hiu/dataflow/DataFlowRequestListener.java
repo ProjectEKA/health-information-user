@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ClientError;
+import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
@@ -33,6 +34,7 @@ public class DataFlowRequestListener {
     private DataFlowClient dataFlowClient;
     private DataFlowRepository dataFlowRepository;
     private Decryptor decryptor;
+    private DataFlowProperties dataFlowProperties;
 
     @PostConstruct
     @SneakyThrows
@@ -107,7 +109,7 @@ public class DataFlowRequestListener {
         Date currentDate = new Date();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(currentDate);
-        calendar.add(Calendar.DATE, 1);
+        calendar.add(Calendar.DATE, dataFlowProperties.getOffsetInDays());
         return dateFormat.format(calendar.getTime());
     }
 

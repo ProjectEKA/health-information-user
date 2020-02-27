@@ -16,6 +16,8 @@ hiu:
     user: postgres
     password: postgres
     poolSize: 5
+  dataflow:
+    offsetInDays: 2
 spring:
   rabbitmq:
     host: localhost

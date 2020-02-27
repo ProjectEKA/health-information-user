@@ -18,6 +18,8 @@ hiu:
     user: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     poolSize: ${DB_CONNECTION_POOL_SIZE}
+  dataflow:
+    offsetInDays: ${OFFSET_IN_DAYS}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}

@@ -196,13 +196,15 @@ public class HiuConfiguration {
                                                            DestinationsConfig destinationsConfig,
                                                            DataFlowClient dataFlowClient,
                                                            DataFlowRepository dataFlowRepository,
-                                                           Decryptor decryptor) {
+                                                           Decryptor decryptor,
+                                                           DataFlowProperties dataFlowProperties) {
         return new DataFlowRequestListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
                 dataFlowClient,
                 dataFlowRepository,
-                decryptor
+                decryptor,
+                dataFlowProperties
         );
     }
 
