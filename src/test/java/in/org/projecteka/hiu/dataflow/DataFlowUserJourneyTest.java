@@ -7,7 +7,6 @@ import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.consent.ConsentRepository;
-import in.org.projecteka.hiu.dataflow.cryptohelper.CryptoHelper;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
@@ -67,7 +66,7 @@ public class DataFlowUserJourneyTest {
     private DataFlowRequestListener dataFlowRequestListener;
 
     @MockBean
-    private CryptoHelper cryptoHelper;
+    private Decryptor decryptor;
 
     @AfterAll
     public static void tearDown() throws IOException {
@@ -93,7 +92,7 @@ public class DataFlowUserJourneyTest {
         when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId()))
                 .thenReturn(Mono.just(savedKeyMaterial));
-        when(cryptoHelper.decrypt(keyMaterial, savedKeyMaterial, entry.getContent())).thenReturn(entry.getContent());
+        when(decryptor.decrypt(keyMaterial, savedKeyMaterial, entry.getContent())).thenReturn(entry.getContent());
         webTestClient
                 .post()
                 .uri("/data/notification")

@@ -5,7 +5,6 @@ import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
-import in.org.projecteka.hiu.dataflow.cryptohelper.CryptoHelper;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
@@ -29,7 +28,7 @@ public class DataFlowRequestListener {
     private DestinationsConfig destinationsConfig;
     private DataFlowClient dataFlowClient;
     private DataFlowRepository dataFlowRepository;
-    private CryptoHelper cryptoHelper;
+    private Decryptor decryptor;
 
     @PostConstruct
     @SneakyThrows
@@ -74,13 +73,13 @@ public class DataFlowRequestListener {
     }
 
     private DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial() throws Exception {
-        var keyPair = cryptoHelper.generateKeyPair();
-        var privateKey = cryptoHelper.getBase64String(CryptoHelper.getEncodedPrivateKey(keyPair.getPrivate()));
-        var publicKey = cryptoHelper.getBase64String(cryptoHelper.getEncodedPublicKey(keyPair.getPublic()));
+        var keyPair = decryptor.generateKeyPair();
+        var privateKey = decryptor.getBase64String(decryptor.getEncodedPrivateKey(keyPair.getPrivate()));
+        var publicKey = decryptor.getBase64String(decryptor.getEncodedPublicKey(keyPair.getPublic()));
         var dataFlowKeyMaterial = DataFlowRequestKeyMaterial.builder()
                 .privateKey(privateKey)
                 .publicKey(publicKey)
-                .randomKey(cryptoHelper.generateRandomKey())
+                .randomKey(decryptor.generateRandomKey())
                 .build();
         return dataFlowKeyMaterial;
     }
@@ -88,12 +87,13 @@ public class DataFlowRequestListener {
     private KeyMaterial keyMaterial(DataFlowRequestKeyMaterial dataFlowKeyMaterial) {
         logger.info("Creating KeyMaterials");
         return KeyMaterial.builder()
-                .cryptoAlg(CryptoHelper.ALGORITHM)
-                .curve(CryptoHelper.CURVE)
+                .cryptoAlg(Decryptor.ALGORITHM)
+                .curve(Decryptor.CURVE)
                 .dhPublicKey(KeyStructure.builder()
                         .expiry("")
                         .keyValue(dataFlowKeyMaterial.getPublicKey())
-                        .parameters("").build())
+                        .parameters(Decryptor.EH_PUBLIC_KEY_PARAMETER)
+                        .build())
                 .nonce(dataFlowKeyMaterial.getRandomKey())
                 .build();
     }

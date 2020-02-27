@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.dataflow;
 
-import in.org.projecteka.hiu.dataflow.cryptohelper.CryptoHelper;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyStructure;
@@ -15,34 +14,34 @@ import java.security.Security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CryptoHelperTest {
-    private CryptoHelper cryptoHelper;
+public class DecryptorTest {
+    private Decryptor decryptor;
 
     @BeforeEach
     public void init() {
-       cryptoHelper = new CryptoHelper();
+        decryptor = new Decryptor();
        Security.addProvider(new BouncyCastleProvider());
     }
 
     @Test
     public void shouldReturn32ByteRandomKey(){
-        var randomKey = cryptoHelper.generateRandomKey();
-        var randomKeyByte = cryptoHelper.getBytesForBase64String(randomKey);
+        var randomKey = decryptor.generateRandomKey();
+        var randomKeyByte = decryptor.getBytesForBase64String(randomKey);
 
         assertThat(randomKeyByte.length).isEqualTo(32);
     }
 
     @Test
     public void shouldGenerateKeyPairs() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        var keyPair = cryptoHelper.generateKeyPair();
+        var keyPair = decryptor.generateKeyPair();
         assertThat(keyPair).isNotNull();
     }
 
     @Test
     public void shouldBeAbleToConvertKeyPairs() throws Exception {
-        var keyPair = cryptoHelper.generateKeyPair();
-        assertThat(cryptoHelper.getEncodedPublicKey(keyPair.getPublic())).isNotNull();
-        assertThat(cryptoHelper.getEncodedPrivateKey(keyPair.getPrivate())).isNotNull();
+        var keyPair = decryptor.generateKeyPair();
+        assertThat(decryptor.getEncodedPublicKey(keyPair.getPublic())).isNotNull();
+        assertThat(decryptor.getEncodedPrivateKey(keyPair.getPrivate())).isNotNull();
     }
 
     @Test
@@ -59,7 +58,7 @@ public class CryptoHelperTest {
         DataFlowRequestKeyMaterial savedKeyMaterial = DataFlowRequestKeyMaterial.builder()
                 .randomKey(hiuRandomKey).privateKey(hiuPrivateKey)
                 .build();
-        assertThat(cryptoHelper.decrypt(receivedKeyMaterial, savedKeyMaterial, encryptedString))
+        assertThat(decryptor.decrypt(receivedKeyMaterial, savedKeyMaterial, encryptedString))
                 .isEqualTo("\"This is a string\"");
     }
 

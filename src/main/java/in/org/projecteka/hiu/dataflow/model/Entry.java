@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 public class Entry {
     private String content;
