@@ -22,7 +22,7 @@ import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
 public class DataAvailabilityListener {
     private final MessageListenerContainerFactory messageListenerContainerFactory;
     private final DestinationsConfig destinationsConfig;
-
+    private final HealthDataRepository healthDataRepository;
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
 
@@ -44,7 +44,7 @@ public class DataAvailabilityListener {
             logger.info(String.format("Received notification of data availability for transaction id : %s", dataAvailableMessage.getTransactionId()));
             logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
             try {
-                new HealthDataProcessor().process(dataAvailableMessage);
+                new HealthDataProcessor(healthDataRepository).process(dataAvailableMessage);
             } catch (Exception e) {
                 e.printStackTrace();
             }

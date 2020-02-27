@@ -97,7 +97,7 @@ public class DataFlowClientTest {
         entries.add(entry);
         DataNotificationRequest dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId("123456").entries(entries).build();
-        FileUtils.serializeDataToFile(dataNotificationRequest, Paths.get("/tmp/hiu/data/Transaction123456.json")).subscribe();
+//        LocalDataStore.serializeDataToFile(dataNotificationRequest, Paths.get("/tmp/hiu/data/Transaction123456.json")).subscribe();
 
     }
 

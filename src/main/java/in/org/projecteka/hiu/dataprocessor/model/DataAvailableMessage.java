@@ -10,4 +10,5 @@ import lombok.Setter;
 public class DataAvailableMessage {
     private String transactionId;
     private String pathToFile;
+    private String partNumber;
 }

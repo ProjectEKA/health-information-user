@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import in.org.projecteka.hiu.clients.Patient;
+import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
@@ -15,10 +16,10 @@ import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
 import in.org.projecteka.hiu.dataflow.DataFlowServiceProperties;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
-import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.dataflow.LocalDataStore;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
+import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
-
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -203,23 +204,41 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public LocalDataStore localDataStore(){
+        return new LocalDataStore();
+    }
+
+    @Bean
     public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
                                            HealthInformationRepository healthInformationRepository,
                                            ConsentRepository consentRepository,
                                            DataAvailabilityPublisher dataAvailabilityPublisher,
-                                           DataFlowServiceProperties properties) {
-        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository, dataAvailabilityPublisher, properties);
+                                           DataFlowServiceProperties properties,
+                                           LocalDataStore localDataStore) {
+        return new DataFlowService(
+                dataFlowRepository,
+                healthInformationRepository,
+                consentRepository,
+                dataAvailabilityPublisher,
+                properties,
+                localDataStore);
+    }
+
+    @Bean
+    public HealthDataRepository healthDataRepository(PgPool pgPool) {
+        return new HealthDataRepository(pgPool);
     }
 
     @Bean
     public DataAvailabilityPublisher dataAvailabilityPublisher(AmqpTemplate amqpTemplate,
-                                                              DestinationsConfig destinationsConfig) {
+                                                               DestinationsConfig destinationsConfig) {
         return new DataAvailabilityPublisher(amqpTemplate, destinationsConfig);
     }
 
     @Bean
     public DataAvailabilityListener dataAvailabilityListener(MessageListenerContainerFactory messageListenerContainerFactory,
-                                                             DestinationsConfig destinationsConfig) {
-        return new DataAvailabilityListener(messageListenerContainerFactory, destinationsConfig);
+                                                             DestinationsConfig destinationsConfig,
+                                                             HealthDataRepository healthDataRepository) {
+        return new DataAvailabilityListener(messageListenerContainerFactory, destinationsConfig, healthDataRepository);
     }
 }

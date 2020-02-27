@@ -12,13 +12,8 @@ import lombok.SneakyThrows;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
-import java.nio.channels.CompletionHandler;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,27 +21,28 @@ import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class DataFlowService {
+    public static final String TRANSACTION_ID = "transactionId";
+    public static final String PATH_TO_FILE = "pathToFile";
+    private static final String DATA_PART_NUMBER = "partNumber";
     private DataFlowRepository dataFlowRepository;
     private HealthInformationRepository healthInformationRepository;
     private ConsentRepository consentRepository;
     private DataAvailabilityPublisher dataAvailabilityPublisher;
     private DataFlowServiceProperties dataFlowServiceProperties;
+    private LocalDataStore localDataStore;
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String senderId) {
-        List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry -> {
-            return !(hasLink(entry) || hasContent(entry));
-        }).collect(Collectors.toList());
+        List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry ->
+                !(hasLink(entry) || hasContent(entry))).collect(Collectors.toList());
 
         if (invalidEntries != null && !invalidEntries.isEmpty()) {
             return Mono.error(ClientError.invalidEntryError("Entry must either have content or provide a link."));
         }
         return validateDataFlowTransaction(dataNotificationRequest.getTransactionId(), senderId)
-            .then(serializeDataTransferred(dataNotificationRequest))
+                .then(serializeDataTransferred(dataNotificationRequest))
+                .doOnSuccess(contentReference -> saveDataAvailability(contentReference, 1))
                 .doOnSuccess(this::notifyDataProcessor)
-                .then(Flux.fromIterable(dataNotificationRequest.getEntries())
-                .filter(entry -> entry.getLink() == null)
-                .flatMap(entry -> insertHealthInformation(entry, dataNotificationRequest.getTransactionId()))
-                .then());
+                .then();
 
 //         TODO: this will be moved to the processor. For the time being, we are storing in db above.
 //        return Flux.fromIterable(dataNotificationRequest.getEntries())
@@ -55,41 +51,29 @@ public class DataFlowService {
 //                .then();
     }
 
+    private Mono<Map<String, String>> saveDataAvailability(Map<String, String> contentReference, int partNumber) {
+        contentReference.put(DATA_PART_NUMBER, String.valueOf(partNumber));
+        return dataFlowRepository.insertDataPartAvailability(contentReference.get(TRANSACTION_ID), partNumber)
+                .thenReturn(contentReference);
+    }
+
     private Mono<Void> notifyDataProcessor(Map<String, String> contentRef) {
         return dataAvailabilityPublisher.broadcastDataAvailability(contentRef);
     }
 
     private Mono<Map<String, String>> serializeDataTransferred(DataNotificationRequest dataNotificationRequest) {
-        return Mono.create(monoSink -> {
-            byte[] bytes = contentFromRequest(dataNotificationRequest);
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            //TODO: assert that dataFlowServiceProperties.getLocalStoragePath() exists
-            Path pathToFile = Paths.get(dataFlowServiceProperties.getLocalStoragePath(), localFileNameToSave(dataNotificationRequest));
-            AsynchronousFileChannel channel = null;
-            try {
-                channel = AsynchronousFileChannel.open(pathToFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            } catch (IOException e) {
-                //TODO: send proper ClientError. Don't leak out internal details
-                monoSink.error(e);
-            }
-            channel.write(byteBuffer, 0, byteBuffer, new CompletionHandler<Integer, ByteBuffer>() {
-                @Override
-                public void completed(Integer result, ByteBuffer attachment) {
-                    Map<String, String> contentReference = createContentAvailabilityRef(dataNotificationRequest, pathToFile);
-                    monoSink.success(contentReference);
-                }
-                @Override
-                public void failed(Throwable exc, ByteBuffer attachment) {
-                    monoSink.error(exc);
-                }
-            });
-        });
+        Path pathToFile = Paths.get(dataFlowServiceProperties.getLocalStoragePath(),
+                localFileNameToSave(dataNotificationRequest));
+
+        return localDataStore.serializeDataToFile(dataNotificationRequest, pathToFile)
+                .thenReturn(createContentAvailabilityRef(dataNotificationRequest, pathToFile));
     }
 
-    private Map<String, String> createContentAvailabilityRef(DataNotificationRequest dataNotificationRequest, Path pathToFile) {
+    private Map<String, String> createContentAvailabilityRef(DataNotificationRequest dataNotificationRequest,
+                                                             Path pathToFile) {
         Map<String, String> contentRef = new HashMap<>();
-        contentRef.put("transactionId", dataNotificationRequest.getTransactionId());
-        contentRef.put("pathToFile", pathToFile.toString());
+        contentRef.put(TRANSACTION_ID, dataNotificationRequest.getTransactionId());
+        contentRef.put(PATH_TO_FILE, pathToFile.toString());
         return contentRef;
     }
 
@@ -108,7 +92,7 @@ public class DataFlowService {
         return dataFlowRepository.retrieveDataFlowRequest(transactionId).flatMap(
                 dataRequest -> {
                     //TODO: possibly validate the senderId
-                    return dataRequest != null? Mono.just(true) : Mono.just(false);
+                    return dataRequest != null ? Mono.just(true) : Mono.just(false);
                 }
         );
     }

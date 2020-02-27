@@ -6,7 +6,7 @@ hiu:
   dataflowservice:
     defaultPageSize: 20
     maxPageSize: 100
-    localStoragePath: /tmp/hiu/data/
+    localStoragePath: /tmp/
   centralregistry:
     url: http://localhost:8082/
   database:

@@ -7,6 +7,7 @@ import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
+import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ResourceType;
 
@@ -19,10 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HealthDataProcessor {
-
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
     public static final String MEDIA_APPLICATION_FHIR_XML = "application/fhir+xml";
-
+    private HealthDataRepository healthDataRepository;
     private FhirContext fhirContext = FhirContext.forR4();
 
     private List<HITypeResourceProcessor> resourceProcessors = new ArrayList<>() {
@@ -31,6 +31,9 @@ public class HealthDataProcessor {
         }
     };
 
+    public HealthDataProcessor(HealthDataRepository healthDataRepository) {
+        this.healthDataRepository = healthDataRepository;
+    }
 
     public void registerHITypeResourceHandler(HITypeResourceProcessor resourceProcessor) {
         resourceProcessors.add(resourceProcessor);
@@ -47,14 +50,16 @@ public class HealthDataProcessor {
     }
 
     private void processEntries(DataContext context) {
-        context.getNotifiedData().getEntries().stream().forEach( entry -> {
+        context.getNotifiedData().getEntries().stream().forEach(entry -> {
             if (hasContent(entry)) {
-                List<String> errors = processEntryContent(entry, context);
-//                if (!errors.isEmpty()) {
-//                    //TODO: store the content? with errors, and state = BAD content?
-//                } else {
-//
-//                }
+                ProcessedResource processedResource = processEntryContent(entry, context);
+                if (!processedResource.hasErrors()) {
+                    //TODO: store the content? with errors, and state = BAD content?s
+                } else {
+                    String resource =
+                            getEntryParser(entry.getMedia()).encodeResourceToString(processedResource.getResource());
+                    healthDataRepository.insertHealthData(context.getTransactionId(), context.getDataPartNumber(), resource);
+                }
             } else {
                 //TODO: should download the content and essentially call processEntryContent(
             }
@@ -65,10 +70,12 @@ public class HealthDataProcessor {
         Path dataFilePath = Paths.get(message.getPathToFile());
         try (InputStream inputStream = Files.newInputStream(dataFilePath)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            DataNotificationRequest dataNotificationRequest = objectMapper.readValue(inputStream, DataNotificationRequest.class);
+            DataNotificationRequest dataNotificationRequest = objectMapper.readValue(inputStream,
+                    DataNotificationRequest.class);
             return DataContext.builder()
                     .notifiedData(dataNotificationRequest)
                     .dataFilePath(dataFilePath)
+                    .dataPartNumber(message.getPartNumber())
                     .build();
         } catch (IOException e) {
             e.printStackTrace();
@@ -78,22 +85,23 @@ public class HealthDataProcessor {
     }
 
 
-
-    private List<String> processEntryContent(Entry entry, DataContext context) {
+    private ProcessedResource processEntryContent(Entry entry, DataContext context) {
+        ProcessedResource result = new ProcessedResource();
         List<String> errors = new ArrayList<>();
         IParser parser = getEntryParser(entry.getMedia());
         if (parser == null) {
-            errors.add("Can't process entry content. Unknown media type.");
-            return errors;
+            result.addError("Can't process entry content. Unknown media type.");
+            return result;
         }
 
         Bundle bundle = (Bundle) parser.parseResource(entry.getContent());
         if (!isValidBundleType(bundle.getType())) {
-            errors.add("Can not process entry content. Entry content is not a FHIR Bundle type COLLECTION or DOCUMENT");
-            return errors;
+            result.addError("Can not process entry content. Entry content is not a FHIR Bundle type COLLECTION or " +
+                    "DOCUMENT");
+            return result;
         }
 
-        bundle.getEntry().stream().forEach(bundleEntry -> {
+        bundle.getEntry().forEach(bundleEntry -> {
             ResourceType resourceType = bundleEntry.getResource().getResourceType();
             System.out.println("bundle entry resource type:  " + resourceType);
             HITypeResourceProcessor processor = identifyResourceProcessor(resourceType);
@@ -101,7 +109,8 @@ public class HealthDataProcessor {
                 processor.process(bundleEntry.getResource(), context);
             }
         });
-        return errors;
+        result.addResource(bundle);
+        return result;
     }
 
     private HITypeResourceProcessor identifyResourceProcessor(ResourceType resourceType) {

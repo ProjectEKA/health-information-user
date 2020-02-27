@@ -19,6 +19,8 @@ public class DataFlowRepository {
             "data_flow_request WHERE data_flow_request -> 'consent' ->> 'id' = $1";
     private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION_ID
             = "SELECT data_flow_request FROM data_flow_request WHERE transaction_id =$1";
+    private static final String INSERT_HEALTH_DATA_AVAILABILITY = "INSERT INTO data_flow_parts (transaction_id, " +
+            "part_number) VALUES ($1, $2)";
     private PgPool dbClient;
 
     public DataFlowRepository(PgPool pgPool) {
@@ -84,5 +86,19 @@ public class DataFlowRepository {
                         }
                     }
                 }));
+    }
+
+    public Mono<Void> insertDataPartAvailability(String transactionId, int partNumber) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(
+                        INSERT_HEALTH_DATA_AVAILABILITY,
+                        Tuple.of(transactionId, partNumber),
+                        handler -> {
+                            if (handler.failed())
+                                monoSink.error(new Exception("Failed to insert health data availability"));
+                            else
+                                monoSink.success();
+                        })
+        );
     }
 }

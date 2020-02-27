@@ -13,8 +13,13 @@ import java.nio.file.Path;
 public class DataContext {
     private DataNotificationRequest notifiedData;
     private Path dataFilePath;
+    private String dataPartNumber;
 
     public Path getLocalStoragePath() {
         return dataFilePath.getParent();
+    }
+
+    public String getTransactionId() {
+        return notifiedData.getTransactionId();
     }
 }

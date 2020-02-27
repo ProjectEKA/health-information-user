@@ -20,6 +20,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -41,6 +42,8 @@ import java.util.Map;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -74,6 +77,9 @@ public class DataFlowUserJourneyTest {
     @MockBean
     private DataAvailabilityListener dataAvailabilityListener;
 
+    @MockBean
+    LocalDataStore localDataStore;
+
     @AfterAll
     public static void tearDown() throws IOException {
         dataFlowServer.shutdown();
@@ -95,9 +101,10 @@ public class DataFlowUserJourneyTest {
         DataNotificationRequest dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
 
-        when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
+        when(dataFlowRepository.insertDataPartAvailability(transactionId, 1)).thenReturn(Mono.empty());
         when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(new DataFlowRequest()));
         when(dataAvailabilityPublisher.broadcastDataAvailability(any())).thenReturn(Mono.empty());
+        when(localDataStore.serializeDataToFile(any(), any())).thenReturn(Mono.empty());
 
         webTestClient
                 .post()

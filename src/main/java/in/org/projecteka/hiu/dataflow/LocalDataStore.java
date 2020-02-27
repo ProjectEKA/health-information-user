@@ -12,8 +12,8 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-public class FileUtils {
-    public static Mono<Boolean> serializeDataToFile(DataNotificationRequest dataNotificationRequest, Path outFileName) {
+public class LocalDataStore {
+    public Mono<Void> serializeDataToFile(DataNotificationRequest dataNotificationRequest, Path outFileName) {
         return Mono.create(monoSink -> {
             byte[] bytes = contentFromRequest(dataNotificationRequest);
             ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
@@ -27,7 +27,7 @@ public class FileUtils {
             channel.write(byteBuffer, 0, byteBuffer, new CompletionHandler<Integer, ByteBuffer>() {
                 @Override
                 public void completed(Integer result, ByteBuffer attachment) {
-                    monoSink.success(true);
+                    monoSink.success();
                 }
                 @Override
                 public void failed(Throwable exc, ByteBuffer attachment) {
