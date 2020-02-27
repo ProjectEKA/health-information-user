@@ -8,10 +8,17 @@ import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 public class AesUtil {
     public static int MacBitSize = 128;
-    public static String decrypt(byte[] encryptedBytes, byte[] key, byte[] iv) {
+
+    public static String decryptData(byte[] encryptedBytes, byte[] key, byte[] xorOfRandoms){
+        byte[] iv = Arrays.copyOfRange(xorOfRandoms, xorOfRandoms.length - 12, xorOfRandoms.length);
+        return decrypt(encryptedBytes, key, iv);
+    }
+
+    private static String decrypt(byte[] encryptedBytes, byte[] key, byte[] iv) {
         String decryptedData = "";
         try {
             GCMBlockCipher cipher = new GCMBlockCipher(new AESEngine());

@@ -50,17 +50,19 @@ public class DataFlowRequestListener {
             try{
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
-                dataFlowRequest.setKeyMaterial(keyMaterial);
+                DataFlowRequest dataRequest = dataFlowRequest.toBuilder()
+                        .keyMaterial(keyMaterial)
+                        .build();
 
                 logger.info("Initiating data flow request to consent manager");
-                dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
+                dataFlowClient.initiateDataFlowRequest(dataRequest)
                         .flatMap(dataFlowRequestResponse ->
-                                dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(), dataFlowRequest)
+                                dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(), dataRequest)
                                         .then(dataFlowRepository.addKeys(
                                                 dataFlowRequestResponse.getTransactionId(),
                                                 dataRequestKeyMaterial)))
                         .block();
-            } catch (Exception exception){
+            } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.fatal("Exception on key creation {exception}", exception);
             }
@@ -73,8 +75,8 @@ public class DataFlowRequestListener {
 
     private DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial() throws Exception {
         var keyPair = cryptoHelper.generateKeyPair();
-        var privateKey = cryptoHelper.getBase64String(CryptoHelper.savePrivateKey(keyPair.getPrivate()));
-        var publicKey = cryptoHelper.getBase64String(cryptoHelper.savePublicKey(keyPair.getPublic()));
+        var privateKey = cryptoHelper.getBase64String(CryptoHelper.getEncodedPrivateKey(keyPair.getPrivate()));
+        var publicKey = cryptoHelper.getBase64String(cryptoHelper.getEncodedPublicKey(keyPair.getPublic()));
         var dataFlowKeyMaterial = DataFlowRequestKeyMaterial.builder()
                 .privateKey(privateKey)
                 .publicKey(publicKey)

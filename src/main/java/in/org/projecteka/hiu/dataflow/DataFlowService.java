@@ -22,40 +22,42 @@ public class DataFlowService {
     private ConsentRepository consentRepository;
     private CryptoHelper cryptoHelper;
 
-    private Mono<Entry> getDecodedData(DataNotificationRequest dataNotificationRequest, Entry entry){
-        var senderPublicKey = dataNotificationRequest.getKeyMaterial().getDhPublicKey().getKeyValue();
-        var randomKeySender = dataNotificationRequest.getKeyMaterial().getNonce();
-        return dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId())
-                .flatMap(keyPairs -> {
-                    try {
-                        var entryString = getEntryData(senderPublicKey, randomKeySender, entry, keyPairs);
-                        return Mono.just(Entry.builder()
-                                .checksum(entry.getChecksum())
-                                .content(entryString)
-                                .link(entry.getLink())
-                                .media(entry.getMedia())
-                                .build());
-                    } catch (Exception e) {
-                        logger.error("Error while decrypting {exception}", e);
-                        return Mono.error(e);
-                    }
-                });
+    private Mono<Entry> getDecodedData(DataFlowRequestKeyMaterial savedKeyMaterial,
+                                       DataNotificationRequest dataNotificationRequest,
+                                       Entry entry){
+        try {
+            var entryString = getEntryData(dataNotificationRequest.getKeyMaterial(), entry, savedKeyMaterial);
+            return Mono.just(Entry.builder()
+                    .checksum(entry.getChecksum())
+                    .content(entryString)
+                    .link(entry.getLink())
+                    .media(entry.getMedia())
+                    .build());
+        } catch (Exception e) {
+            logger.error("Error while decrypting {exception}", e);
+            return Mono.error(e);
+        }
+
     }
 
-    private String getEntryData(String senderPublicKey, String randomKeySender, Entry entry, DataFlowRequestKeyMaterial keyPairs) throws Exception {
-        return cryptoHelper.decrypt(keyPairs.getPrivateKey(),
-                senderPublicKey,
-                randomKeySender,
-                keyPairs.getRandomKey(),
-                entry.getContent());
+    private String getEntryData(KeyMaterial receivedKeyMaterial,
+                                Entry entry,
+                                DataFlowRequestKeyMaterial keyPairs) throws Exception {
+        return cryptoHelper.decrypt(receivedKeyMaterial, keyPairs, entry.getContent());
     }
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest) {
-        return Flux.fromIterable(dataNotificationRequest.getEntries())
-                .filter(entry -> entry.getLink() == null)
-                .flatMap(entry -> getDecodedData(dataNotificationRequest, entry))
-                .flatMap(entry -> insertHealthInformation(entry, dataNotificationRequest.getTransactionId()))
-                .then();
+        return dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId())
+                .flatMap(keyPair -> Flux.fromIterable(dataNotificationRequest.getEntries())
+                                        .filter(entry -> isComponent(entry))
+                                        .flatMap(entry -> getDecodedData(keyPair, dataNotificationRequest, entry))
+                                        .flatMap(entry -> insertHealthInformation(entry,
+                                                dataNotificationRequest.getTransactionId()))
+                                        .then());
+    }
+
+    private boolean isComponent(Entry entry){
+        return entry.getLink() == null;
     }
 
     private Mono<Void> insertHealthInformation(Entry entry, String transactionId) {

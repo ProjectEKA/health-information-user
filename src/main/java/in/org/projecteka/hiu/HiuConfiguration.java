@@ -198,9 +198,12 @@ public class HiuConfiguration {
                                                            DataFlowClient dataFlowClient,
                                                            DataFlowRepository dataFlowRepository,
                                                            CryptoHelper cryptoHelper) {
-        return new DataFlowRequestListener(messageListenerContainerFactory,
+        return new DataFlowRequestListener(
+                messageListenerContainerFactory,
                 destinationsConfig,
-                dataFlowClient, dataFlowRepository, cryptoHelper);
+                dataFlowClient,
+                dataFlowRepository, cryptoHelper
+        );
     }
 
     @Bean

@@ -1,6 +1,9 @@
 package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.dataflow.cryptohelper.CryptoHelper;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.KeyStructure;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,8 +41,8 @@ public class CryptoHelperTest {
     @Test
     public void shouldBeAbleToConvertKeyPairs() throws Exception {
         var keyPair = cryptoHelper.generateKeyPair();
-        assertThat(cryptoHelper.savePublicKey(keyPair.getPublic())).isNotNull();
-        assertThat(cryptoHelper.savePrivateKey(keyPair.getPrivate())).isNotNull();
+        assertThat(cryptoHelper.getEncodedPublicKey(keyPair.getPublic())).isNotNull();
+        assertThat(cryptoHelper.getEncodedPrivateKey(keyPair.getPrivate())).isNotNull();
     }
 
     @Test
@@ -49,7 +52,14 @@ public class CryptoHelperTest {
         var encryptedString = "cMTT+FiiDMVXdK1nbBXmnNXP2doSbWQ11Sl8rs1d5SzVDA==";
         var senderPublicKey = "MIIBMTCB6gYHKoZIzj0CATCB3gIBATArBgcqhkjOPQEBAiB/////////////////////////////////////////7TBEBCAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqYSRShRAQge0Je0Je0Je0Je0Je0Je0Je0Je0Je0Je0JgtenHcQyGQEQQQqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0kWiCuGaG4oIa04B7dLHdI0UySPU1+bXxhsinpxaJ+ztPZAiAQAAAAAAAAAAAAAAAAAAAAFN753qL3nNZYEmMaXPXT7QIBCANCAARfpkcbh0Y6Z1xcck4D2pNKLQ2DwLOxI9bO2sy8zlbJ4391xJpwYNG2STnmP9cwz0+V74B3mbcykl5J1gsXtNe+";
         var senderRandomKey = "xXrM6PfCsBX0Q238uxZCP8YBpPXxsiZvbE++jX5GV5c=";
-        assertThat(cryptoHelper.decrypt(hiuPrivateKey, senderPublicKey, senderRandomKey, hiuRandomKey, encryptedString))
+        KeyMaterial receivedKeyMaterial = KeyMaterial.builder()
+                .dhPublicKey(KeyStructure.builder().keyValue(senderPublicKey).build())
+                .nonce(senderRandomKey)
+                .build();
+        DataFlowRequestKeyMaterial savedKeyMaterial = DataFlowRequestKeyMaterial.builder()
+                .randomKey(hiuRandomKey).privateKey(hiuPrivateKey)
+                .build();
+        assertThat(cryptoHelper.decrypt(receivedKeyMaterial, savedKeyMaterial, encryptedString))
                 .isEqualTo("\"This is a string\"");
     }
 

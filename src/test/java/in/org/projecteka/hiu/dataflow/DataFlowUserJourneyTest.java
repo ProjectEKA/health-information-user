@@ -93,8 +93,7 @@ public class DataFlowUserJourneyTest {
         when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId()))
                 .thenReturn(Mono.just(savedKeyMaterial));
-        when(cryptoHelper.decrypt(savedKeyMaterial.getPrivateKey(),keyMaterial.getDhPublicKey().getKeyValue(),
-                keyMaterial.getNonce(), savedKeyMaterial.getRandomKey(), entry.getContent())).thenReturn(entry.getContent());
+        when(cryptoHelper.decrypt(keyMaterial, savedKeyMaterial, entry.getContent())).thenReturn(entry.getContent());
         webTestClient
                 .post()
                 .uri("/data/notification")

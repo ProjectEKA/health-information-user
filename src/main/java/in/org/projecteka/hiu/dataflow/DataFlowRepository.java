@@ -88,10 +88,7 @@ public class DataFlowRepository {
                                     keyPairs = keyPairsJson.mapTo(DataFlowRequestKeyMaterial.class);
                                 }
                                 monoSink.success(keyPairs);
-                            }
-                        }
-                )
-        );
+                            }}));
     }
 
     public Mono<String> getTransactionId(String consentArtefactId) {

@@ -19,7 +19,7 @@ public class DataFlowController {
     private DataFlowService dataFlowService;
     private DataFlowServiceProperties dataFlowServiceProperties;
 
-    @PostMapping("data/notification")
+    @PostMapping("/data/notification")
     public Mono<Void> dataNotification(
             @RequestHeader(value = "Authorization") String authorization,
             @RequestBody DataNotificationRequest dataNotificationRequest) throws Exception {

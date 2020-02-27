@@ -1,5 +1,7 @@
 package in.org.projecteka.hiu.dataflow.cryptohelper;
 
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
@@ -44,16 +46,16 @@ public class CryptoHelper {
         return getBase64String(salt);
     }
 
-    public byte [] savePublicKey (PublicKey key) throws Exception
+    public byte [] getEncodedPublicKey(PublicKey key) throws Exception
     {
-        ECPublicKey eckey = (ECPublicKey)key;
-        return eckey.getQ().getEncoded(false);
+        ECPublicKey ecKey = (ECPublicKey)key;
+        return ecKey.getQ().getEncoded(false);
     }
 
-    public static byte [] savePrivateKey (PrivateKey key) throws Exception
+    public static byte [] getEncodedPrivateKey(PrivateKey key) throws Exception
     {
-        ECPrivateKey eckey = (ECPrivateKey)key;
-        return eckey.getD().toByteArray();
+        ECPrivateKey ecKey = (ECPrivateKey)key;
+        return ecKey.getD().toByteArray();
     }
 
     public KeyPair generateKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
@@ -94,24 +96,26 @@ public class CryptoHelper {
         return getBase64String(secret);
     }
 
-    public String decrypt(String receiverPrivateKey,
-                          String senderPublicKey,
-                          String randomKeySender,
-                          String randomKeyReceiver,
-                          String encryptedMessage) throws Exception {
-        String sharedKey = doECDH(getBytesForBase64String(receiverPrivateKey)
-                , getBytesForBase64String(senderPublicKey));
-        byte[] xorOfRandoms = xorOfRandom(randomKeySender, randomKeyReceiver);
+    private byte [] generateAesKey(byte[] xorOfRandoms, String sharedKey ){
         byte[] salt = Arrays.copyOfRange(xorOfRandoms, 0, 20);
-        byte[] iv = Arrays.copyOfRange(xorOfRandoms, xorOfRandoms.length - 12, xorOfRandoms.length);
-
         HKDFBytesGenerator hkdfBytesGenerator = new HKDFBytesGenerator(new SHA256Digest());
         HKDFParameters hkdfParameters = new HKDFParameters(getBytesForBase64String(sharedKey), salt, null);
         hkdfBytesGenerator.init(hkdfParameters);
         byte[] aesKey = new byte[32];
         hkdfBytesGenerator.generateBytes(aesKey, 0, 32);
+        return aesKey;
+    }
 
-        return AesUtil.decrypt(getBytesForBase64String(encryptedMessage), aesKey, iv);
+    public String decrypt(KeyMaterial receivedKeyMaterial,
+                          DataFlowRequestKeyMaterial savedKeyMaterial,
+                          String encryptedMessage) throws Exception {
+        var senderPublicKey = receivedKeyMaterial.getDhPublicKey().getKeyValue();
+        var randomKeySender = receivedKeyMaterial.getNonce();
+        String sharedKey = doECDH(getBytesForBase64String(savedKeyMaterial.getPrivateKey())
+                , getBytesForBase64String(senderPublicKey));
+        byte[] xorOfRandoms = xorOfRandom(randomKeySender, savedKeyMaterial.getRandomKey());
+        var aesKey = generateAesKey(xorOfRandoms, sharedKey);
+        return AesUtil.decryptData(getBytesForBase64String(encryptedMessage), aesKey, xorOfRandoms);
     }
 
     private byte [] xorOfRandom(String randomKeySender, String randomKeyReceiver)

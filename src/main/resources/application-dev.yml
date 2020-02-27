@@ -3,18 +3,18 @@ hiu:
   name: Max Health Care
   callbackurl: http://localhost:8003
   consentmanager:
-    url: http://localhost:9000
+    url: http://localhost:8081
   dataflowservice:
     defaultPageSize: 20
     maxPageSize: 100
   centralregistry:
-    url: http://localhost:8080/
+    url: http://localhost:8082/
   database:
     host: localhost
     port: 5432
     schema: health_information_user
     user: postgres
-    password: welcome
+    password: postgres
     poolSize: 5
 spring:
   rabbitmq:
