@@ -46,7 +46,8 @@ public class DataFlowRequestListener {
             logger.info("Initiating data flow request to consent manager");
             dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
                     .flatMap(dataFlowRequestResponse ->
-                            dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(), dataFlowRequest))
+                            dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                    dataFlowRequest.getConsent().getId(), dataFlowRequest))
                     .block();
         };
         mlc.setupMessageListener(messageListener);

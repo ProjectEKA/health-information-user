@@ -59,7 +59,6 @@ public class DataFlowService {
         return dataAvailabilityPublisher.broadcastDataAvailability(contentRef);
     }
 
-
     private Mono<Map<String, String>> serializeDataTransferred(DataNotificationRequest dataNotificationRequest) {
         return Mono.create(monoSink -> {
             byte[] bytes = contentFromRequest(dataNotificationRequest);

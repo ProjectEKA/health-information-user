@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
-            "data_flow_request) VALUES ($1, $2)";
+            "consent_artefact_id, data_flow_request) VALUES ($1, $2, $3)";
     private static final String INSERT_HEALTH_INFORMATION = "INSERT INTO health_information " +
             "(transaction_id, health_information) VALUES ($1, $2)";
     private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
@@ -25,11 +25,11 @@ public class DataFlowRepository {
         this.dbClient = pgPool;
     }
 
-    public Mono<Void> addDataRequest(String transactionId, DataFlowRequest dataFlowRequest) {
+    public Mono<Void> addDataRequest(String transactionId, String consentId, DataFlowRequest dataFlowRequest) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         INSERT_TO_DATA_FLOW_REQUEST,
-                        Tuple.of(transactionId, JsonObject.mapFrom(dataFlowRequest)),
+                        Tuple.of(transactionId, consentId, JsonObject.mapFrom(dataFlowRequest)),
                         handler -> {
                             if (handler.failed())
                                 monoSink.error(new Exception("Failed to insert to data flow request"));

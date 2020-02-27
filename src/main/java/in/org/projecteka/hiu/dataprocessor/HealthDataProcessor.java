@@ -101,7 +101,6 @@ public class HealthDataProcessor {
                 processor.process(bundleEntry.getResource(), context);
             }
         });
-
         return errors;
     }
 
