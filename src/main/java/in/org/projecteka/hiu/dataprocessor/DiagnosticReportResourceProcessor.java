@@ -26,6 +26,8 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
     private Map<String, String> mediaTypeToFileExtnMap = new HashMap<>() {{
         put("APPLICATION/PDF", ".pdf");
         put("APPLICATION/DICOM", ".dcm");
+        put("APPLICATION/MSWORD", ".doc");
+        put("TEXT/RTF", ".rtf");
     }};
     private final String DEFAULT_FILE_EXTN = ".txt";
 

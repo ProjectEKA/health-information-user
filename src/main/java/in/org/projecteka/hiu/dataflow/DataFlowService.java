@@ -32,7 +32,7 @@ public class DataFlowService {
     private DataAvailabilityPublisher dataAvailabilityPublisher;
     private DataFlowServiceProperties dataFlowServiceProperties;
 
-    public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String requesterId) {
+    public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String senderId) {
         List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry -> {
             return !(hasLink(entry) || hasContent(entry));
         }).collect(Collectors.toList());
@@ -40,7 +40,7 @@ public class DataFlowService {
         if (invalidEntries != null && !invalidEntries.isEmpty()) {
             return Mono.error(ClientError.invalidEntryError("Entry must either have content or provide a link."));
         }
-        return validateDataFlowTransaction(dataNotificationRequest.getTransactionId(), requesterId)
+        return validateDataFlowTransaction(dataNotificationRequest.getTransactionId(), senderId)
             .then(serializeDataTransferred(dataNotificationRequest))
                 .doOnSuccess(this::notifyDataProcessor)
                 .then(Flux.fromIterable(dataNotificationRequest.getEntries())
@@ -76,7 +76,7 @@ public class DataFlowService {
             channel.write(byteBuffer, 0, byteBuffer, new CompletionHandler<Integer, ByteBuffer>() {
                 @Override
                 public void completed(Integer result, ByteBuffer attachment) {
-                    Map<String, String> contentReference = createContentReference(dataNotificationRequest, pathToFile);
+                    Map<String, String> contentReference = createContentAvailabilityRef(dataNotificationRequest, pathToFile);
                     monoSink.success(contentReference);
                 }
                 @Override
@@ -87,7 +87,7 @@ public class DataFlowService {
         });
     }
 
-    private Map<String, String> createContentReference(DataNotificationRequest dataNotificationRequest, Path pathToFile) {
+    private Map<String, String> createContentAvailabilityRef(DataNotificationRequest dataNotificationRequest, Path pathToFile) {
         Map<String, String> contentRef = new HashMap<>();
         contentRef.put("transactionId", dataNotificationRequest.getTransactionId());
         contentRef.put("pathToFile", pathToFile.toString());
@@ -105,10 +105,10 @@ public class DataFlowService {
         return objectMapper.writeValueAsBytes(dataNotificationRequest);
     }
 
-    private Mono<Boolean> validateDataFlowTransaction(String transactionId, String requesterId) {
+    private Mono<Boolean> validateDataFlowTransaction(String transactionId, String senderId) {
         return dataFlowRepository.retrieveDataFlowRequest(transactionId).flatMap(
                 dataRequest -> {
-                    //TODO: possibly validate the requesterId
+                    //TODO: possibly validate the senderId
                     return dataRequest != null? Mono.just(true) : Mono.just(false);
                 }
         );

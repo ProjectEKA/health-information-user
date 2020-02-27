@@ -100,8 +100,8 @@ public class HealthDataProcessor {
             if (processor != null) {
                 processor.process(bundleEntry.getResource(), context);
             }
-
         });
+
         return errors;
     }
 
