@@ -2,25 +2,48 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.consent.ConsentRepository;
-import in.org.projecteka.hiu.dataflow.model.DataEntry;
+import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
+import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.Status;
 import lombok.AllArgsConstructor;
+import org.apache.log4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @AllArgsConstructor
 public class DataFlowService {
     private DataFlowRepository dataFlowRepository;
+    private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
     private HealthInformationRepository healthInformationRepository;
     private ConsentRepository consentRepository;
+    private Decryptor decryptor;
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest) {
-        return Flux.fromIterable(dataNotificationRequest.getEntries())
-                .filter(entry -> entry.getLink() == null)
-                .flatMap(entry -> insertHealthInformation(entry, dataNotificationRequest.getTransactionId()))
-                .then();
+        return dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId())
+                .flatMap(keyPair -> Flux.fromIterable(dataNotificationRequest.getEntries())
+                        .filter(this::isComponent)
+                        .flatMap(entry -> {
+                            try {
+                                String decryptedContent = decryptor.decrypt(dataNotificationRequest.getKeyMaterial(),
+                                        keyPair,
+                                        entry.getContent());
+                                return Mono.just(entry.toBuilder()
+                                        .content(decryptedContent)
+                                        .build());
+                            } catch (Exception e) {
+                                logger.error("Error while decrypting {exception}", e);
+                                return Mono.error(e);                            }
+                        })
+                        .flatMap(entry ->
+                                insertHealthInformation(entry,
+                                        dataNotificationRequest.getTransactionId()))
+                        .then());
+    }
+
+    private boolean isComponent(Entry entry) {
+        return entry.getLink() == null;
     }
 
     private Mono<Void> insertHealthInformation(Entry entry, String transactionId) {
@@ -49,3 +72,4 @@ public class DataFlowService {
                         .build());
     }
 }
+

@@ -22,7 +22,7 @@ public class DataFlowController {
     @PostMapping("/data/notification")
     public Mono<Void> dataNotification(
             @RequestHeader(value = "Authorization") String authorization,
-            @RequestBody DataNotificationRequest dataNotificationRequest) {
+            @RequestBody DataNotificationRequest dataNotificationRequest) throws Exception {
         return dataFlowService.handleNotification(dataNotificationRequest);
     }
 

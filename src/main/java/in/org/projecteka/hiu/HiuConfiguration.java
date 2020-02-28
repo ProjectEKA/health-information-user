@@ -8,14 +8,14 @@ import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
+import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
-import in.org.projecteka.hiu.clients.PatientServiceClient;
-import in.org.projecteka.hiu.patient.PatientService;
-
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -187,19 +187,34 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public Decryptor decryptor(){
+        return new Decryptor();
+    }
+
+    @Bean
     public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
                                                            DestinationsConfig destinationsConfig,
                                                            DataFlowClient dataFlowClient,
-                                                           DataFlowRepository dataFlowRepository) {
-        return new DataFlowRequestListener(messageListenerContainerFactory,
+                                                           DataFlowRepository dataFlowRepository,
+                                                           Decryptor decryptor,
+                                                           DataFlowProperties dataFlowProperties) {
+        return new DataFlowRequestListener(
+                messageListenerContainerFactory,
                 destinationsConfig,
-                dataFlowClient, dataFlowRepository);
+                dataFlowClient,
+                dataFlowRepository,
+                decryptor,
+                dataFlowProperties
+        );
     }
 
     @Bean
     public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
                                            HealthInformationRepository healthInformationRepository,
-                                           ConsentRepository consentRepository) {
-        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository);
+                                           ConsentRepository consentRepository,
+                                           Decryptor decryptor) {
+        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository, decryptor);
     }
+
+
 }

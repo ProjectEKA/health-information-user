@@ -7,9 +7,10 @@ import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.consent.ConsentRepository;
-import in.org.projecteka.hiu.dataflow.model.DataEntry;
-import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.Entry;
+import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
+import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataflow.model.Status;
 import okhttp3.mockwebserver.MockWebServer;
@@ -35,7 +36,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -62,6 +65,9 @@ public class DataFlowUserJourneyTest {
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
 
+    @MockBean
+    private Decryptor decryptor;
+
     @AfterAll
     public static void tearDown() throws IOException {
         dataFlowServer.shutdown();
@@ -73,17 +79,20 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldNotifyDataFlowResponse() {
+    public void shouldNotifyDataFlowResponse() throws Exception {
         Entry entry = entry().build();
         entry.setLink(null);
         List<Entry> entries = new ArrayList<>();
         entries.add(entry);
         String transactionId = "transactionId";
+        KeyMaterial keyMaterial = keyMaterial().build();
         DataNotificationRequest dataNotificationRequest =
-                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
-
+                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).keyMaterial(keyMaterial).build();
+        var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
         when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
-
+        when(dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId()))
+                .thenReturn(Mono.just(savedKeyMaterial));
+        when(decryptor.decrypt(keyMaterial, savedKeyMaterial, entry.getContent())).thenReturn(entry.getContent());
         webTestClient
                 .post()
                 .uri("/data/notification")
