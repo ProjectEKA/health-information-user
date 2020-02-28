@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class HealthDataProcessorTest {
     @Mock
@@ -28,13 +30,14 @@ class HealthDataProcessorTest {
     @Test
     public void shouldDeserializeDataNotificationRequestFromFile() throws IOException {
         //Path filePath = Paths.get("src","test","resources", "sample_data_flow_notification.json");
+
         Path filePath = Paths.get("src", "test", "resources", "Transaction123456.json");
         String absolutePath = filePath.toFile().getAbsolutePath();
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository);
         String transactionId = "123456";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, "1");
+        when(healthDataRepository.insertHealthData(eq(transactionId), eq("1"), any())).thenReturn(Mono.empty());
         processor.process(message);
-
         verify(healthDataRepository, times(1)).insertHealthData(eq(transactionId), eq("1"), any());
     }
 

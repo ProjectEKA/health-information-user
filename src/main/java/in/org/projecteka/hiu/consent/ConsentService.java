@@ -74,16 +74,16 @@ public class ConsentService {
         return Flux.fromIterable(consentNotificationRequest.getConsents())
                 .flatMap(consentArtefactReference ->
                         consentArtefactReference.getStatus() == ConsentStatus.GRANTED
-                        ? insertConsentArtefact(consentArtefactReference,
+                        ? processGrantedConsent(consentArtefactReference,
                                 consentNotificationRequest.getConsentRequestId())
-                        : updateConsentArtefactStatus(consentArtefactReference));
+                        : processRejectedConsent(consentArtefactReference));
     }
 
-    private Mono<Void> updateConsentArtefactStatus(ConsentArtefactReference consentArtefactReference) {
+    private Mono<Void> processRejectedConsent(ConsentArtefactReference consentArtefactReference) {
         return consentRepository.updateStatus(consentArtefactReference).then();
     }
 
-    private Mono<Void> insertConsentArtefact(ConsentArtefactReference consentArtefactReference,
+    private Mono<Void> processGrantedConsent(ConsentArtefactReference consentArtefactReference,
                                              String consentRequestId) {
         return consentManagerClient.getConsentArtefact(consentArtefactReference.getId())
                 .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(

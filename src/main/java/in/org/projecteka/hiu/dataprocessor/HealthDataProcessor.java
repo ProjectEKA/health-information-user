@@ -58,7 +58,11 @@ public class HealthDataProcessor {
                 } else {
                     String resource =
                             getEntryParser(entry.getMedia()).encodeResourceToString(processedResource.getResource());
-                    healthDataRepository.insertHealthData(context.getTransactionId(), context.getDataPartNumber(), resource);
+                    healthDataRepository.insertHealthData(
+                            context.getTransactionId(),
+                            context.getDataPartNumber(),
+                            resource)
+                            .block();
                 }
             } else {
                 //TODO: should download the content and essentially call processEntryContent(
