@@ -1,7 +1,7 @@
 hiu:
   id: 10000005
   name: Max Health Care
-  callbackurl:  http://localhost:8003/
+  callbackurl:  http://localhost:8003/data/notification
   consentmanager:
     url: http://localhost:9000/
   dataflowservice:
@@ -21,3 +21,5 @@ spring:
   rabbitmq:
     host: localhost
     port: 5672
+  codec:
+    max-in-memory-size: 500MB

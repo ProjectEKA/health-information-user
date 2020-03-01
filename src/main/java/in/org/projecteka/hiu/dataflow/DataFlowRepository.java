@@ -88,16 +88,16 @@ public class DataFlowRepository {
                 }));
     }
 
-    public Mono<Void> insertDataPartAvailability(String transactionId, int partNumber) {
+    public Mono<Boolean> insertDataPartAvailability(String transactionId, int partNumber) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         INSERT_HEALTH_DATA_AVAILABILITY,
-                        Tuple.of(transactionId, partNumber),
+                        Tuple.of(transactionId, String.valueOf(partNumber)),
                         handler -> {
                             if (handler.failed())
                                 monoSink.error(new Exception("Failed to insert health data availability"));
                             else
-                                monoSink.success();
+                                monoSink.success(true);
                         })
         );
     }

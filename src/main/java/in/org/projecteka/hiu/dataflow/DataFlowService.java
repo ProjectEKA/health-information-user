@@ -40,21 +40,14 @@ public class DataFlowService {
         }
         return validateDataFlowTransaction(dataNotificationRequest.getTransactionId(), senderId)
                 .then(serializeDataTransferred(dataNotificationRequest))
-                .doOnSuccess(contentReference -> saveDataAvailability(contentReference, 1))
-                .doOnSuccess(this::notifyDataProcessor)
-                .then();
-
-//         TODO: this will be moved to the processor. For the time being, we are storing in db above.
-//        return Flux.fromIterable(dataNotificationRequest.getEntries())
-//                .filter(entry -> entry.getLink() == null)
-//                .flatMap(entry -> insertHealthInformation(entry, dataNotificationRequest.getTransactionId()))
-//                .then();
+                .flatMap(contentReference -> saveDataAvailability(contentReference, 1))
+                .flatMap(contentReference -> notifyDataProcessor(contentReference));
     }
 
     private Mono<Map<String, String>> saveDataAvailability(Map<String, String> contentReference, int partNumber) {
         contentReference.put(DATA_PART_NUMBER, String.valueOf(partNumber));
         return dataFlowRepository.insertDataPartAvailability(contentReference.get(TRANSACTION_ID), partNumber)
-                .thenReturn(contentReference);
+                .flatMap(r -> Mono.just(contentReference));
     }
 
     private Mono<Void> notifyDataProcessor(Map<String, String> contentRef) {

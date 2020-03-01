@@ -42,7 +42,6 @@ public class DataFlowRequestListener {
         MessageListener messageListener = message -> {
             DataFlowRequest dataFlowRequest = convertToDataFlowRequest(message.getBody());
             logger.info("Received data flow request with consent id : " + dataFlowRequest.getConsent().getId());
-            DataFlowRequest.builder().build();
             logger.info("Initiating data flow request to consent manager");
             dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
                     .flatMap(dataFlowRequestResponse ->
