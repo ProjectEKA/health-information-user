@@ -96,7 +96,7 @@ public class ConsentServiceTest {
                 .permission(permission)
                 .build();
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
-        when(consentRepository.getConsentStatus(consentRequest.getId())).thenReturn(Mono.empty());
+        when(consentRepository.getConsentDetails(consentRequest.getId())).thenReturn(Flux.empty());
         when(consentRepository.requestsFrom(requesterId)).thenReturn(Flux.just(consentRequest));
         when(patientServiceClient.patientWith(consentRequest.getPatient().getId()))
                 .thenReturn(Mono.just(patient));
@@ -126,8 +126,10 @@ public class ConsentServiceTest {
                 .patient(new in.org.projecteka.hiu.consent.model.Patient(patient.getIdentifier()))
                 .permission(permission)
                 .build();
+        var statusMap = new HashMap<String, String>();
+        statusMap.put("status", "GRANTED");
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
-        when(consentRepository.getConsentStatus(consentRequest.getId())).thenReturn(Mono.just("GRANTED"));
+        when(consentRepository.getConsentDetails(consentRequest.getId())).thenReturn(Flux.just(statusMap));
         when(consentRepository.requestsFrom(requesterId)).thenReturn(Flux.just(consentRequest));
         when(patientServiceClient.patientWith(consentRequest.getPatient().getId()))
                 .thenReturn(Mono.just(patient));
