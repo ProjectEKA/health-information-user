@@ -62,8 +62,10 @@ public class ConsentService {
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeArtefactWith(
             in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
-        return consentRepository.getConsentStatus(consentRequest.getId())
-                .map(ConsentStatus::valueOf)
+        return consentRepository.getConsentDetails(consentRequest.getId())
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get("status")))
                 .switchIfEmpty(Mono.just(ConsentStatus.REQUESTED))
                 .map(status -> consentRequest.toBuilder().status(status).build());
     }
