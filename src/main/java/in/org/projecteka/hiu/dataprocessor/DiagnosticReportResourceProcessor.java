@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.dataprocessor;
 
-import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import org.hl7.fhir.r4.model.Attachment;
 import org.hl7.fhir.r4.model.DiagnosticReport;
