@@ -164,8 +164,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public MessageListenerContainerFactory messageListenerContainerFactory(ConnectionFactory connectionFactory,
-                                                                           Jackson2JsonMessageConverter jackson2JsonMessageConverter) {
+    public MessageListenerContainerFactory messageListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            Jackson2JsonMessageConverter jackson2JsonMessageConverter) {
         return new MessageListenerContainerFactory(connectionFactory, jackson2JsonMessageConverter);
     }
 
@@ -215,6 +216,4 @@ public class HiuConfiguration {
                                            Decryptor decryptor) {
         return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository, decryptor);
     }
-
-
 }

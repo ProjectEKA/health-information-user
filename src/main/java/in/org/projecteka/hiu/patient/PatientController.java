@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.patient;
 
-import in.org.projecteka.hiu.clients.PatientServiceClient;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

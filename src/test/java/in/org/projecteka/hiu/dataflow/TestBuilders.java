@@ -24,4 +24,8 @@ public class TestBuilders {
     public static DataFlowRequestKeyMaterial.DataFlowRequestKeyMaterialBuilder dataFlowRequestKeyMaterial() {
         return easyRandom.nextObject(DataFlowRequestKeyMaterial.DataFlowRequestKeyMaterialBuilder.class);
     }
+
+    public static String string() {
+        return easyRandom.nextObject(String.class);
+    }
 }

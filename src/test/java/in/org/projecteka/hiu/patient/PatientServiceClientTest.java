@@ -23,6 +23,7 @@ import reactor.test.StepVerifier;
 import java.util.function.Supplier;
 
 import static in.org.projecteka.hiu.patient.TestBuilders.patient;
+import static in.org.projecteka.hiu.patient.TestBuilders.string;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -47,7 +48,7 @@ class PatientServiceClientTest {
         patientServiceClient = new PatientServiceClient(
                 webClientBuilder,
                 new ConsentManagerServiceProperties(BASE_URL),
-                new HiuProperties("", "random", ""));
+                new HiuProperties("", "random", "", string()));
     }
 
     @Test
