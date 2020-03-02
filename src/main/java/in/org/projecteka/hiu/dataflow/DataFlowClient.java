@@ -23,7 +23,7 @@ public class DataFlowClient {
         return webClientBuilder.build()
                 .post()
                 .uri(consentManagerServiceProperties.getUrl() + "/health-information/request")
-                .header("Authorization", TokenUtils.encodeHIUId(hiuProperties.getId()))
+                .header("Authorization", TokenUtils.encode(hiuProperties.getId()))
                 .body(Mono.just(dataFlowRequest), DataFlowRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),

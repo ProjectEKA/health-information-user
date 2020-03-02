@@ -15,6 +15,7 @@ import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
 import in.org.projecteka.hiu.dataflow.DataFlowServiceProperties;
+import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.dataflow.LocalDataStore;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
@@ -210,18 +211,21 @@ public class HiuConfiguration {
 
     @Bean
     public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
-                                           HealthInformationRepository healthInformationRepository,
-                                           ConsentRepository consentRepository,
                                            DataAvailabilityPublisher dataAvailabilityPublisher,
                                            DataFlowServiceProperties properties,
                                            LocalDataStore localDataStore) {
         return new DataFlowService(
                 dataFlowRepository,
-                healthInformationRepository,
-                consentRepository,
                 dataAvailabilityPublisher,
                 properties,
                 localDataStore);
+    }
+
+    @Bean
+    public HealthInfoManager healthInfoManager(ConsentRepository consentRepository,
+                                               DataFlowRepository dataFlowRepository,
+                                               HealthInformationRepository healthInformationRepository) {
+        return new HealthInfoManager(consentRepository, dataFlowRepository, healthInformationRepository);
     }
 
     @Bean

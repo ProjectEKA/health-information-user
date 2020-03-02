@@ -8,7 +8,7 @@ public class TokenUtils {
         return new String(decoder.decode(authorizationHeader));
     }
 
-    public static String encodeHIUId(String id){
+    public static String encode(String id){
         Base64.Encoder encoder = Base64.getEncoder();
         return new String(encoder.encode(id.getBytes()));
     }

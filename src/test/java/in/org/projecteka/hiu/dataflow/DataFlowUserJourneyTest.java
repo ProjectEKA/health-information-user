@@ -20,7 +20,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -28,7 +27,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -42,7 +40,6 @@ import java.util.Map;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -134,7 +131,7 @@ public class DataFlowUserJourneyTest {
         consentDetails.add(consentDetailsMap);
         Entry entry = entry().build();
         DataEntry dataEntry =
-                DataEntry.builder().hipId(hipId).hipName(hipName).status(Status.COMPLETED).entry(entry).build();
+                DataEntry.builder().hipId(hipId).hipName(hipName).status(Status.COMPLETED).data(entry).build();
         List<DataEntry> dataEntries = new ArrayList<>();
         dataEntries.add(dataEntry);
 

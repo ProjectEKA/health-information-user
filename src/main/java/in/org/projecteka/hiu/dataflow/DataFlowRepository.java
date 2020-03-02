@@ -9,6 +9,9 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
@@ -17,10 +20,14 @@ public class DataFlowRepository {
             "(transaction_id, health_information) VALUES ($1, $2)";
     private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
             "data_flow_request WHERE data_flow_request -> 'consent' ->> 'id' = $1";
-    private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION_ID
-            = "SELECT data_flow_request FROM data_flow_request WHERE transaction_id =$1";
     private static final String INSERT_HEALTH_DATA_AVAILABILITY = "INSERT INTO data_flow_parts (transaction_id, " +
             "part_number) VALUES ($1, $2)";
+    private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION =
+            "SELECT  ca.consent_request_id, dfr.data_flow_request " +
+            "FROM data_flow_request dfr " +
+            "INNER JOIN consent_artefact ca ON dfr.consent_artefact_id=ca.consent_artefact_id " +
+            "WHERE dfr.transaction_id=$1";
+
     private PgPool dbClient;
 
     public DataFlowRepository(PgPool pgPool) {
@@ -68,8 +75,8 @@ public class DataFlowRepository {
     }
 
 
-    public Mono<DataFlowRequest> retrieveDataFlowRequest(String transactionId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION_ID,
+    public Mono<Map<String, Object>> retrieveDataFlowRequest(String transactionId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION,
                 Tuple.of(transactionId),
                 handler -> {
                     if (handler.failed()) {
@@ -78,9 +85,11 @@ public class DataFlowRepository {
                         RowSet<Row> results = handler.result();
                         if (results.iterator().hasNext()) {
                             Row row = results.iterator().next();
+                            Map<String, Object> flowRequestTransaction = new HashMap<>();
+                            flowRequestTransaction.put("consentRequestId", row.getString("consent_request_id"));
                             JsonObject jsonObject = (JsonObject) row.getValue("data_flow_request");
-                            DataFlowRequest request = jsonObject.mapTo(DataFlowRequest.class);
-                            monoSink.success(request);
+                            flowRequestTransaction.put("dataFlowRequest", jsonObject.mapTo(DataFlowRequest.class));
+                            monoSink.success(flowRequestTransaction);
                         } else {
                             monoSink.error(new Exception("Failed to identify data flow request for transaction Id"));
                         }

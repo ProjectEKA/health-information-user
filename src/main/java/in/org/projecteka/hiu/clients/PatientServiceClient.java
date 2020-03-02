@@ -29,7 +29,7 @@ public class PatientServiceClient {
         return builder.
                 get()
                 .uri(format("/users/%s", id))
-                .header(HttpHeaders.AUTHORIZATION, TokenUtils.encodeHIUId(hiuProperties.getId()))
+                .header(HttpHeaders.AUTHORIZATION, TokenUtils.encode(hiuProperties.getId()))
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus == HttpStatus.NOT_FOUND,
                         clientResponse -> Mono.error(notFound()))

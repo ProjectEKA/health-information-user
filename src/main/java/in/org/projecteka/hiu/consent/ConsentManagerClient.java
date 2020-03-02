@@ -30,7 +30,7 @@ public class ConsentManagerClient {
                 .post()
                 .uri("/consent-requests")
                 .header("Authorization",
-                        TokenUtils.encodeHIUId(hiuProperties.getId()))
+                        TokenUtils.encode(hiuProperties.getId()))
                 .body(Mono.just(consentRequest),
                         ConsentRequest.class)
                 .retrieve()
@@ -44,7 +44,7 @@ public class ConsentManagerClient {
                 .get()
                 .uri(String.format("/consents/%s/", consentId))
                 .header("Authorization",
-                        TokenUtils.encodeHIUId(hiuProperties.getId()))
+                        TokenUtils.encode(hiuProperties.getId()))
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
                         clientResponse -> Mono.error(fetchConsentArtefactFailed()))

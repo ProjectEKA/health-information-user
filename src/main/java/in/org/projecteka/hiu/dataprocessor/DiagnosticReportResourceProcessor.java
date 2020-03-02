@@ -92,7 +92,7 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
 
     private String referenceWebUrl(Path attachmentFilePath) {
         //TODO create a referenceable path so that, UI can use that. maybe startwith /
-        return attachmentFilePath.toString();
+        return String.format("/attachments/%s", attachmentFilePath.getFileName().toString());
     }
 
     private String getFileExtension(Attachment attachment) {
