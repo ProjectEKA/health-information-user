@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.dataflow.DataFlowRepository;
+import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -23,6 +25,7 @@ public class DataAvailabilityListener {
     private final MessageListenerContainerFactory messageListenerContainerFactory;
     private final DestinationsConfig destinationsConfig;
     private final HealthDataRepository healthDataRepository;
+    private final DataFlowRepository dataFlowRepository;
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
 
@@ -44,7 +47,7 @@ public class DataAvailabilityListener {
             logger.info(String.format("Received notification of data availability for transaction id : %s", dataAvailableMessage.getTransactionId()));
             logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
             try {
-                new HealthDataProcessor(healthDataRepository).process(dataAvailableMessage);
+                new HealthDataProcessor(healthDataRepository, dataFlowRepository, new Decryptor()).process(dataAvailableMessage);
             } catch (Exception e) {
                 e.printStackTrace();
             }

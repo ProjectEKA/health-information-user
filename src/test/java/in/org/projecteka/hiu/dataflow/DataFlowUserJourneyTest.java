@@ -8,11 +8,10 @@ import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
-import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
-import in.org.projecteka.hiu.dataflow.model.Status;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
@@ -38,9 +37,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -77,6 +77,8 @@ public class DataFlowUserJourneyTest {
     @MockBean
     LocalDataStore localDataStore;
 
+    private Decryptor decryptor;
+
     @AfterAll
     public static void tearDown() throws IOException {
         dataFlowServer.shutdown();
@@ -88,21 +90,28 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldNotifyDataFlowResponse() {
+    public void shouldNotifyDataFlowResponse() throws Exception {
         Entry entry = entry().build();
         entry.setLink(null);
         entry.setContent("Some Dummy Content XYZ 1");
         List<Entry> entries = new ArrayList<>();
         entries.add(entry);
         String transactionId = "transactionId";
+        KeyMaterial keyMaterial = keyMaterial().build();
         DataNotificationRequest dataNotificationRequest =
-                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
+        DataNotificationRequest.builder().transactionId(transactionId).entries(entries).keyMaterial(keyMaterial).build();
+
+        Map<String, Object> flowRequestMap = new HashMap<>();
+        flowRequestMap.put("consentRequestId", "consentRequestId");
 
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1)).thenReturn(Mono.empty());
-        when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(new DataFlowRequest()));
+        when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(flowRequestMap));
         when(dataAvailabilityPublisher.broadcastDataAvailability(any())).thenReturn(Mono.empty());
         when(localDataStore.serializeDataToFile(any(), any())).thenReturn(Mono.empty());
 
+//        when(dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId()))
+//                .thenReturn(Mono.just(savedKeyMaterial));
+//        when(decryptor.decrypt(keyMaterial, savedKeyMaterial, entry.getContent())).thenReturn(entry.getContent());
         webTestClient
                 .post()
                 .uri("/data/notification")
@@ -129,15 +138,15 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("hipName", hipName);
         consentDetailsMap.put("requester", "1");
         consentDetails.add(consentDetailsMap);
-        Entry entry = entry().build();
+        String content = "Some dummy content";
         DataEntry dataEntry =
-                DataEntry.builder().hipId(hipId).hipName(hipName).status(Status.COMPLETED).data(entry).build();
+                DataEntry.builder().hipId(hipId).hipName(hipName).data(content).build();
         List<DataEntry> dataEntries = new ArrayList<>();
         dataEntries.add(dataEntry);
 
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
         when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
-        when(healthInformationRepository.getHealthInformation(transactionId)).thenReturn(Flux.just(entry));
+        when(healthInformationRepository.getHealthInformation(transactionId)).thenReturn(Flux.just(content));
 
         webTestClient
                 .get()
@@ -196,7 +205,7 @@ public class DataFlowUserJourneyTest {
         DataNotificationRequest dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
 
-        when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
+        when(dataFlowRepository.insertDataPartAvailability(transactionId, 1)).thenReturn(Mono.empty());
 
         var errorResponse = new ErrorRepresentation(new Error(
                 ErrorCode.INVALID_DATA_FLOW_ENTRY,

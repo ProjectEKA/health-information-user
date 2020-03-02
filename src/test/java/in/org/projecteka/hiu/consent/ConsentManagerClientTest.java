@@ -14,6 +14,7 @@ import reactor.test.StepVerifier;
 
 import java.util.Objects;
 
+import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -30,7 +31,10 @@ public class ConsentManagerClientTest {
         WebClient.Builder webClientBuilder = WebClient.builder();
         ConsentManagerServiceProperties consentManagerServiceProperties =
                 new ConsentManagerServiceProperties(mockWebServer.url("").toString());
-        HiuProperties hiuProperties = new HiuProperties("10000005", "Max Health Care", "localhost:8080");
+        HiuProperties hiuProperties = new HiuProperties("10000005",
+                "Max Health Care",
+                "localhost:8080",
+                randomString());
         consentManagerClient = new ConsentManagerClient(webClientBuilder, consentManagerServiceProperties, hiuProperties);
     }
 

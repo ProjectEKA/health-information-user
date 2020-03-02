@@ -2,10 +2,14 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ClientError;
+import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.KeyStructure;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -13,6 +17,10 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
@@ -25,6 +33,8 @@ public class DataFlowRequestListener {
     private DestinationsConfig destinationsConfig;
     private DataFlowClient dataFlowClient;
     private DataFlowRepository dataFlowRepository;
+    private Decryptor decryptor;
+    private DataFlowProperties dataFlowProperties;
 
     @PostConstruct
     @SneakyThrows
@@ -42,16 +52,67 @@ public class DataFlowRequestListener {
         MessageListener messageListener = message -> {
             DataFlowRequest dataFlowRequest = convertToDataFlowRequest(message.getBody());
             logger.info("Received data flow request with consent id : " + dataFlowRequest.getConsent().getId());
-            logger.info("Initiating data flow request to consent manager");
-            dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
-                    .flatMap(dataFlowRequestResponse ->
-                            dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                    dataFlowRequest.getConsent().getId(), dataFlowRequest))
-                    .block();
+            try {
+                var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
+                var keyMaterial = keyMaterial(dataRequestKeyMaterial);
+                DataFlowRequest dataRequest = dataFlowRequest.toBuilder()
+                        .keyMaterial(keyMaterial)
+                        .build();
+
+                logger.info("Initiating data flow request to consent manager");
+                dataFlowClient.initiateDataFlowRequest(dataRequest)
+                        .flatMap(dataFlowRequestResponse ->
+                                dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                        dataFlowRequest.getConsent().getId(),
+                                        dataRequest)
+                                        .then(dataFlowRepository.addKeys(
+                                                dataFlowRequestResponse.getTransactionId(),
+                                                dataRequestKeyMaterial)))
+                        .block();
+            } catch (Exception exception) {
+                // TODO: Put the message in dead letter queue
+                logger.fatal("Exception on key creation {exception}", exception);
+            }
         };
+
         mlc.setupMessageListener(messageListener);
 
         mlc.start();
+    }
+
+    private DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial() throws Exception {
+        var keyPair = decryptor.generateKeyPair();
+        var privateKey = decryptor.getBase64String(decryptor.getEncodedPrivateKey(keyPair.getPrivate()));
+        var publicKey = decryptor.getBase64String(decryptor.getEncodedPublicKey(keyPair.getPublic()));
+        var dataFlowKeyMaterial = DataFlowRequestKeyMaterial.builder()
+                .privateKey(privateKey)
+                .publicKey(publicKey)
+                .randomKey(decryptor.generateRandomKey())
+                .build();
+        return dataFlowKeyMaterial;
+    }
+
+    private KeyMaterial keyMaterial(DataFlowRequestKeyMaterial dataFlowKeyMaterial) {
+        logger.info("Creating KeyMaterials");
+        return KeyMaterial.builder()
+                .cryptoAlg(Decryptor.ALGORITHM)
+                .curve(Decryptor.CURVE)
+                .dhPublicKey(KeyStructure.builder()
+                        .expiry(getExpiryDate())
+                        .keyValue(dataFlowKeyMaterial.getPublicKey())
+                        .parameters(Decryptor.EH_PUBLIC_KEY_PARAMETER)
+                        .build())
+                .nonce(dataFlowKeyMaterial.getRandomKey())
+                .build();
+    }
+
+    private String getExpiryDate() {
+        var dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        Date currentDate = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(currentDate);
+        calendar.add(Calendar.DATE, dataFlowProperties.getOffsetInDays());
+        return dateFormat.format(calendar.getTime());
     }
 
     @SneakyThrows

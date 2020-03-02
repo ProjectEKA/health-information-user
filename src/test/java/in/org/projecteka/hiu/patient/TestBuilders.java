@@ -10,4 +10,8 @@ public class TestBuilders {
     static Patient.PatientBuilder patient() {
         return easyRandom.nextObject(Patient.PatientBuilder.class);
     }
+
+    public static String string() {
+        return easyRandom.nextObject(String.class);
+    }
 }

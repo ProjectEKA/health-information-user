@@ -1,9 +1,9 @@
 hiu:
   id: 10000005
   name: Max Health Care
-  callbackurl:  http://localhost:8003/data/notification
+  callbackurl: http://localhost:8003
   consentmanager:
-    url: http://localhost:9000/
+    url: http://localhost:9000
   dataflowservice:
     defaultPageSize: 20
     maxPageSize: 100
@@ -17,6 +17,8 @@ hiu:
     user: postgres
     password: postgres
     poolSize: 5
+  dataflow:
+    offsetInDays: 2
 spring:
   rabbitmq:
     host: localhost

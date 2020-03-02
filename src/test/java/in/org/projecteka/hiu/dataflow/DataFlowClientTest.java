@@ -26,12 +26,13 @@ import reactor.test.StepVerifier;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.string;
 import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,9 +46,8 @@ public class DataFlowClientTest {
         WebClient.Builder webClientBuilder = WebClient.builder();
         ConsentManagerServiceProperties consentManagerServiceProperties =
                 new ConsentManagerServiceProperties(mockWebServer.url("").toString());
-        HiuProperties hiuProperties = new HiuProperties("10000005", "Max Health Care", "localhost:8080");
+        HiuProperties hiuProperties = new HiuProperties("10000005", "Max Health Care", "localhost:8080", string());
         dataFlowClient = new DataFlowClient(webClientBuilder, hiuProperties, consentManagerServiceProperties);
-
     }
 
     @Test
@@ -59,12 +59,10 @@ public class DataFlowClientTest {
         DataFlowRequest dataFlowRequest = dataFlowRequest().build();
         dataFlowRequest.setHiDataRange(HIDataRange.builder().from(toDate("2020-01-14T08:47:48Z")).to(toDate("2020" +
                 "-01-20T08:47:48Z")).build());
-
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
                 .setBody(dataFlowRequestResponseJson));
-
 
         StepVerifier.create(dataFlowClient.initiateDataFlowRequest(dataFlowRequest))
                 .assertNext(
@@ -74,8 +72,8 @@ public class DataFlowClientTest {
                 .verifyComplete();
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        assertThat(recordedRequest.getRequestUrl().toString()).isEqualTo(mockWebServer.url("") + "health-information" +
-                "/request");
+        assertThat(Objects.requireNonNull(recordedRequest.getRequestUrl()).toString())
+                .isEqualTo(mockWebServer.url("") + "health-information/request");
         assertThat(recordedRequest.getBody().readUtf8())
                 .isEqualTo(new ObjectMapper().writeValueAsString(dataFlowRequest));
     }
@@ -107,7 +105,4 @@ public class DataFlowClientTest {
         Encounter encounter = (Encounter) composition.getEncounter().getResource();
         System.out.println("Status:" + encounter.getStatus());
     }
-
-
-
 }

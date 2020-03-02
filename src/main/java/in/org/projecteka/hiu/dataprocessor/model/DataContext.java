@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.dataprocessor.model;
 
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,5 +22,9 @@ public class DataContext {
 
     public String getTransactionId() {
         return notifiedData.getTransactionId();
+    }
+
+    public KeyMaterial getKeyMaterial(){
+        return notifiedData.getKeyMaterial();
     }
 }

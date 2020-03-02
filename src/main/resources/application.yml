@@ -3,6 +3,7 @@ server:
 hiu:
   id: ${HIU_ID}
   name: ${HIU_NAME}
+  secret: ${HIU_TOKEN}
   callbackurl: ${CALL_BACK_URL}
   consentmanager:
     url: ${CONSENT_MANAGEMENT_URL}
@@ -19,6 +20,8 @@ hiu:
     user: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     poolSize: ${DB_CONNECTION_POOL_SIZE}
+  dataflow:
+    offsetInDays: ${OFFSET_IN_DAYS}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}

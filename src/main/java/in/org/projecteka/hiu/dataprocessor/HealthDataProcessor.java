@@ -3,11 +3,16 @@ package in.org.projecteka.hiu.dataprocessor;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.dataflow.DataFlowRepository;
+import in.org.projecteka.hiu.dataflow.Decryptor;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
+import org.apache.log4j.Logger;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ResourceType;
 
@@ -23,7 +28,10 @@ public class HealthDataProcessor {
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
     public static final String MEDIA_APPLICATION_FHIR_XML = "application/fhir+xml";
     private HealthDataRepository healthDataRepository;
+    private DataFlowRepository dataFlowRepository;
+    private Decryptor decryptor;
     private FhirContext fhirContext = FhirContext.forR4();
+    private static final Logger logger = Logger.getLogger(HealthDataProcessor.class);
 
     private List<HITypeResourceProcessor> resourceProcessors = new ArrayList<>() {
         {
@@ -31,8 +39,10 @@ public class HealthDataProcessor {
         }
     };
 
-    public HealthDataProcessor(HealthDataRepository healthDataRepository) {
+    public HealthDataProcessor(HealthDataRepository healthDataRepository, DataFlowRepository dataFlowRepository, Decryptor decryptor) {
         this.healthDataRepository = healthDataRepository;
+        this.dataFlowRepository = dataFlowRepository;
+        this.decryptor = decryptor;
     }
 
     public void registerHITypeResourceHandler(HITypeResourceProcessor resourceProcessor) {
@@ -50,10 +60,13 @@ public class HealthDataProcessor {
     }
 
     private void processEntries(DataContext context) {
+        DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(context.getTransactionId()).block();
+
         context.getNotifiedData().getEntries().stream().forEach(entry -> {
             if (hasContent(entry)) {
-                ProcessedResource processedResource = processEntryContent(entry, context);
+                ProcessedResource processedResource = processEntryContent(context, entry, keyMaterial);
                 if (!processedResource.hasErrors()) {
+                    //TODO: this if branch should be executed instead!!
                     //TODO: store the content? with errors, and state = BAD content?s
                 } else {
                     String resource =
@@ -89,7 +102,7 @@ public class HealthDataProcessor {
     }
 
 
-    private ProcessedResource processEntryContent(Entry entry, DataContext context) {
+    private ProcessedResource processEntryContent(DataContext context, Entry entry, DataFlowRequestKeyMaterial keyMaterial) {
         ProcessedResource result = new ProcessedResource();
         List<String> errors = new ArrayList<>();
         IParser parser = getEntryParser(entry.getMedia());
@@ -97,8 +110,17 @@ public class HealthDataProcessor {
             result.addError("Can't process entry content. Unknown media type.");
             return result;
         }
-
-        Bundle bundle = (Bundle) parser.parseResource(entry.getContent());
+        String decryptedContent = null;
+        try {
+            decryptedContent = decryptor.decrypt(context.getKeyMaterial(),
+                    keyMaterial,
+                    entry.getContent());
+        } catch (Exception e) {
+            logger.error("Error while decrypting {exception}", e);
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        Bundle bundle = (Bundle) parser.parseResource(decryptedContent);
         if (!isValidBundleType(bundle.getType())) {
             result.addError("Can not process entry content. Entry content is not a FHIR Bundle type COLLECTION or " +
                     "DOCUMENT");

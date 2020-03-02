@@ -26,10 +26,10 @@ public class ConsentRepository {
             "consent_artefact -> 'hip' ->> 'id' as hipId, consent_artefact -> 'hip' ->> 'name' as hipName, " +
             "consent_artefact -> 'requester' ->> 'name' as requester, status FROM " +
             "consent_artefact WHERE consent_request_id=$1";
-    private final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
+    private static final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
             "consent_artefact (consent_request_id, consent_artefact, consent_artefact_id, status, date_created)" +
             " VALUES ($1, $2, $3, $4, $5)";
-    private final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
+    private static final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
             "consent_artefact set status=$1, date_modified=$2 where consent_artefact_id=$3";
     private PgPool dbClient;
 
@@ -144,7 +144,6 @@ public class ConsentRepository {
                                 .forEach(fluxSink::next);
                         fluxSink.complete();
                     }
-                }
-        ));
+                }));
     }
 }

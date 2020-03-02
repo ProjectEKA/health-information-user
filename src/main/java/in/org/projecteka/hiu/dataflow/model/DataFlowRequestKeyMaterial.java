@@ -5,14 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
-@AllArgsConstructor
 @Data
 @Builder
+@AllArgsConstructor
 @NoArgsConstructor
-public class  DataNotificationRequest {
-    private String transactionId;
-    private List<Entry> entries;
-    private KeyMaterial keyMaterial;
+public class DataFlowRequestKeyMaterial {
+    private String privateKey;
+    private String publicKey;
+    private String randomKey;
 }

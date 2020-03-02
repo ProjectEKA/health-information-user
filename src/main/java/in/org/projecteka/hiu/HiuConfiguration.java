@@ -15,6 +15,7 @@ import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
 import in.org.projecteka.hiu.dataflow.DataFlowServiceProperties;
+import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.dataflow.LocalDataStore;
@@ -172,8 +173,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public MessageListenerContainerFactory messageListenerContainerFactory(ConnectionFactory connectionFactory,
-                                                                           Jackson2JsonMessageConverter jackson2JsonMessageConverter) {
+    public MessageListenerContainerFactory messageListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            Jackson2JsonMessageConverter jackson2JsonMessageConverter) {
         return new MessageListenerContainerFactory(connectionFactory, jackson2JsonMessageConverter);
     }
 
@@ -195,17 +197,29 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
-                                                           DestinationsConfig destinationsConfig,
-                                                           DataFlowClient dataFlowClient,
-                                                           DataFlowRepository dataFlowRepository) {
-        return new DataFlowRequestListener(messageListenerContainerFactory,
-                destinationsConfig,
-                dataFlowClient, dataFlowRepository);
+    public Decryptor decryptor() {
+        return new Decryptor();
     }
 
     @Bean
-    public LocalDataStore localDataStore(){
+    public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
+                                                           DestinationsConfig destinationsConfig,
+                                                           DataFlowClient dataFlowClient,
+                                                           DataFlowRepository dataFlowRepository,
+                                                           Decryptor decryptor,
+                                                           DataFlowProperties dataFlowProperties) {
+        return new DataFlowRequestListener(
+                messageListenerContainerFactory,
+                destinationsConfig,
+                dataFlowClient,
+                dataFlowRepository,
+                decryptor,
+                dataFlowProperties
+        );
+    }
+
+    @Bean
+    public LocalDataStore localDataStore() {
         return new LocalDataStore();
     }
 
@@ -242,7 +256,12 @@ public class HiuConfiguration {
     @Bean
     public DataAvailabilityListener dataAvailabilityListener(MessageListenerContainerFactory messageListenerContainerFactory,
                                                              DestinationsConfig destinationsConfig,
-                                                             HealthDataRepository healthDataRepository) {
-        return new DataAvailabilityListener(messageListenerContainerFactory, destinationsConfig, healthDataRepository);
+                                                             HealthDataRepository healthDataRepository,
+                                                             DataFlowRepository dataFlowRepository) {
+        return new DataAvailabilityListener(
+                messageListenerContainerFactory,
+                destinationsConfig,
+                healthDataRepository,
+                dataFlowRepository);
     }
 }

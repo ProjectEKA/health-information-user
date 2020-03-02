@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
-import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
 import lombok.AllArgsConstructor;
@@ -23,7 +22,7 @@ public class DataFlowClient {
         return webClientBuilder.build()
                 .post()
                 .uri(consentManagerServiceProperties.getUrl() + "/health-information/request")
-                .header("Authorization", TokenUtils.encode(hiuProperties.getId()))
+                .header("Authorization", hiuProperties.getSecret())
                 .body(Mono.just(dataFlowRequest), DataFlowRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
