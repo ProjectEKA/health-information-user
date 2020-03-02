@@ -3,7 +3,6 @@ package in.org.projecteka.hiu.dataprocessor;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -66,9 +65,6 @@ public class HealthDataProcessor {
             if (hasContent(entry)) {
                 ProcessedResource processedResource = processEntryContent(context, entry, keyMaterial);
                 if (!processedResource.hasErrors()) {
-                    //TODO: this if branch should be executed instead!!
-                    //TODO: store the content? with errors, and state = BAD content?s
-                } else {
                     String resource =
                             getEntryParser(entry.getMedia()).encodeResourceToString(processedResource.getResource());
                     healthDataRepository.insertHealthData(
@@ -77,9 +73,9 @@ public class HealthDataProcessor {
                             resource)
                             .block();
                 }
-            } else {
-                //TODO: should download the content and essentially call processEntryContent(
+                //TODO: if the above has errors, store the content? with errors, and state = BAD content?s
             }
+            //TODO: else part. download the content from entry.getLink().getHref(), and essentially call processEntryContent()
         });
     }
 

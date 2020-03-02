@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -58,9 +60,13 @@ public class HealthInfoController {
                 .body(new FileSystemResource(filePath)));
     }
 
+    @SneakyThrows
     private MediaType responseContentType(Path filePath) {
-        //TODO: if can't identify specify MediaType.APPLICATION_OCTET_STREAM
-        return MediaType.APPLICATION_PDF;
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+        return MediaType.parseMediaType(contentType);
     }
 
 }

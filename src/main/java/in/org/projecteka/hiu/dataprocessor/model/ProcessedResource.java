@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.dataprocessor.model;
 
-import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Resource;
 
 import java.util.ArrayList;
@@ -23,7 +22,7 @@ public class ProcessedResource {
     }
 
     public boolean hasErrors() {
-        return errors.isEmpty();
+        return !errors.isEmpty();
     }
 
     public Resource getResource() {

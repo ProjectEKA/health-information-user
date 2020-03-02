@@ -37,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
 import static org.mockito.ArgumentMatchers.any;
@@ -77,7 +76,6 @@ public class DataFlowUserJourneyTest {
     @MockBean
     LocalDataStore localDataStore;
 
-    private Decryptor decryptor;
 
     @AfterAll
     public static void tearDown() throws IOException {

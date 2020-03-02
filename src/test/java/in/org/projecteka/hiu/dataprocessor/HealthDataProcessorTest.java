@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
-import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
-import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -53,7 +51,6 @@ class HealthDataProcessorTest {
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, "1");
         var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
-        KeyMaterial keyMaterial = keyMaterial().build();
 
         when(healthDataRepository.insertHealthData(eq(transactionId), eq("1"), any())).thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));

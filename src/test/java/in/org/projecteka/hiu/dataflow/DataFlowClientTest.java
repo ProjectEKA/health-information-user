@@ -26,6 +26,7 @@ import reactor.test.StepVerifier;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,31 +79,4 @@ public class DataFlowClientTest {
                 .isEqualTo(new ObjectMapper().writeValueAsString(dataFlowRequest));
     }
 
-    @Test
-    @Ignore
-    public void shouldTestFHIRResourceParsing() {
-        FhirContext fhirContext = FhirContext.forR4();
-        IParser iParser = fhirContext.newJsonParser();
-
-        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("sample_diagnostic_report_with_pdf_attachment.json");
-        Reader reader = new InputStreamReader(resourceAsStream);
-        Bundle bundle = (Bundle) iParser.parseResource(reader);
-
-        List<Entry> entries = new ArrayList<>();
-        Entry entry = new Entry();
-        entry.setContent(iParser.encodeResourceToString(bundle));
-        entry.setMedia("application/fhir+json");
-        entries.add(entry);
-        DataNotificationRequest dataNotificationRequest =
-                DataNotificationRequest.builder().transactionId("123456").entries(entries).build();
-//        LocalDataStore.serializeDataToFile(dataNotificationRequest, Paths.get("/tmp/hiu/data/Transaction123456.json")).subscribe();
-
-    }
-
-    private void readEncounter(Bundle bundle) {
-        Bundle.BundleEntryComponent bundleEntryComponent = bundle.getEntry().get(0);
-        Composition composition = (Composition) bundleEntryComponent.getResource();
-        Encounter encounter = (Encounter) composition.getEncounter().getResource();
-        System.out.println("Status:" + encounter.getStatus());
-    }
 }

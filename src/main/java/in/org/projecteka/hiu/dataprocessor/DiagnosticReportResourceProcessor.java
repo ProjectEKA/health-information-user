@@ -51,7 +51,7 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
 
         for (DiagnosticReport.DiagnosticReportMediaComponent media : mediaList) {
             if (media.hasLink()) {
-                Media linkTarget = (Media) media. getLink().getResource();
+                Media linkTarget = (Media) media.getLink().getResource();
                 saveAttachmentAsFile(linkTarget.getContent(), localStoragePath);
             }
         }
@@ -104,7 +104,4 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         return (attachment.getUrl() != null) && !attachment.getUrl().isBlank();
     }
 
-    private boolean hasContent(Entry entry) {
-        return (entry.getContent() != null) && !entry.getContent().isBlank();
-    }
 }
