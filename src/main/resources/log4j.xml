@@ -15,10 +15,6 @@
         <level value="debug"/>
     </logger>
 
-    <logger name="in.org.projecteka.hiu.clients">
-        <level value="debug"/>
-    </logger>
-
     <root>
         <priority value="info"/>
         <appender-ref ref="console"/>

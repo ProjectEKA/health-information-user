@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.clients;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
-import org.apache.log4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,7 +16,6 @@ public class PatientServiceClient {
 
     private final WebClient builder;
     private HiuProperties hiuProperties;
-    private final Logger logger = Logger.getLogger(PatientServiceClient.class);
 
     public PatientServiceClient(WebClient.Builder builder,
                                 ConsentManagerServiceProperties properties,
@@ -27,7 +25,6 @@ public class PatientServiceClient {
     }
 
     public Mono<Patient> patientWith(String id) {
-        logger.debug(hiuProperties.getSecret());
         return builder.
                 get()
                 .uri(format("/users/%s", id))
