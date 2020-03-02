@@ -26,10 +26,12 @@ public class ConsentRepository {
             "consent_artefact -> 'hip' ->> 'id' as hipId, consent_artefact -> 'hip' ->> 'name' as hipName, " +
             "consent_artefact -> 'requester' ->> 'name' as requester, status FROM " +
             "consent_artefact WHERE consent_request_id=$1";
-    private final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
+    private static final String SELECT_CONSENT_STATUS_FROM_CONSENT_ARTIFACT = "SELECT consent_artefact_id, status" +
+            " FROM consent_artefact WHERE consent_request_id=$1 limit 1";
+    private static final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
             "consent_artefact (consent_request_id, consent_artefact, consent_artefact_id, status, date_created)" +
             " VALUES ($1, $2, $3, $4, $5)";
-    private final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
+    private static final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
             "consent_artefact set status=$1, date_modified=$2 where consent_artefact_id=$3";
     private PgPool dbClient;
 
@@ -115,6 +117,23 @@ public class ConsentRepository {
                                 .forEach(fluxSink::next);
                         fluxSink.complete();
                     }
+                }));
+    }
+
+    public Mono<String> getConsentStatus(String consentRequestId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_STATUS_FROM_CONSENT_ARTIFACT,
+                Tuple.of(consentRequestId),
+                handler -> {
+                    if (handler.failed()) {
+                        monoSink.error(dbOperationFailure("Failed to get consent artefact status"));
+                        return;
+                    }
+                    var iterator = handler.result().iterator();
+                    if (iterator.hasNext()) {
+                        monoSink.success(iterator.next().getString(1));
+                        return;
+                    }
+                    monoSink.error(dbOperationFailure("Failed to get consent artefact status"));
                 }));
     }
 
