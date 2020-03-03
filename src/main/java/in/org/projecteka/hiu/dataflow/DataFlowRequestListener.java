@@ -55,16 +55,14 @@ public class DataFlowRequestListener {
             try {
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
-                DataFlowRequest dataRequest = dataFlowRequest.toBuilder()
-                        .keyMaterial(keyMaterial)
-                        .build();
+                dataFlowRequest.setKeyMaterial(keyMaterial);
 
                 logger.info("Initiating data flow request to consent manager");
-                dataFlowClient.initiateDataFlowRequest(dataRequest)
+                dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
                         .flatMap(dataFlowRequestResponse ->
                                 dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
                                         dataFlowRequest.getConsent().getId(),
-                                        dataRequest)
+                                        dataFlowRequest)
                                         .then(dataFlowRepository.addKeys(
                                                 dataFlowRequestResponse.getTransactionId(),
                                                 dataRequestKeyMaterial)))
