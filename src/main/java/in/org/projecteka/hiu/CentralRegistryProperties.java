@@ -9,13 +9,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "hiu")
+@ConfigurationProperties(prefix = "hiu.centralregistry")
 @Data
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @AllArgsConstructor
 @Builder
-public class HiuProperties {
-    private String id;
-    private String name;
-    private String callBackUrl;
+public class CentralRegistryProperties {
+    public String url;
+    public String clientId;
+    public String clientSecret;
 }

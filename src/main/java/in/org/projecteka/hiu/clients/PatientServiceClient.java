@@ -15,20 +15,17 @@ import static java.util.function.Predicate.not;
 public class PatientServiceClient {
 
     private final WebClient builder;
-    private HiuProperties hiuProperties;
 
     public PatientServiceClient(WebClient.Builder builder,
-                                ConsentManagerServiceProperties properties,
-                                HiuProperties hiuProperties) {
+                                ConsentManagerServiceProperties properties) {
         this.builder = builder.baseUrl(properties.getUrl()).build();
-        this.hiuProperties = hiuProperties;
     }
 
-    public Mono<Patient> patientWith(String id) {
+    public Mono<Patient> patientWith(String id, String token) {
         return builder.
                 get()
                 .uri(format("/users/%s", id))
-                .header(HttpHeaders.AUTHORIZATION, hiuProperties.getSecret())
+                .header(HttpHeaders.AUTHORIZATION, token)
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus == HttpStatus.NOT_FOUND,
                         clientResponse -> Mono.error(notFound()))

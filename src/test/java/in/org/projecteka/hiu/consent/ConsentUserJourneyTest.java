@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.consent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
@@ -39,6 +40,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse
 import static in.org.projecteka.hiu.consent.TestBuilders.consentNotificationRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
+import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static java.util.Collections.singletonList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -66,6 +68,8 @@ public class ConsentUserJourneyTest {
     @MockBean
     private DataFlowRequestPublisher dataFlowRequestPublisher;
 
+    @MockBean
+    private CentralRegistry centralRegistry;
 
     @AfterAll
     public static void tearDown() throws IOException {
@@ -83,6 +87,7 @@ public class ConsentUserJourneyTest {
         String requesterId = "1";
         String callBackUrl = "localhost:8080";
 
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
 
@@ -119,7 +124,7 @@ public class ConsentUserJourneyTest {
         consentManagerServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
-
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId, "requesterId", "localhost:8080"))).
                 thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
 
@@ -156,6 +161,7 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
+        when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), anyString(), anyString()))
@@ -186,6 +192,7 @@ public class ConsentUserJourneyTest {
                 .consents(singletonList(consentArtefactReference().build()))
                 .build();
 
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(null)));
 
@@ -209,6 +216,7 @@ public class ConsentUserJourneyTest {
                 .consents(singletonList(consentArtefactReference().build()))
                 .build();
 
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.error(new Exception("Failed to fetch consent request")));
 
@@ -247,7 +255,7 @@ public class ConsentUserJourneyTest {
 
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
-
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()),
                 eq(consentArtefactResponse.getStatus()),
@@ -278,6 +286,7 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
 

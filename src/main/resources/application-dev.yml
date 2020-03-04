@@ -3,12 +3,14 @@ hiu:
   name: Max Health Care
   callbackurl: http://localhost:8003
   consentmanager:
-    url: http://localhost:8081
+    url: http://localhost:9000
   dataflowservice:
     defaultPageSize: 20
     maxPageSize: 100
   centralregistry:
-    url: http://localhost:8082/
+    url: http://localhost:9001/auth
+    clientId: 10000005
+    clientSecret: 435cbced-9d57-4e35-9de8-0c2315d841df
   database:
     host: localhost
     port: 5432

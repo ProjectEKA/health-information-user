@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
@@ -25,6 +26,7 @@ public class ConsentService {
     private final ConsentRepository consentRepository;
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
     private final PatientService patientService;
+    private final CentralRegistry centralRegistry;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
@@ -32,7 +34,8 @@ public class ConsentService {
                 hiuProperties.getId(),
                 hiuProperties.getName(),
                 hiuProperties.getCallBackUrl());
-        return consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest))
+        return centralRegistry.token()
+                .flatMap(token -> consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest), token))
                 .flatMap(consentCreationResponse ->
                         consentRepository
                                 .insert(consentRequestData.getConsent().toConsentRequest(
@@ -85,7 +88,8 @@ public class ConsentService {
 
     private Mono<Void> insertConsentArtefact(ConsentArtefactReference consentArtefactReference,
                                              String consentRequestId) {
-        return consentManagerClient.getConsentArtefact(consentArtefactReference.getId())
+        return centralRegistry.token()
+                .flatMap(token -> consentManagerClient.getConsentArtefact(consentArtefactReference.getId(), token))
                 .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
                         consentArtefactResponse.getConsentDetail(),
                         consentArtefactResponse.getStatus(),

@@ -54,4 +54,12 @@ public class ClientError extends Throwable {
                         ErrorCode.UNAUTHORIZED_REQUESTER,
                         "Requester is not authorized to perform this action")));
     }
+
+    public static ClientError authenticationFailed() {
+        return new ClientError(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.UNKNOWN_ERROR,
+                        "Something went wrong")));
+    }
 }
