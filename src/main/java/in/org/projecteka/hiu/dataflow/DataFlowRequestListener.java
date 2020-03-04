@@ -1,12 +1,9 @@
 package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.org.projecteka.hiu.CentralRegistryProperties;
-import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
-import in.org.projecteka.hiu.clients.CentralRegistryClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
@@ -20,7 +17,6 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;

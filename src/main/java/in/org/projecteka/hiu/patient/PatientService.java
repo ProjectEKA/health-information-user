@@ -1,8 +1,6 @@
 package in.org.projecteka.hiu.patient;
 
 import com.google.common.cache.Cache;
-import in.org.projecteka.hiu.CentralRegistryProperties;
-import in.org.projecteka.hiu.clients.CentralRegistryClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;

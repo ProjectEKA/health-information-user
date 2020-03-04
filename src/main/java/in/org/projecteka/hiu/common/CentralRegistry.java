@@ -4,7 +4,6 @@ import in.org.projecteka.hiu.CentralRegistryProperties;
 import in.org.projecteka.hiu.clients.CentralRegistryClient;
 import in.org.projecteka.hiu.clients.Token;
 import lombok.AllArgsConstructor;
-import lombok.extern.java.Log;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Mono;
 
