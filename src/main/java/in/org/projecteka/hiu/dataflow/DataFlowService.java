@@ -28,7 +28,7 @@ public class DataFlowService {
         List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry ->
                 !(hasLink(entry) || hasContent(entry))).collect(Collectors.toList());
 
-        if (invalidEntries != null && !invalidEntries.isEmpty()) {
+        if (!invalidEntries.isEmpty()) {
             return Mono.error(ClientError.invalidEntryError("Entry must either have content or provide a link."));
         }
 
@@ -36,7 +36,7 @@ public class DataFlowService {
         return validateAndRetrieveRequestedConsent(dataNotificationRequest.getTransactionId(), senderId)
                 .flatMap(consentRequestId -> serializeDataTransferred(dataNotificationRequest, consentRequestId, dataFlowPartNo))
                 .flatMap(contentReference -> saveDataAvailability(contentReference, dataFlowPartNo))
-                .flatMap(contentReference -> notifyDataProcessor(contentReference));
+                .flatMap(this::notifyDataProcessor);
     }
 
     private Mono<Map<String, String>> saveDataAvailability(Map<String, String> contentReference, int partNumber) {

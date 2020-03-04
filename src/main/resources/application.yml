@@ -26,3 +26,5 @@ spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT}
+  codec:
+    max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
