@@ -1,7 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
@@ -15,21 +14,19 @@ import static java.util.function.Predicate.not;
 
 public class ConsentManagerClient {
     private final WebClient webClient;
-    private HiuProperties hiuProperties;
 
     public ConsentManagerClient(WebClient.Builder webClient,
-                                ConsentManagerServiceProperties consentManagerServiceProperties,
-                                HiuProperties hiuProperties) {
+                                ConsentManagerServiceProperties consentManagerServiceProperties) {
         this.webClient = webClient.baseUrl(consentManagerServiceProperties.getUrl()).build();
-        this.hiuProperties = hiuProperties;
     }
 
     public Mono<ConsentCreationResponse> createConsentRequest(
-            ConsentRequest consentRequest) {
+            ConsentRequest consentRequest,
+            String token) {
         return webClient
                 .post()
                 .uri("/consent-requests")
-                .header("Authorization", hiuProperties.getSecret())
+                .header("Authorization", token)
                 .body(Mono.just(consentRequest),
                         ConsentRequest.class)
                 .retrieve()
@@ -38,11 +35,11 @@ public class ConsentManagerClient {
                 .bodyToMono(ConsentCreationResponse.class);
     }
 
-    public Mono<ConsentArtefactResponse> getConsentArtefact(String consentId) {
+    public Mono<ConsentArtefactResponse> getConsentArtefact(String consentId, String token) {
         return webClient
                 .get()
                 .uri(String.format("/consents/%s/", consentId))
-                .header("Authorization", hiuProperties.getSecret())
+                .header("Authorization", token)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
                         clientResponse -> Mono.error(fetchConsentArtefactFailed()))

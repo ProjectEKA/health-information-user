@@ -1,10 +1,10 @@
 package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
+import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -17,7 +17,6 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -29,16 +28,18 @@ import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 @AllArgsConstructor
 public class DataFlowRequestListener {
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
-    private MessageListenerContainerFactory messageListenerContainerFactory;
-    private DestinationsConfig destinationsConfig;
-    private DataFlowClient dataFlowClient;
-    private DataFlowRepository dataFlowRepository;
-    private Decryptor decryptor;
-    private DataFlowProperties dataFlowProperties;
+    private final MessageListenerContainerFactory messageListenerContainerFactory;
+    private final DestinationsConfig destinationsConfig;
+    private final DataFlowClient dataFlowClient;
+    private final DataFlowRepository dataFlowRepository;
+    private final Decryptor decryptor;
+    private final DataFlowProperties dataFlowProperties;
+    private final CentralRegistry centralRegistry;
+
 
     @PostConstruct
     @SneakyThrows
-    public void subscribe() throws ClientError {
+    public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
                 .get(DATA_FLOW_REQUEST_QUEUE);
@@ -52,7 +53,7 @@ public class DataFlowRequestListener {
         MessageListener messageListener = message -> {
             DataFlowRequest dataFlowRequest = convertToDataFlowRequest(message.getBody());
             logger.info("Received data flow request with consent id : " + dataFlowRequest.getConsent().getId());
-            try{
+            try {
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
                 DataFlowRequest dataRequest = dataFlowRequest.toBuilder()
@@ -60,9 +61,11 @@ public class DataFlowRequestListener {
                         .build();
 
                 logger.info("Initiating data flow request to consent manager");
-                dataFlowClient.initiateDataFlowRequest(dataRequest)
+                centralRegistry.token()
+                        .flatMap(token -> dataFlowClient.initiateDataFlowRequest(dataRequest, token))
                         .flatMap(dataFlowRequestResponse ->
-                                dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(), dataRequest)
+                                dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                        dataRequest)
                                         .then(dataFlowRepository.addKeys(
                                                 dataFlowRequestResponse.getTransactionId(),
                                                 dataRequestKeyMaterial)))
@@ -82,12 +85,11 @@ public class DataFlowRequestListener {
         var keyPair = decryptor.generateKeyPair();
         var privateKey = decryptor.getBase64String(decryptor.getEncodedPrivateKey(keyPair.getPrivate()));
         var publicKey = decryptor.getBase64String(decryptor.getEncodedPublicKey(keyPair.getPublic()));
-        var dataFlowKeyMaterial = DataFlowRequestKeyMaterial.builder()
+        return DataFlowRequestKeyMaterial.builder()
                 .privateKey(privateKey)
                 .publicKey(publicKey)
                 .randomKey(decryptor.generateRandomKey())
                 .build();
-        return dataFlowKeyMaterial;
     }
 
     private KeyMaterial keyMaterial(DataFlowRequestKeyMaterial dataFlowKeyMaterial) {
@@ -104,7 +106,7 @@ public class DataFlowRequestListener {
                 .build();
     }
 
-    private String getExpiryDate(){
+    private String getExpiryDate() {
         var dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         Date currentDate = new Date();
         Calendar calendar = Calendar.getInstance();

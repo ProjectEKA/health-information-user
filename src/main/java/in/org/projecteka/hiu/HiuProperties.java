@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-
 @Configuration
 @ConfigurationProperties(prefix = "hiu")
 @Data
@@ -19,5 +18,4 @@ public class HiuProperties {
     private String id;
     private String name;
     private String callBackUrl;
-    private String secret;
 }

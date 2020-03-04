@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.consent;
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
@@ -47,6 +48,9 @@ public class ConsentServiceTest {
     @Mock
     Cache<String, Optional<Patient>> cache;
 
+    @Mock
+    private CentralRegistry centralRegistry;
+
     @BeforeEach
     public void setUp() {
         initMocks(this);
@@ -56,18 +60,22 @@ public class ConsentServiceTest {
     public void shouldCreateConsentRequest() {
         String requesterId = randomString();
         var hiuProperties = hiuProperties().build();
+        var token = randomString();
         ConsentService consentService = new ConsentService(
                 consentManagerClient,
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
-                null);
+                null,
+                centralRegistry);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
         ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()
                 .to(requesterId, hiuProperties.getId(), hiuProperties.getName(), hiuProperties.getCallBackUrl()));
 
-        when(consentManagerClient.createConsentRequest(consentRequest)).thenReturn(Mono.just(consentCreationResponse));
+        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(consentManagerClient.createConsentRequest(consentRequest, token))
+                .thenReturn(Mono.just(consentCreationResponse));
         when(consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
                 consentCreationResponse.getId(),
                 requesterId, hiuProperties.getCallBackUrl())))
@@ -81,12 +89,14 @@ public class ConsentServiceTest {
     @Test
     void returnsRequestsFrom() {
         var requesterId = randomString();
+        var token = randomString();
         var consentService = new ConsentService(
                 consentManagerClient,
                 hiuProperties().build(),
                 consentRepository,
                 dataFlowRequestPublisher,
-                new PatientService(patientServiceClient, cache));
+                new PatientService(patientServiceClient, cache, centralRegistry),
+                centralRegistry);
         Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
         Patient patient = patient().build();
         var consentRequest = consentRequest()
@@ -98,7 +108,8 @@ public class ConsentServiceTest {
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
         when(consentRepository.getConsentDetails(consentRequest.getId())).thenReturn(Flux.empty());
         when(consentRepository.requestsFrom(requesterId)).thenReturn(Flux.just(consentRequest));
-        when(patientServiceClient.patientWith(consentRequest.getPatient().getId()))
+        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(patientServiceClient.patientWith(consentRequest.getPatient().getId(), token))
                 .thenReturn(Mono.just(patient));
 
         var consents = consentService.requestsFrom(requesterId);
@@ -112,12 +123,14 @@ public class ConsentServiceTest {
     @Test
     void returnsRequestsWithConsentArtefactStatus() {
         var requesterId = randomString();
+        var token = randomString();
         var consentService = new ConsentService(
                 consentManagerClient,
                 hiuProperties().build(),
                 consentRepository,
                 dataFlowRequestPublisher,
-                new PatientService(patientServiceClient, cache));
+                new PatientService(patientServiceClient, cache, centralRegistry),
+                centralRegistry);
         Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
         Patient patient = patient().build();
         var consentRequest = consentRequest()
@@ -128,10 +141,11 @@ public class ConsentServiceTest {
                 .build();
         var statusMap = new HashMap<String, String>();
         statusMap.put("status", "GRANTED");
+        when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
         when(consentRepository.getConsentDetails(consentRequest.getId())).thenReturn(Flux.just(statusMap));
         when(consentRepository.requestsFrom(requesterId)).thenReturn(Flux.just(consentRequest));
-        when(patientServiceClient.patientWith(consentRequest.getPatient().getId()))
+        when(patientServiceClient.patientWith(consentRequest.getPatient().getId(), token))
                 .thenReturn(Mono.just(patient));
 
         var consents = consentService.requestsFrom(requesterId);

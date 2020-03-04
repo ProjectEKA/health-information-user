@@ -3,7 +3,6 @@ server:
 hiu:
   id: ${HIU_ID}
   name: ${HIU_NAME}
-  secret: ${HIU_TOKEN}
   callbackurl: ${CALL_BACK_URL}
   consentmanager:
     url: ${CONSENT_MANAGEMENT_URL}
@@ -12,6 +11,8 @@ hiu:
     maxPageSize: ${MAX_PAGE_SIZE}
   centralregistry:
     url: ${CENTRAL_REGISTRY_URL}
+    clientId: ${HIU_CLIENT_ID}
+    clientSecret: ${HIU_CLIENT_SECRET}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}

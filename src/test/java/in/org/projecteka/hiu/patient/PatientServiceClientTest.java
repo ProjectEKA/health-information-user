@@ -3,7 +3,6 @@ package in.org.projecteka.hiu.patient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,8 +46,7 @@ class PatientServiceClientTest {
                 .exchangeFunction(exchangeFunction);
         patientServiceClient = new PatientServiceClient(
                 webClientBuilder,
-                new ConsentManagerServiceProperties(BASE_URL),
-                new HiuProperties("", "random", "", string()));
+                new ConsentManagerServiceProperties(BASE_URL));
     }
 
     @Test
@@ -61,9 +59,10 @@ class PatientServiceClientTest {
                         .header("Content-Type", "application/json")
                         .body(response).build()));
 
-        Supplier<Mono<Patient>> action = () -> patientServiceClient.patientWith(patientId);
+        Supplier<Mono<Patient>> action = () -> patientServiceClient.patientWith(patientId, string());
 
         StepVerifier.create(action.get()).expectNext(patient).verifyComplete();
-        assertThat(captor.getValue().url().toString()).isEqualTo(format("%s/users/consentArtefactPatient-id@ncg", BASE_URL));
+        assertThat(captor.getValue().url().toString())
+                .isEqualTo(format("%s/users/consentArtefactPatient-id@ncg", BASE_URL));
     }
 }

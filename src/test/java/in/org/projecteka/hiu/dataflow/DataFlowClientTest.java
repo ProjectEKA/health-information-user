@@ -33,8 +33,7 @@ public class DataFlowClientTest {
         WebClient.Builder webClientBuilder = WebClient.builder();
         ConsentManagerServiceProperties consentManagerServiceProperties =
                 new ConsentManagerServiceProperties(mockWebServer.url("").toString());
-        HiuProperties hiuProperties = new HiuProperties("10000005", "Max Health Care", "localhost:8080", string());
-        dataFlowClient = new DataFlowClient(webClientBuilder, hiuProperties, consentManagerServiceProperties);
+        dataFlowClient = new DataFlowClient(webClientBuilder, consentManagerServiceProperties);
     }
 
     @Test
@@ -51,7 +50,7 @@ public class DataFlowClientTest {
                 .setHeader("Content-Type", "application/json")
                 .setBody(dataFlowRequestResponseJson));
 
-        StepVerifier.create(dataFlowClient.initiateDataFlowRequest(dataFlowRequest))
+        StepVerifier.create(dataFlowClient.initiateDataFlowRequest(dataFlowRequest, string()))
                 .assertNext(
                         response -> {
                             assertThat(response.getTransactionId()).isEqualTo(transactionId);
