@@ -10,6 +10,7 @@ import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -48,8 +49,9 @@ public class DataAvailabilityListener {
             logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
             try {
                 new HealthDataProcessor(healthDataRepository, dataFlowRepository, new Decryptor()).process(dataAvailableMessage);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception exception) {
+                logger.error(exception);
+                throw new AmqpRejectAndDontRequeueException(exception);
             }
         };
         mlc.setupMessageListener(messageListener);
