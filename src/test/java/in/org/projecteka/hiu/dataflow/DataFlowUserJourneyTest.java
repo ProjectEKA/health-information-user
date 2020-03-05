@@ -7,12 +7,12 @@ import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.consent.ConsentRepository;
-import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
-import in.org.projecteka.hiu.dataflow.model.Entry;
-import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
+import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
+import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
-import in.org.projecteka.hiu.dataflow.model.Status;
+import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -25,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -36,14 +37,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
+@ActiveProfiles("dev")
 public class DataFlowUserJourneyTest {
     private static MockWebServer dataFlowServer = new MockWebServer();
 
@@ -59,14 +61,24 @@ public class DataFlowUserJourneyTest {
     @MockBean
     private ConsentRepository consentRepository;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DestinationsConfig destinationsConfig;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
 
     @MockBean
-    private Decryptor decryptor;
+    private DataAvailabilityPublisher dataAvailabilityPublisher;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    private DataAvailabilityListener dataAvailabilityListener;
+
+    @MockBean
+    LocalDataStore localDataStore;
+
 
     @AfterAll
     public static void tearDown() throws IOException {
@@ -82,21 +94,26 @@ public class DataFlowUserJourneyTest {
     public void shouldNotifyDataFlowResponse() throws Exception {
         Entry entry = entry().build();
         entry.setLink(null);
+        entry.setContent("Some Dummy Content XYZ 1");
         List<Entry> entries = new ArrayList<>();
         entries.add(entry);
         String transactionId = "transactionId";
         KeyMaterial keyMaterial = keyMaterial().build();
         DataNotificationRequest dataNotificationRequest =
-                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).keyMaterial(keyMaterial).build();
-        var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
-        when(dataFlowRepository.insertHealthInformation(transactionId, entry)).thenReturn(Mono.empty());
-        when(dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId()))
-                .thenReturn(Mono.just(savedKeyMaterial));
-        when(decryptor.decrypt(keyMaterial, savedKeyMaterial, entry.getContent())).thenReturn(entry.getContent());
+        DataNotificationRequest.builder().transactionId(transactionId).entries(entries).keyMaterial(keyMaterial).build();
+
+        Map<String, Object> flowRequestMap = new HashMap<>();
+        flowRequestMap.put("consentRequestId", "consentRequestId");
+
+        when(dataFlowRepository.insertDataPartAvailability(transactionId, 1)).thenReturn(Mono.empty());
+        when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(flowRequestMap));
+        when(dataAvailabilityPublisher.broadcastDataAvailability(any())).thenReturn(Mono.empty());
+        when(localDataStore.serializeDataToFile(any(), any())).thenReturn(Mono.empty());
+
         webTestClient
                 .post()
                 .uri("/data/notification")
-                .header("Authorization", "AuthToken")
+                .header("Authorization", "R2FuZXNoQG5jZw==")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -119,15 +136,15 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("hipName", hipName);
         consentDetailsMap.put("requester", "1");
         consentDetails.add(consentDetailsMap);
-        Entry entry = entry().build();
+        String content = "Some dummy content";
         DataEntry dataEntry =
-                DataEntry.builder().hipId(hipId).hipName(hipName).status(Status.COMPLETED).entry(entry).build();
+                DataEntry.builder().hipId(hipId).hipName(hipName).data(content).build();
         List<DataEntry> dataEntries = new ArrayList<>();
         dataEntries.add(dataEntry);
 
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
         when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
-        when(healthInformationRepository.getHealthInformation(transactionId)).thenReturn(Flux.just(entry));
+        when(healthInformationRepository.getHealthInformation(transactionId)).thenReturn(Flux.just(content));
 
         webTestClient
                 .get()
@@ -171,6 +188,37 @@ public class DataFlowUserJourneyTest {
                 .header("Authorization", "MQ==")
                 .exchange()
                 .expectStatus().isUnauthorized()
+                .expectBody()
+                .json(errorResponseJson);
+    }
+
+
+    @Test
+    public void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
+        Entry entry = new Entry();
+        entry.setLink(null);
+        List<Entry> entries = new ArrayList<>();
+        entries.add(entry);
+        String transactionId = "transactionId";
+        DataNotificationRequest dataNotificationRequest =
+                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
+
+        when(dataFlowRepository.insertDataPartAvailability(transactionId, 1)).thenReturn(Mono.empty());
+
+        var errorResponse = new ErrorRepresentation(new Error(
+                ErrorCode.INVALID_DATA_FLOW_ENTRY,
+                "Entry must either have content or provide a link."));
+        var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
+
+        webTestClient
+                .post()
+                .uri("/data/notification")
+                .header("Authorization", "R2FuZXNoQG5jZw==")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(dataNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .json(errorResponseJson);
     }

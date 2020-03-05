@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
@@ -58,15 +59,21 @@ public class ConsentUserJourneyTest {
 
     @MockBean
     private ConsentRepository consentRepository;
-    
+
+    @SuppressWarnings("unused")
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DestinationsConfig destinationsConfig;
 
     @MockBean
     private DataFlowRequestPublisher dataFlowRequestPublisher;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    private DataAvailabilityListener dataAvailabilityListener;
 
     @MockBean
     private CentralRegistry centralRegistry;

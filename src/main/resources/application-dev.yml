@@ -7,6 +7,7 @@ hiu:
   dataflowservice:
     defaultPageSize: 20
     maxPageSize: 100
+    localStoragePath: /tmp/
   centralregistry:
     url: http://localhost:9001/auth
     clientId: 10000005
@@ -24,3 +25,5 @@ spring:
   rabbitmq:
     host: localhost
     port: 5672
+  codec:
+    max-in-memory-size: 500MB

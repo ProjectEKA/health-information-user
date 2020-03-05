@@ -11,12 +11,18 @@ import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
+import in.org.projecteka.hiu.dataflow.DataFlowServiceProperties;
 import in.org.projecteka.hiu.dataflow.Decryptor;
+import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
+import in.org.projecteka.hiu.dataflow.LocalDataStore;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
+import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
@@ -47,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class HiuConfiguration {
     public static final String DATA_FLOW_REQUEST_QUEUE = "data-flow-request-queue";
+    public static final String DATA_FLOW_PROCESS_QUEUE = "data-flow-process-queue";
 
     @Bean
     public PatientServiceClient patientServiceClient(
@@ -139,6 +146,8 @@ public class HiuConfiguration {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
         queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
                 DATA_FLOW_REQUEST_QUEUE));
+        queues.put(DATA_FLOW_PROCESS_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
+                DATA_FLOW_PROCESS_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
         destinationsConfig.getQueues()
@@ -215,11 +224,50 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public LocalDataStore localDataStore() {
+        return new LocalDataStore();
+    }
+
+    @Bean
     public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
-                                           HealthInformationRepository healthInformationRepository,
-                                           ConsentRepository consentRepository,
-                                           Decryptor decryptor) {
-        return new DataFlowService(dataFlowRepository, healthInformationRepository, consentRepository, decryptor);
+                                           DataAvailabilityPublisher dataAvailabilityPublisher,
+                                           DataFlowServiceProperties properties,
+                                           LocalDataStore localDataStore) {
+        return new DataFlowService(
+                dataFlowRepository,
+                dataAvailabilityPublisher,
+                properties,
+                localDataStore);
+    }
+
+    @Bean
+    public HealthInfoManager healthInfoManager(ConsentRepository consentRepository,
+                                               DataFlowRepository dataFlowRepository,
+                                               HealthInformationRepository healthInformationRepository) {
+        return new HealthInfoManager(consentRepository, dataFlowRepository, healthInformationRepository);
+    }
+
+    @Bean
+    public HealthDataRepository healthDataRepository(PgPool pgPool) {
+        return new HealthDataRepository(pgPool);
+    }
+
+    @Bean
+    public DataAvailabilityPublisher dataAvailabilityPublisher(AmqpTemplate amqpTemplate,
+                                                               DestinationsConfig destinationsConfig) {
+        return new DataAvailabilityPublisher(amqpTemplate, destinationsConfig);
+    }
+
+    @Bean
+    public DataAvailabilityListener dataAvailabilityListener(MessageListenerContainerFactory messageListenerContainerFactory,
+                                                             DestinationsConfig destinationsConfig,
+                                                             HealthDataRepository healthDataRepository,
+                                                             DataFlowRepository dataFlowRepository) {
+        return new DataAvailabilityListener(
+                messageListenerContainerFactory,
+                destinationsConfig,
+                healthDataRepository,
+                dataFlowRepository);
     }
 
     @Bean

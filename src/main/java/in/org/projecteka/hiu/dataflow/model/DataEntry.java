@@ -13,5 +13,5 @@ public class DataEntry {
     private String hipId;
     private String hipName;
     private Status status;
-    private Entry entry;
+    private Object data;
 }

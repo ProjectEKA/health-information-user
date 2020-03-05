@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class ClientError extends Throwable {
 
-    private static final String CANNOT_PROCESS_REQUEST_TRY_LATER = "Cannot process the request at the moment, please try later.";
+    private static final String CANNOT_PROCESS_REQUEST_TRY_LATER = "Cannot process the request at the moment, please " +
+            "try later.";
     private final HttpStatus httpStatus;
     private final ErrorRepresentation error;
 
@@ -53,6 +54,13 @@ public class ClientError extends Throwable {
                 new ErrorRepresentation(new Error(
                         ErrorCode.UNAUTHORIZED_REQUESTER,
                         "Requester is not authorized to perform this action")));
+    }
+
+    public static ClientError invalidEntryError(String errorMessage) {
+        return new ClientError(
+                HttpStatus.BAD_REQUEST,
+                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FLOW_ENTRY,
+                        errorMessage)));
     }
 
     public static ClientError authenticationFailed() {

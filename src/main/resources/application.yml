@@ -9,6 +9,7 @@ hiu:
   dataflowservice:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}
     maxPageSize: ${MAX_PAGE_SIZE}
+    localStoragePath: ${LOCAL_STORAGE_PATH}
   centralregistry:
     url: ${CENTRAL_REGISTRY_URL}
     clientId: ${HIU_CLIENT_ID}
@@ -26,3 +27,5 @@ spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT}
+  codec:
+    max-in-memory-size: ${MAX_IN_MEMORY_SIZE}

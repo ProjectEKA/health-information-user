@@ -56,20 +56,19 @@ public class DataFlowRequestListener {
             try {
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
-                DataFlowRequest dataRequest = dataFlowRequest.toBuilder()
-                        .keyMaterial(keyMaterial)
-                        .build();
+                dataFlowRequest.setKeyMaterial(keyMaterial);
 
                 logger.info("Initiating data flow request to consent manager");
+
                 centralRegistry.token()
-                        .flatMap(token -> dataFlowClient.initiateDataFlowRequest(dataRequest, token))
-                        .flatMap(dataFlowRequestResponse ->
-                                dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                        dataRequest)
-                                        .then(dataFlowRepository.addKeys(
-                                                dataFlowRequestResponse.getTransactionId(),
-                                                dataRequestKeyMaterial)))
-                        .block();
+                        .flatMap(token -> dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
+                                .flatMap(dataFlowRequestResponse ->
+                                        dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                                dataFlowRequest.getConsent().getId(),
+                                                dataFlowRequest)
+                                                .then(dataFlowRepository.addKeys(
+                                                        dataFlowRequestResponse.getTransactionId(),
+                                                        dataRequestKeyMaterial)))).block();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.fatal("Exception on key creation {exception}", exception);
