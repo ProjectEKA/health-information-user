@@ -251,9 +251,7 @@ components:
         - hipId
         - hipName
         - status
-        - content
-        - media
-        - checksum
+        - data
       properties:
         hipId:
           type: string
@@ -261,11 +259,7 @@ components:
           type: string
         status:
           type: string
-          enum: [REQUESTED, COMPLETED]
-        content:
-          type: string
-          description: content is a FHIR bundle
-        meadia:
-          type: string
-        checksum:
-          type: string
+          enum: [SUCCEEDED, ERRORED]
+        data:
+          type: object
+          description: data is a FHIR bundle. https://www.hl7.org/fhir/bundle.html

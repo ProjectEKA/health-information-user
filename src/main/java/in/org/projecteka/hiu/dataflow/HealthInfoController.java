@@ -34,18 +34,14 @@ public class HealthInfoController {
             @RequestParam(defaultValue = "0") int offset) {
         String requesterId = TokenUtils.decode(authorization);
         return healthInfoManager.fetchHealthInformation(consentRequestId, requesterId).collectList()
-                .map(dataEntries -> {
-                    HealthInformation hi = HealthInformation.builder()
-                            .size(dataEntries.size())
-                            .limit(Math.min(limit, serviceProperties.getMaxPageSize()))
-                            .offset(offset)
-                            .entries(dataEntries).build();
-                    return hi;
-                });
+                .map(dataEntries -> HealthInformation.builder()
+                        .size(dataEntries.size())
+                        .limit(Math.min(limit, serviceProperties.getMaxPageSize()))
+                        .offset(offset)
+                        .entries(dataEntries).build());
     }
 
-
-    @GetMapping("/consent-requests/{consent-request-id}/attachments/{file-name}")
+    @GetMapping("/health-information/fetch/{consent-request-id}/attachments/{file-name}")
     public Mono<ResponseEntity<FileSystemResource>> fetchHealthInformation(
             ServerHttpResponse response,
             @RequestHeader(value = "Authorization", required = false) String authorization,

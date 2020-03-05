@@ -22,7 +22,7 @@ public class DataFlowRepository {
     private static final String GET_KEY_FOR_ID = "SELECT key_pairs " +
             "FROM data_flow_request_keys WHERE transaction_id = $1";;
     private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
-            "data_flow_request WHERE data_flow_request -> 'consent' ->> 'id' = $1";
+            "data_flow_request WHERE consent_artefact_id = $1";
     private static final String INSERT_HEALTH_DATA_AVAILABILITY = "INSERT INTO data_flow_parts (transaction_id, " +
             "part_number) VALUES ($1, $2)";
     private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION =
