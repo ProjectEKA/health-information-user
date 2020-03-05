@@ -61,15 +61,18 @@ public class DataFlowUserJourneyTest {
     @MockBean
     private ConsentRepository consentRepository;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DestinationsConfig destinationsConfig;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
 
     @MockBean
     private DataAvailabilityPublisher dataAvailabilityPublisher;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DataAvailabilityListener dataAvailabilityListener;
 
@@ -107,9 +110,6 @@ public class DataFlowUserJourneyTest {
         when(dataAvailabilityPublisher.broadcastDataAvailability(any())).thenReturn(Mono.empty());
         when(localDataStore.serializeDataToFile(any(), any())).thenReturn(Mono.empty());
 
-//        when(dataFlowRepository.getKeys(dataNotificationRequest.getTransactionId()))
-//                .thenReturn(Mono.just(savedKeyMaterial));
-//        when(decryptor.decrypt(keyMaterial, savedKeyMaterial, entry.getContent())).thenReturn(entry.getContent());
         webTestClient
                 .post()
                 .uri("/data/notification")

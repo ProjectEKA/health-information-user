@@ -59,16 +59,19 @@ public class ConsentUserJourneyTest {
 
     @MockBean
     private ConsentRepository consentRepository;
-    
+
+    @SuppressWarnings("unused")
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DestinationsConfig destinationsConfig;
 
     @MockBean
     private DataFlowRequestPublisher dataFlowRequestPublisher;
 
+    @SuppressWarnings("unused")
     @MockBean
     private DataAvailabilityListener dataAvailabilityListener;
 
