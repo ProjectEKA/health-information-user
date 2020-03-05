@@ -1,7 +1,6 @@
 package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
 import lombok.AllArgsConstructor;
@@ -15,14 +14,13 @@ import static java.util.function.Predicate.not;
 @AllArgsConstructor
 public class DataFlowClient {
     private WebClient.Builder webClientBuilder;
-    private HiuProperties hiuProperties;
     private ConsentManagerServiceProperties consentManagerServiceProperties;
 
-    public Mono<DataFlowRequestResponse> initiateDataFlowRequest(DataFlowRequest dataFlowRequest) {
+    public Mono<DataFlowRequestResponse> initiateDataFlowRequest(DataFlowRequest dataFlowRequest, String token) {
         return webClientBuilder.build()
                 .post()
                 .uri(consentManagerServiceProperties.getUrl() + "/health-information/request")
-                .header("Authorization", hiuProperties.getSecret())
+                .header("Authorization", token)
                 .body(Mono.just(dataFlowRequest), DataFlowRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),

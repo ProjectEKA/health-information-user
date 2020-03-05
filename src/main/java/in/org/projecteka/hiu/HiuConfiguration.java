@@ -3,8 +3,10 @@ package in.org.projecteka.hiu;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import in.org.projecteka.hiu.clients.CentralRegistryClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
@@ -56,9 +58,8 @@ public class HiuConfiguration {
     @Bean
     public PatientServiceClient patientServiceClient(
             WebClient.Builder builder,
-            ConsentManagerServiceProperties consentManagerServiceProperties,
-            HiuProperties hiuProperties) {
-        return new PatientServiceClient(builder, consentManagerServiceProperties, hiuProperties);
+            ConsentManagerServiceProperties consentManagerServiceProperties) {
+        return new PatientServiceClient(builder, consentManagerServiceProperties);
     }
 
     @Bean
@@ -89,19 +90,22 @@ public class HiuConfiguration {
             HiuProperties hiuProperties,
             ConsentRepository consentRepository,
             DataFlowRequestPublisher dataFlowRequestPublisher,
-            PatientService patientService) {
+            PatientService patientService,
+            CentralRegistry centralRegistry) {
         return new ConsentService(
-                new ConsentManagerClient(builder, consentManagerServiceProperties, hiuProperties),
+                new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
-                patientService);
+                patientService,
+                centralRegistry);
     }
 
     @Bean
     public PatientService patientService(PatientServiceClient patientServiceClient,
-                                         Cache<String, Optional<Patient>> cache) {
-        return new PatientService(patientServiceClient, cache);
+                                         Cache<String, Optional<Patient>> cache,
+                                         CentralRegistry centralRegistry) {
+        return new PatientService(patientServiceClient, cache, centralRegistry);
     }
 
     @Bean
@@ -181,9 +185,8 @@ public class HiuConfiguration {
 
     @Bean
     public DataFlowClient dataFlowClient(WebClient.Builder builder,
-                                         HiuProperties hiuProperties,
                                          ConsentManagerServiceProperties consentManagerServiceProperties) {
-        return new DataFlowClient(builder, hiuProperties, consentManagerServiceProperties);
+        return new DataFlowClient(builder, consentManagerServiceProperties);
     }
 
     @Bean
@@ -202,20 +205,22 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowRequestListener dataFlowRequestListener(MessageListenerContainerFactory messageListenerContainerFactory,
-                                                           DestinationsConfig destinationsConfig,
-                                                           DataFlowClient dataFlowClient,
-                                                           DataFlowRepository dataFlowRepository,
-                                                           Decryptor decryptor,
-                                                           DataFlowProperties dataFlowProperties) {
+    public DataFlowRequestListener dataFlowRequestListener(
+            MessageListenerContainerFactory messageListenerContainerFactory,
+            DestinationsConfig destinationsConfig,
+            DataFlowClient dataFlowClient,
+            DataFlowRepository dataFlowRepository,
+            Decryptor decryptor,
+            DataFlowProperties dataFlowProperties,
+            CentralRegistry centralRegistry) {
         return new DataFlowRequestListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
                 dataFlowClient,
                 dataFlowRepository,
                 decryptor,
-                dataFlowProperties
-        );
+                dataFlowProperties,
+                centralRegistry);
     }
 
     @Bean
@@ -263,5 +268,17 @@ public class HiuConfiguration {
                 destinationsConfig,
                 healthDataRepository,
                 dataFlowRepository);
+    }
+
+    @Bean
+    public CentralRegistryClient centralRegistryClient(WebClient.Builder builder,
+                                                       CentralRegistryProperties centralRegistryProperties) {
+        return new CentralRegistryClient(builder.baseUrl(centralRegistryProperties.url));
+    }
+
+    @Bean
+    public CentralRegistry connector(CentralRegistryProperties centralRegistryProperties,
+                                     CentralRegistryClient centralRegistryClient) {
+        return new CentralRegistry(centralRegistryProperties, centralRegistryClient);
     }
 }

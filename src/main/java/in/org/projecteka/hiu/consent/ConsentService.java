@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
@@ -8,15 +9,14 @@ import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
-
 import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.invalidConsentManager;
+import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 
 @AllArgsConstructor
 public class ConsentService {
@@ -25,6 +25,7 @@ public class ConsentService {
     private final ConsentRepository consentRepository;
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
     private final PatientService patientService;
+    private final CentralRegistry centralRegistry;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
@@ -32,7 +33,8 @@ public class ConsentService {
                 hiuProperties.getId(),
                 hiuProperties.getName(),
                 hiuProperties.getCallBackUrl());
-        return consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest))
+        return centralRegistry.token()
+                .flatMap(token -> consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest), token))
                 .flatMap(consentCreationResponse ->
                         consentRepository
                                 .insert(consentRequestData.getConsent().toConsentRequest(
@@ -85,7 +87,8 @@ public class ConsentService {
 
     private Mono<Void> processGrantedConsent(ConsentArtefactReference consentArtefactReference,
                                              String consentRequestId) {
-        return consentManagerClient.getConsentArtefact(consentArtefactReference.getId())
+        return centralRegistry.token()
+                .flatMap(token -> consentManagerClient.getConsentArtefact(consentArtefactReference.getId(), token))
                 .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
                         consentArtefactResponse.getConsentDetail(),
                         consentArtefactResponse.getStatus(),

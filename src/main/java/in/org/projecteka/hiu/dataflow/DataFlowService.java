@@ -34,7 +34,8 @@ public class DataFlowService {
 
         int dataFlowPartNo = 1;
         return validateAndRetrieveRequestedConsent(dataNotificationRequest.getTransactionId(), senderId)
-                .flatMap(consentRequestId -> serializeDataTransferred(dataNotificationRequest, consentRequestId, dataFlowPartNo))
+                .flatMap(consentRequestId -> serializeDataTransferred(dataNotificationRequest, consentRequestId,
+                        dataFlowPartNo))
                 .flatMap(contentReference -> saveDataAvailability(contentReference, dataFlowPartNo))
                 .flatMap(this::notifyDataProcessor);
     }

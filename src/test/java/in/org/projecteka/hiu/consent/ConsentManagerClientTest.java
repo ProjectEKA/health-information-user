@@ -3,7 +3,6 @@ package in.org.projecteka.hiu.consent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.HiuProperties;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -31,11 +30,7 @@ public class ConsentManagerClientTest {
         WebClient.Builder webClientBuilder = WebClient.builder();
         ConsentManagerServiceProperties consentManagerServiceProperties =
                 new ConsentManagerServiceProperties(mockWebServer.url("").toString());
-        HiuProperties hiuProperties = new HiuProperties("10000005",
-                "Max Health Care",
-                "localhost:8080",
-                randomString());
-        consentManagerClient = new ConsentManagerClient(webClientBuilder, consentManagerServiceProperties, hiuProperties);
+        consentManagerClient = new ConsentManagerClient(webClientBuilder, consentManagerServiceProperties);
     }
 
     @Test
@@ -49,7 +44,7 @@ public class ConsentManagerClientTest {
                 .setHeader("Content-Type", "application/json")
                 .setBody(consentCreationResponseJson));
 
-        StepVerifier.create(consentManagerClient.createConsentRequest(consentRepresentation))
+        StepVerifier.create(consentManagerClient.createConsentRequest(consentRepresentation, randomString()))
                 .assertNext(response -> assertThat(response.getId()).isEqualTo(consentCreationResponse.getId()))
                 .verifyComplete();
 

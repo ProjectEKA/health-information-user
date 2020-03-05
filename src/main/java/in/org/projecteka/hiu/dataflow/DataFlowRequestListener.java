@@ -1,10 +1,10 @@
 package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
+import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -17,7 +17,6 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -29,16 +28,18 @@ import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 @AllArgsConstructor
 public class DataFlowRequestListener {
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
-    private MessageListenerContainerFactory messageListenerContainerFactory;
-    private DestinationsConfig destinationsConfig;
-    private DataFlowClient dataFlowClient;
-    private DataFlowRepository dataFlowRepository;
-    private Decryptor decryptor;
-    private DataFlowProperties dataFlowProperties;
+    private final MessageListenerContainerFactory messageListenerContainerFactory;
+    private final DestinationsConfig destinationsConfig;
+    private final DataFlowClient dataFlowClient;
+    private final DataFlowRepository dataFlowRepository;
+    private final Decryptor decryptor;
+    private final DataFlowProperties dataFlowProperties;
+    private final CentralRegistry centralRegistry;
+
 
     @PostConstruct
     @SneakyThrows
-    public void subscribe() throws ClientError {
+    public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
                 .get(DATA_FLOW_REQUEST_QUEUE);
@@ -58,15 +59,16 @@ public class DataFlowRequestListener {
                 dataFlowRequest.setKeyMaterial(keyMaterial);
 
                 logger.info("Initiating data flow request to consent manager");
-                dataFlowClient.initiateDataFlowRequest(dataFlowRequest)
-                        .flatMap(dataFlowRequestResponse ->
-                                dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                        dataFlowRequest.getConsent().getId(),
-                                        dataFlowRequest)
-                                        .then(dataFlowRepository.addKeys(
-                                                dataFlowRequestResponse.getTransactionId(),
-                                                dataRequestKeyMaterial)))
-                        .block();
+
+                centralRegistry.token()
+                        .flatMap(token -> dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
+                                .flatMap(dataFlowRequestResponse ->
+                                        dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                                dataFlowRequest.getConsent().getId(),
+                                                dataFlowRequest)
+                                                .then(dataFlowRepository.addKeys(
+                                                        dataFlowRequestResponse.getTransactionId(),
+                                                        dataRequestKeyMaterial)))).block();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.fatal("Exception on key creation {exception}", exception);
@@ -82,12 +84,11 @@ public class DataFlowRequestListener {
         var keyPair = decryptor.generateKeyPair();
         var privateKey = decryptor.getBase64String(decryptor.getEncodedPrivateKey(keyPair.getPrivate()));
         var publicKey = decryptor.getBase64String(decryptor.getEncodedPublicKey(keyPair.getPublic()));
-        var dataFlowKeyMaterial = DataFlowRequestKeyMaterial.builder()
+        return DataFlowRequestKeyMaterial.builder()
                 .privateKey(privateKey)
                 .publicKey(publicKey)
                 .randomKey(decryptor.generateRandomKey())
                 .build();
-        return dataFlowKeyMaterial;
     }
 
     private KeyMaterial keyMaterial(DataFlowRequestKeyMaterial dataFlowKeyMaterial) {
