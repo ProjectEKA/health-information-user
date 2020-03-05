@@ -46,11 +46,9 @@ public class DataAvailabilityListener {
             DataAvailableMessage dataAvailableMessage = deserializeMessage(message);
             logger.info(String.format("Received notification of data availability for transaction id : %s", dataAvailableMessage.getTransactionId()));
             logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
-            try {
-                new HealthDataProcessor(healthDataRepository, dataFlowRepository, new Decryptor()).process(dataAvailableMessage);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            HealthDataProcessor healthDataProcessor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, new Decryptor());
+            healthDataProcessor.registerHITypeResourceHandler(new DiagnosticReportResourceProcessor());
+            healthDataProcessor.process(dataAvailableMessage);
         };
         mlc.setupMessageListener(messageListener);
         mlc.start();

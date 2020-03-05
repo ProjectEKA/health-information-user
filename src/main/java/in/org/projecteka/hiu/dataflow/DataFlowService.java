@@ -4,6 +4,7 @@ import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
+import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -42,7 +43,9 @@ public class DataFlowService {
 
     private Mono<Map<String, String>> saveDataAvailability(Map<String, String> contentReference, int partNumber) {
         contentReference.put(DATA_PART_NUMBER, String.valueOf(partNumber));
-        return dataFlowRepository.insertDataPartAvailability(contentReference.get(TRANSACTION_ID), partNumber)
+        return dataFlowRepository.insertDataPartAvailability(contentReference.get(TRANSACTION_ID),
+                partNumber,
+                HealthInfoStatus.RECEIVED)
                 .flatMap(r -> Mono.just(contentReference));
     }
 

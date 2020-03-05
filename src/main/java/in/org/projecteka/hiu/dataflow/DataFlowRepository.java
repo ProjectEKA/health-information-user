@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
@@ -24,12 +25,13 @@ public class DataFlowRepository {
     private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
             "data_flow_request WHERE consent_artefact_id = $1";
     private static final String INSERT_HEALTH_DATA_AVAILABILITY = "INSERT INTO data_flow_parts (transaction_id, " +
-            "part_number) VALUES ($1, $2)";
+            "part_number, status) VALUES ($1, $2, $3)";
     private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION =
             "SELECT  ca.consent_request_id, dfr.data_flow_request " +
             "FROM data_flow_request dfr " +
             "INNER JOIN consent_artefact ca ON dfr.consent_artefact_id=ca.consent_artefact_id " +
             "WHERE dfr.transaction_id=$1";
+    private static final String UPDATE_HEALTH_DATA_AVAILABILITY = "UPDATE data_flow_parts SET status = $1, errors = $2 WHERE transaction_id = $3 AND part_number = $4";
 
     private PgPool dbClient;
 
@@ -119,16 +121,30 @@ public class DataFlowRepository {
                 }));
     }
 
-    public Mono<Boolean> insertDataPartAvailability(String transactionId, int partNumber) {
+    public Mono<Void> insertDataPartAvailability(String transactionId, int partNumber, HealthInfoStatus status) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         INSERT_HEALTH_DATA_AVAILABILITY,
-                        Tuple.of(transactionId, String.valueOf(partNumber)),
+                        Tuple.of(transactionId, String.valueOf(partNumber), status),
                         handler -> {
                             if (handler.failed())
                                 monoSink.error(new Exception("Failed to insert health data availability"));
                             else
-                                monoSink.success(true);
+                                monoSink.success();
+                        })
+        );
+    }
+
+    public Mono<Void> updateDataFlowWithStatus(String transactionId, String dataPartNumber, String allErrors, HealthInfoStatus status) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(
+                        UPDATE_HEALTH_DATA_AVAILABILITY,
+                        Tuple.of(status, allErrors, transactionId, dataPartNumber),
+                        handler -> {
+                            if (handler.failed())
+                                monoSink.error(new Exception("Failed to update health data availability"));
+                            else
+                                monoSink.success();
                         })
         );
     }
