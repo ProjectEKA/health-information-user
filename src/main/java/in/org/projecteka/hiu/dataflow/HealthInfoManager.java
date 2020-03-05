@@ -14,14 +14,15 @@ public class HealthInfoManager {
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return consentRepository.getConsentDetails(consentRequestId)
-                .filter(consentDetail -> consentDetail.get("requester").equals(requesterId))
-                .flatMap(consentDetail ->
-                        dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
-                                .flatMapMany(transactionId -> getDataEntries(
-                                        transactionId,
-                                        consentDetail.get("hipId"),
-                                        consentDetail.get("hipName")))
-                ).switchIfEmpty(Flux.error(ClientError.unauthorizedRequester()));
+                .flatMap(consentDetail -> {
+                            if (!consentDetail.get("requester").equals(requesterId))
+                                return Flux.error(ClientError.unauthorizedRequester());
+                            return dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
+                                    .flatMapMany(transactionId -> getDataEntries(
+                                            transactionId,
+                                            consentDetail.get("hipId"),
+                                            consentDetail.get("hipName")));
+                });
     }
 
     private Flux<DataEntry> getDataEntries(String transactionId, String hipId, String hipName) {
