@@ -38,7 +38,9 @@ public class HealthDataProcessor {
         }
     };
 
-    public HealthDataProcessor(HealthDataRepository healthDataRepository, DataFlowRepository dataFlowRepository, Decryptor decryptor) {
+    public HealthDataProcessor(HealthDataRepository healthDataRepository,
+                               DataFlowRepository dataFlowRepository,
+                               Decryptor decryptor) {
         this.healthDataRepository = healthDataRepository;
         this.dataFlowRepository = dataFlowRepository;
         this.decryptor = decryptor;
@@ -50,7 +52,7 @@ public class HealthDataProcessor {
 
     public void process(DataAvailableMessage message) throws IOException {
         DataContext context = createContext(message);
-        if (context.getNotifiedData() != null) {
+        if (context != null && context.getNotifiedData() != null) {
             processEntries(context);
         } else {
             // TODO: this should never happen, unless someone sends empty response.
@@ -61,7 +63,7 @@ public class HealthDataProcessor {
     private void processEntries(DataContext context) {
         DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(context.getTransactionId()).block();
 
-        context.getNotifiedData().getEntries().stream().forEach(entry -> {
+        context.getNotifiedData().getEntries().forEach(entry -> {
             if (hasContent(entry)) {
                 ProcessedResource processedResource = processEntryContent(context, entry, keyMaterial);
                 if (!processedResource.hasErrors()) {

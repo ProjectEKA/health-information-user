@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 @Builder
 @NoArgsConstructor
-public class  DataNotificationRequest {
+public class DataNotificationRequest {
     private String transactionId;
     private List<Entry> entries;
     private KeyMaterial keyMaterial;
