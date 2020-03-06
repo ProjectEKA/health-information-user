@@ -46,7 +46,7 @@ public class DataFlowService {
         return dataFlowRepository.insertDataPartAvailability(contentReference.get(TRANSACTION_ID),
                 partNumber,
                 HealthInfoStatus.RECEIVED)
-                .flatMap(r -> Mono.just(contentReference));
+                .thenReturn(contentReference);
     }
 
     private Mono<Void> notifyDataProcessor(Map<String, String> contentRef) {

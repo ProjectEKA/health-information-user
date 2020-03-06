@@ -125,7 +125,7 @@ public class DataFlowRepository {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         INSERT_HEALTH_DATA_AVAILABILITY,
-                        Tuple.of(transactionId, String.valueOf(partNumber), status),
+                        Tuple.of(transactionId, String.valueOf(partNumber), status.toString()),
                         handler -> {
                             if (handler.failed())
                                 monoSink.error(new Exception("Failed to insert health data availability"));
@@ -139,7 +139,7 @@ public class DataFlowRepository {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         UPDATE_HEALTH_DATA_AVAILABILITY,
-                        Tuple.of(status, allErrors, transactionId, dataPartNumber),
+                        Tuple.of(status.toString(), allErrors, transactionId, dataPartNumber),
                         handler -> {
                             if (handler.failed())
                                 monoSink.error(new Exception("Failed to update health data availability"));
