@@ -145,7 +145,6 @@ public class DataFlowRepository {
                                 monoSink.error(new Exception("Failed to update health data availability"));
                             else
                                 monoSink.success();
-                        })
-        );
+                        }));
     }
 }
