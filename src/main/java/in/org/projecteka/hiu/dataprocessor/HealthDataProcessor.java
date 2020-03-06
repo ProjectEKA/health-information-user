@@ -90,7 +90,6 @@ public class HealthDataProcessor {
         } else {
             updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED);
         }
-
     }
 
     private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status) {
