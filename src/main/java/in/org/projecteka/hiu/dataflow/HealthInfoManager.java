@@ -7,6 +7,7 @@ import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 
+
 @AllArgsConstructor
 public class HealthInfoManager {
     private ConsentRepository consentRepository;
@@ -28,11 +29,20 @@ public class HealthInfoManager {
 
     private Flux<DataEntry> getDataEntries(String transactionId, String hipId, String hipName) {
         return healthInformationRepository.getHealthInformation(transactionId)
-                .map(healthInfo -> DataEntry.builder()
-                        .hipId(hipId)
-                        .hipName(hipName)
-                        .status(EntryStatus.valueOf((String) healthInfo.get("status")))
-                        .data(healthInfo.get("data"))
-                        .build());
+                .map(healthInfo -> {
+                    return DataEntry.builder()
+                            .hipId(hipId)
+                            .hipName(hipName)
+                            .status(toStatus((String) healthInfo.get("status")))
+                            .data(healthInfo.get("data"))
+                            .build();
+                });
+    }
+
+    private EntryStatus toStatus(String status) {
+        if ( (status != null) && !"".equals(status)) {
+            return EntryStatus.valueOf(status);
+        }
+        return null;
     }
 }

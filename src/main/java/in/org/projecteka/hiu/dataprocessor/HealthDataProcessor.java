@@ -38,14 +38,11 @@ public class HealthDataProcessor {
 
     public HealthDataProcessor(HealthDataRepository healthDataRepository,
                                DataFlowRepository dataFlowRepository,
-                               Decryptor decryptor) {
+                               Decryptor decryptor, List<HITypeResourceProcessor> hiTypeResourceProcessors) {
         this.healthDataRepository = healthDataRepository;
         this.dataFlowRepository = dataFlowRepository;
         this.decryptor = decryptor;
-    }
-
-    public void registerHITypeResourceHandler(HITypeResourceProcessor resourceProcessor) {
-        resourceProcessors.add(resourceProcessor);
+        this.resourceProcessors.addAll(hiTypeResourceProcessors);
     }
 
     public void process(DataAvailableMessage message) {

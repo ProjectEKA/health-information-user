@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,8 +49,7 @@ class HealthDataProcessorTest {
 
         Path filePath = Paths.get("src", "test", "resources", "Transaction123456.json");
         String absolutePath = filePath.toFile().getAbsolutePath();
-        HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor);
-        processor.registerHITypeResourceHandler(new DiagnosticReportResourceProcessor());
+        HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor, Collections.singletonList(new DiagnosticReportResourceProcessor()));
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
