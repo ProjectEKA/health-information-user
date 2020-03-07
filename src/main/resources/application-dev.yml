@@ -22,7 +22,7 @@ hiu:
   dataflow:
     offsetInDays: 2
   dicomserver:
-    url: http://localhost:8042/
+    url: http://localhost:8042
     user: orthanc
     password: orthanc
 spring:
