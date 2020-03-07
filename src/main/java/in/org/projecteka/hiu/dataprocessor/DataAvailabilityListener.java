@@ -2,11 +2,13 @@ package in.org.projecteka.hiu.dataprocessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
+import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -27,6 +29,7 @@ public class DataAvailabilityListener {
     private final DestinationsConfig destinationsConfig;
     private final HealthDataRepository healthDataRepository;
     private final DataFlowRepository dataFlowRepository;
+    private final LocalDicomServerProperties dicomServerProperties;
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
 
@@ -55,7 +58,7 @@ public class DataAvailabilityListener {
     }
 
     private List<HITypeResourceProcessor> allResourceProcessors() {
-        return Collections.singletonList(new DiagnosticReportResourceProcessor());
+        return Collections.singletonList(new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)));
     }
 
     @SneakyThrows

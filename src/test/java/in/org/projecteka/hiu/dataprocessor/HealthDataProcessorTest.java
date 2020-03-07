@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.dataprocessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
@@ -8,6 +9,8 @@ import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
+import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -16,10 +19,13 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,13 +49,26 @@ class HealthDataProcessorTest {
         MockitoAnnotations.initMocks(this);
     }
 
+    @AfterAll
+    public static void cleanUp() throws IOException {
+        /**
+         * NOTE this would delete any files matching patterns under the test/resources directory.
+         * That might include your test file (if you have put any pdf or dcm file.
+         */
+        deleteGeneratedFiles("pdf");
+        deleteGeneratedFiles("dcm");
+    }
+
     @Test
     public void shouldDeserializeDataNotificationRequestFromFile() throws Exception {
         //Path filePath = Paths.get("src","test","resources", "sample_data_flow_notification.json");
 
         Path filePath = Paths.get("src", "test", "resources", "Transaction123456.json");
         String absolutePath = filePath.toFile().getAbsolutePath();
-        HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor, Collections.singletonList(new DiagnosticReportResourceProcessor()));
+        //TODO
+        List<HITypeResourceProcessor> resourceProcessors = Collections.singletonList(
+                new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())));
+        HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor, resourceProcessors);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
@@ -89,6 +108,20 @@ class HealthDataProcessorTest {
             e.printStackTrace();
         }
         return null;
+    }
+
+
+    public static void deleteGeneratedFiles(String extension) throws IOException {
+        Path filePath = Paths.get("src", "test", "resources");
+        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher(String.format("glob:**.{%s}",extension));
+        Files.walk(filePath).filter(pathMatcher::matches).forEach(f -> {
+            try {
+                System.out.println("deleting file: " + f);
+                Files.delete(f);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
 }

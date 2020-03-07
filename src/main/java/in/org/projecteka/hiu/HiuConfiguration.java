@@ -262,12 +262,14 @@ public class HiuConfiguration {
     public DataAvailabilityListener dataAvailabilityListener(MessageListenerContainerFactory messageListenerContainerFactory,
                                                              DestinationsConfig destinationsConfig,
                                                              HealthDataRepository healthDataRepository,
-                                                             DataFlowRepository dataFlowRepository) {
+                                                             DataFlowRepository dataFlowRepository,
+                                                             LocalDicomServerProperties dicomServerProperties) {
         return new DataAvailabilityListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
                 healthDataRepository,
-                dataFlowRepository);
+                dataFlowRepository,
+                dicomServerProperties);
     }
 
     @Bean

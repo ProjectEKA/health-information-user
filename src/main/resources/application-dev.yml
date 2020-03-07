@@ -21,6 +21,10 @@ hiu:
     poolSize: 5
   dataflow:
     offsetInDays: 2
+  dicomserver:
+    url: http://localhost:8042/
+    user: orthanc
+    password: orthanc
 spring:
   rabbitmq:
     host: localhost
