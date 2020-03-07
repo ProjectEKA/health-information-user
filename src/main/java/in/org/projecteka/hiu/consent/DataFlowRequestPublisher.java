@@ -1,8 +1,10 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.consent.model.DateRange;
 import in.org.projecteka.hiu.consent.model.dataflow.Consent;
 import in.org.projecteka.hiu.consent.model.dataflow.DataFlowRequest;
+import in.org.projecteka.hiu.consent.model.dataflow.HIDataRange;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -19,7 +21,7 @@ public class DataFlowRequestPublisher {
     private DestinationsConfig destinationsConfig;
 
     @SneakyThrows
-    public Mono<Void> broadcastDataFlowRequest(String consentArtefactId, String signature, String callBackUrl) {
+    public Mono<Void> broadcastDataFlowRequest(String consentArtefactId, DateRange dateRange, String signature, String callBackUrl) {
         DestinationsConfig.DestinationInfo destinationInfo =
                 destinationsConfig.getQueues().get(DATA_FLOW_REQUEST_QUEUE);
 
@@ -36,6 +38,10 @@ public class DataFlowRequestPublisher {
                             .consent(Consent.builder().
                                     id(consentArtefactId)
                                     .digitalSignature(signature)
+                                    .build())
+                            .hiDataRange(HIDataRange.builder()
+                                    .from(dateRange.getFrom())
+                                    .to(dateRange.getTo())
                                     .build())
                             .callBackUrl(callBackUrl)
                             .build());
