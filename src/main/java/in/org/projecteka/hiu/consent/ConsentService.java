@@ -95,6 +95,7 @@ public class ConsentService {
                         consentRequestId)
                         .then(dataFlowRequestPublisher.broadcastDataFlowRequest(
                                 consentArtefactResponse.getConsentDetail().getConsentId(),
+                                consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
                                 consentArtefactResponse.getSignature(),
                                 hiuProperties.getCallBackUrl())))
                 .then();
