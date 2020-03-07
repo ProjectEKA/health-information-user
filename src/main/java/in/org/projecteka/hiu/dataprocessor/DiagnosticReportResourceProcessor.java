@@ -119,8 +119,9 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         return (attachment.getUrl() != null) && !attachment.getUrl().isBlank();
     }
 
-    private boolean isRadiologyFile(Attachment content) {
-        return false;
+    private boolean isRadiologyFile(Attachment attachment) {
+        String extension = mediaTypeToFileExtnMap.get(attachment.getContentType().toUpperCase());
+        return (extension != null) ? extension.equals(".dcm") : false;
     }
 
     private boolean isRadiologyCategory(DiagnosticReport diagnosticReport) {
