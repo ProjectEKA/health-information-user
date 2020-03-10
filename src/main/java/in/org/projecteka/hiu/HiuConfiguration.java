@@ -31,6 +31,7 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.Queue;
@@ -54,6 +55,9 @@ import java.util.concurrent.TimeUnit;
 public class HiuConfiguration {
     public static final String DATA_FLOW_REQUEST_QUEUE = "data-flow-request-queue";
     public static final String DATA_FLOW_PROCESS_QUEUE = "data-flow-process-queue";
+    public static final String HIU_DEAD_LETTER_QUEUE = "hiu-dead-letter-queue";
+    private static final String HIU_DEAD_LETTER_EXCHANGE = "hiu-dead-letter-exchange";
+    public static final String HIU_DEAD_LETTER_ROUTING_KEY = "deadLetter";
 
     @Bean
     public PatientServiceClient patientServiceClient(
@@ -150,6 +154,14 @@ public class HiuConfiguration {
                 DATA_FLOW_PROCESS_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
+        Queue deadLetterQueue = QueueBuilder.durable(HIU_DEAD_LETTER_QUEUE).build();
+        Binding with = BindingBuilder
+                .bind(deadLetterQueue)
+                .to(new DirectExchange(HIU_DEAD_LETTER_EXCHANGE))
+                .with(HIU_DEAD_LETTER_ROUTING_KEY);
+        amqpAdmin.declareQueue(deadLetterQueue);
+        amqpAdmin.declareExchange(new DirectExchange(HIU_DEAD_LETTER_EXCHANGE));
+        amqpAdmin.declareBinding(with);
         destinationsConfig.getQueues()
                 .forEach((key, destination) -> {
                     Exchange ex = ExchangeBuilder.directExchange(
@@ -159,6 +171,8 @@ public class HiuConfiguration {
                     amqpAdmin.declareExchange(ex);
                     Queue q = QueueBuilder.durable(
                             destination.getRoutingKey())
+                            .deadLetterExchange(HIU_DEAD_LETTER_EXCHANGE)
+                            .deadLetterRoutingKey(HIU_DEAD_LETTER_ROUTING_KEY)
                             .build();
                     amqpAdmin.declareQueue(q);
                     Binding b = BindingBuilder.bind(q)

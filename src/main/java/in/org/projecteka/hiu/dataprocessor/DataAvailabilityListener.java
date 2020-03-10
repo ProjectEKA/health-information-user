@@ -10,6 +10,7 @@ import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -32,7 +33,7 @@ public class DataAvailabilityListener {
 
     @PostConstruct
     @SneakyThrows
-    public void subscribe()  {
+    public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
                 .get(DATA_FLOW_PROCESS_QUEUE);
@@ -45,10 +46,20 @@ public class DataAvailabilityListener {
 
         MessageListener messageListener = message -> {
             DataAvailableMessage dataAvailableMessage = deserializeMessage(message);
-            logger.info(String.format("Received notification of data availability for transaction id : %s", dataAvailableMessage.getTransactionId()));
+            logger.info(String.format("Received notification of data availability for transaction id : %s",
+                    dataAvailableMessage.getTransactionId()));
             logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
-            HealthDataProcessor healthDataProcessor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, new Decryptor(), allResourceProcessors());
-            healthDataProcessor.process(dataAvailableMessage);
+            try {
+                HealthDataProcessor healthDataProcessor = new HealthDataProcessor(
+                        healthDataRepository,
+                        dataFlowRepository,
+                        new Decryptor(),
+                        allResourceProcessors());
+                healthDataProcessor.process(dataAvailableMessage);
+            } catch (Exception exception) {
+                logger.error(exception);
+                throw new AmqpRejectAndDontRequeueException(exception);
+            }
         };
         mlc.setupMessageListener(messageListener);
         mlc.start();
