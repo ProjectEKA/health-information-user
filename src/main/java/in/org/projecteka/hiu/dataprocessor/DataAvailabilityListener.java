@@ -16,7 +16,8 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
-
+import java.util.Collections;
+import java.util.List;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
@@ -32,7 +33,7 @@ public class DataAvailabilityListener {
 
     @PostConstruct
     @SneakyThrows
-    public void subscribe()  {
+    public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
                 .get(DATA_FLOW_PROCESS_QUEUE);
@@ -45,10 +46,16 @@ public class DataAvailabilityListener {
 
         MessageListener messageListener = message -> {
             DataAvailableMessage dataAvailableMessage = deserializeMessage(message);
-            logger.info(String.format("Received notification of data availability for transaction id : %s", dataAvailableMessage.getTransactionId()));
+            logger.info(String.format("Received notification of data availability for transaction id : %s",
+                    dataAvailableMessage.getTransactionId()));
             logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
             try {
-                new HealthDataProcessor(healthDataRepository, dataFlowRepository, new Decryptor()).process(dataAvailableMessage);
+                HealthDataProcessor healthDataProcessor = new HealthDataProcessor(
+                        healthDataRepository,
+                        dataFlowRepository,
+                        new Decryptor(),
+                        allResourceProcessors());
+                healthDataProcessor.process(dataAvailableMessage);
             } catch (Exception exception) {
                 logger.error(exception);
                 throw new AmqpRejectAndDontRequeueException(exception);
@@ -56,6 +63,10 @@ public class DataAvailabilityListener {
         };
         mlc.setupMessageListener(messageListener);
         mlc.start();
+    }
+
+    private List<HITypeResourceProcessor> allResourceProcessors() {
+        return Collections.singletonList(new DiagnosticReportResourceProcessor());
     }
 
     @SneakyThrows

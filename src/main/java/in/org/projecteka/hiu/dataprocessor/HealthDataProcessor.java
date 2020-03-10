@@ -8,8 +8,10 @@ import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
+import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
+import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
 import org.apache.log4j.Logger;
 import org.hl7.fhir.r4.model.Bundle;
@@ -32,25 +34,18 @@ public class HealthDataProcessor {
     private FhirContext fhirContext = FhirContext.forR4();
     private static final Logger logger = Logger.getLogger(HealthDataProcessor.class);
 
-    private List<HITypeResourceProcessor> resourceProcessors = new ArrayList<>() {
-        {
-            add(new DiagnosticReportResourceProcessor());
-        }
-    };
+    private List<HITypeResourceProcessor> resourceProcessors = new ArrayList<>();
 
     public HealthDataProcessor(HealthDataRepository healthDataRepository,
                                DataFlowRepository dataFlowRepository,
-                               Decryptor decryptor) {
+                               Decryptor decryptor, List<HITypeResourceProcessor> hiTypeResourceProcessors) {
         this.healthDataRepository = healthDataRepository;
         this.dataFlowRepository = dataFlowRepository;
         this.decryptor = decryptor;
+        this.resourceProcessors.addAll(hiTypeResourceProcessors);
     }
 
-    public void registerHITypeResourceHandler(HITypeResourceProcessor resourceProcessor) {
-        resourceProcessors.add(resourceProcessor);
-    }
-
-    public void process(DataAvailableMessage message) throws IOException {
+    public void process(DataAvailableMessage message) {
         DataContext context = createContext(message);
         if (context != null && context.getNotifiedData() != null) {
             processEntries(context);
@@ -61,8 +56,9 @@ public class HealthDataProcessor {
     }
 
     private void processEntries(DataContext context) {
+        updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING);
         DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(context.getTransactionId()).block();
-
+        List<String> dataErrors = new ArrayList<>();
         context.getNotifiedData().getEntries().forEach(entry -> {
             if (hasContent(entry)) {
                 ProcessedResource processedResource = processEntryContent(context, entry, keyMaterial);
@@ -72,13 +68,35 @@ public class HealthDataProcessor {
                     healthDataRepository.insertHealthData(
                             context.getTransactionId(),
                             context.getDataPartNumber(),
-                            resource)
+                            resource,
+                            EntryStatus.SUCCEEDED)
+                            .block();
+                } else {
+                    dataErrors.addAll(processedResource.getErrors());
+                    healthDataRepository.insertHealthData(
+                            context.getTransactionId(),
+                            context.getDataPartNumber(),
+                            "",
+                            EntryStatus.ERRORED)
                             .block();
                 }
-                //TODO: if the above has errors, store the content? with errors, and state = BAD content?s
             }
             //TODO: else part. download the content from entry.getLink().getHref(), and essentially call processEntryContent()
         });
+
+        if (!dataErrors.isEmpty()) {
+            String allErrors = "[ERROR]".concat(String.join("[ERROR]", dataErrors));
+            updateDataProcessStatus(context, allErrors, HealthInfoStatus.ERRORED);
+        } else {
+            updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED);
+        }
+    }
+
+    private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status) {
+        dataFlowRepository.updateDataFlowWithStatus(context.getTransactionId(),
+                context.getDataPartNumber(),
+                allErrors,
+                status).block();
     }
 
     private DataContext createContext(DataAvailableMessage message) {
@@ -93,16 +111,14 @@ public class HealthDataProcessor {
                     .dataPartNumber(message.getPartNumber())
                     .build();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Could not create context from data file path", e);
+            throw new RuntimeException(e);
         }
-
-        return null;
     }
 
 
     private ProcessedResource processEntryContent(DataContext context, Entry entry, DataFlowRequestKeyMaterial keyMaterial) {
         ProcessedResource result = new ProcessedResource();
-        List<String> errors = new ArrayList<>();
         IParser parser = getEntryParser(entry.getMedia());
         if (parser == null) {
             result.addError("Can't process entry content. Unknown media type.");
