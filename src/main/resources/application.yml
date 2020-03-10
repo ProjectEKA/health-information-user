@@ -23,6 +23,10 @@ hiu:
     poolSize: ${DB_CONNECTION_POOL_SIZE}
   dataflow:
     offsetInDays: ${OFFSET_IN_DAYS}
+  dicomserver:
+    url: ${ORTHANC_SERVER_URL}
+    user: ${ORTHANC_USERNAME}
+    password: ${ORTHANC_PASSWORD}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
