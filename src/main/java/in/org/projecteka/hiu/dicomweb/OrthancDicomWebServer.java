@@ -79,13 +79,4 @@ public class OrthancDicomWebServer {
     private  String authCredentials() {
         return "Basic " + Base64Utils.encodeToString(String.format("%s:%s", properties.getUser(), properties.getPassword()).getBytes());
     }
-
-
-//    public static void main(String[] args) {
-//        LocalDicomServerProperties properties = new LocalDicomServerProperties(
-//                "http://localhost:8042",
-//                "orthanc", "orthanc");
-//        DicomStudy dicomStudy = new OrthancDicomWebServer(properties).upload(Paths.get("/tmp/bmode.dcm"));
-//        System.out.println("response:" + dicomStudy.getStudyInstanceUid());
-//    }
 }
