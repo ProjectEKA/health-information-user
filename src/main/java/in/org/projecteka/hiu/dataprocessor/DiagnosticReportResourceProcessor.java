@@ -4,7 +4,6 @@ import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dicomweb.DicomStudy;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -16,7 +15,6 @@ import org.hl7.fhir.r4.model.Media;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -34,7 +32,8 @@ import java.util.UUID;
 
 public class DiagnosticReportResourceProcessor implements HITypeResourceProcessor {
 
-    public static final String VS_SYSTEM_DIAGNOSTIC_SERVICE_SECTIONS = "http://hl7.org/fhir/ValueSet/diagnostic-service-sections";
+    public static final String VS_SYSTEM_DIAGNOSTIC_SERVICE_SECTIONS = "http://hl7.org/fhir/ValueSet/diagnostic" +
+            "-service-sections";
     public static final String RADILOGY_CATEGORY_CODE = "RAD";
     private final String DEFAULT_FILE_EXTN = ".txt";
     private Map<String, String> mediaTypeToFileExtnMap = new HashMap<>() {{
