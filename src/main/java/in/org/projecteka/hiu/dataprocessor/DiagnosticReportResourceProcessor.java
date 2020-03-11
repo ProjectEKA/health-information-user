@@ -3,12 +3,20 @@ package in.org.projecteka.hiu.dataprocessor;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dicomweb.DicomStudy;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
+import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.hl7.fhir.r4.model.Attachment;
 import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Media;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -107,14 +115,15 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         }
     }
 
+    @SneakyThrows
     private Path downloadAndSaveFile(Attachment attachment, Path localStorePath) {
         Path attachmentFilePath = getFileAttachmentPath(attachment, localStorePath);
-        try (InputStream in = URI.create(attachment.getUrl()).toURL().openStream()) {
-            Files.copy(in, attachmentFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        CloseableHttpClient client = HttpClientBuilder.create().build();
+        HttpGet request = new HttpGet(URI.create(attachment.getUrl()));
+        HttpResponse response = client.execute(request);
+        HttpEntity entity = response.getEntity();
+        InputStream inputStream = entity.getContent();
+        Files.copy(inputStream, attachmentFilePath);
         attachment.setUrl(referenceWebUrl(attachmentFilePath));
         return attachmentFilePath;
     }
@@ -157,16 +166,5 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
 
     private String referenceLocalDicomServerUrl(String studyInstanceUid) {
         return String.format("/dicom-server/studies/%s", studyInstanceUid);
-    }
-
-    public static void main(String [] args){
-        String randomFileName = UUID.randomUUID().toString() + ".dcm";
-        Path attachmentFilePath = Paths.get("/tmp/", randomFileName);
-        try (InputStream in = URI.create("http://medistim.com/wp-content/uploads/2016/07/bmode.dcm").toURL().openStream()) {
-            Files.copy(in, attachmentFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
     }
 }
