@@ -61,14 +61,80 @@ class HealthDataProcessorTest {
 
     @Test
     public void shouldDeserializeDataNotificationRequestFromFile() throws Exception {
-        //Path filePath = Paths.get("src","test","resources", "sample_data_flow_notification.json");
-
         Path filePath = Paths.get("src", "test", "resources", "Transaction123456.json");
         String absolutePath = filePath.toFile().getAbsolutePath();
         //TODO
         List<HITypeResourceProcessor> resourceProcessors = Collections.singletonList(
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())));
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor, resourceProcessors);
+        String transactionId = "123456";
+        String partNumber = "1";
+        DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
+        var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
+        var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
+
+        when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
+                .thenReturn(Mono.empty());
+        when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
+        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+                .thenReturn(Mono.empty());
+        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber,"", HealthInfoStatus.PROCESSING))
+                .thenReturn(Mono.empty());
+        when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
+        processor.process(message);
+
+        verify(healthDataRepository, times(1))
+                .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
+        verify(dataFlowRepository, times(1))
+                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+        verify(dataFlowRepository, times(1))
+                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+    }
+
+    @Test
+    public void shouldDownloadFileFromUrlInPresentedForm() throws Exception {
+        Path filePath = Paths.get("src", "test", "resources", "Transaction789.json");
+        String absolutePath = filePath.toFile().getAbsolutePath();
+        List<HITypeResourceProcessor> resourceProcessors = Collections.singletonList(
+                new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())));
+        HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository,
+                dataFlowRepository,
+                decryptor,
+                resourceProcessors);
+        String transactionId = "123456";
+        String partNumber = "1";
+        DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
+        var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
+        var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
+
+        when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
+                .thenReturn(Mono.empty());
+        when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
+        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+                .thenReturn(Mono.empty());
+        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber,"", HealthInfoStatus.PROCESSING))
+                .thenReturn(Mono.empty());
+        when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
+        processor.process(message);
+
+        verify(healthDataRepository, times(1))
+                .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
+        verify(dataFlowRepository, times(1))
+                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+        verify(dataFlowRepository, times(1))
+                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+    }
+
+    @Test
+    public void shouldDownloadFileFromUrlInMedia() throws Exception {
+        Path filePath = Paths.get("src", "test", "resources", "Transaction567.json");
+        String absolutePath = filePath.toFile().getAbsolutePath();
+        List<HITypeResourceProcessor> resourceProcessors = Collections.singletonList(
+                new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())));
+        HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository,
+                dataFlowRepository,
+                decryptor,
+                resourceProcessors);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);

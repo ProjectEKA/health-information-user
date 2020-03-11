@@ -10,6 +10,8 @@ import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -26,13 +28,13 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
 
     public static final String VS_SYSTEM_DIAGNOSTIC_SERVICE_SECTIONS = "http://hl7.org/fhir/ValueSet/diagnostic-service-sections";
     public static final String RADILOGY_CATEGORY_CODE = "RAD";
+    private final String DEFAULT_FILE_EXTN = ".txt";
     private Map<String, String> mediaTypeToFileExtnMap = new HashMap<>() {{
         put("APPLICATION/PDF", ".pdf");
         put("APPLICATION/DICOM", ".dcm");
         put("APPLICATION/MSWORD", ".doc");
         put("TEXT/RTF", ".rtf");
     }};
-    private final String DEFAULT_FILE_EXTN = ".txt";
     private OrthancDicomWebServer localDicomWebServer;
 
     public DiagnosticReportResourceProcessor(OrthancDicomWebServer localDicomWebServer) {
@@ -75,10 +77,9 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
             List<Attachment> presentedForm = diagnosticReport.getPresentedForm();
             for (Attachment attachment : presentedForm) {
                 if (hasLink(attachment)) {
-                    //TODO: download the file and save
+                    downloadAndSaveFile(attachment, localStorePath);
                 } else {
                     saveAttachmentAsFile(attachment, localStorePath);
-
                 }
             }
         }
@@ -87,9 +88,9 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
     private Path saveAttachmentAsFile(Attachment attachment, Path localStorePath) throws RuntimeException {
         if (attachment.getData() != null) {
             byte[] data = Base64.getDecoder().decode(attachment.getDataElement().getValueAsString());
-            String randomFileName = UUID.randomUUID().toString() + getFileExtension(attachment);
-            Path attachmentFilePath = Paths.get(localStorePath.toString(), randomFileName);
-            try (FileChannel channel = (FileChannel)  Files.newByteChannel(attachmentFilePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            Path attachmentFilePath = getFileAttachmentPath(attachment, localStorePath);
+            try (FileChannel channel = (FileChannel) Files.newByteChannel(attachmentFilePath,
+                    StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
                 ByteBuffer buffer = ByteBuffer.allocate(data.length);
                 buffer.put(data);
                 buffer.flip();
@@ -101,8 +102,26 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
             attachment.setData(null);
             attachment.setUrl(referenceWebUrl(attachmentFilePath));
             return attachmentFilePath;
+        } else {
+            return downloadAndSaveFile(attachment, localStorePath);
         }
-        return null;
+    }
+
+    private Path downloadAndSaveFile(Attachment attachment, Path localStorePath) {
+        Path attachmentFilePath = getFileAttachmentPath(attachment, localStorePath);
+        try (InputStream in = URI.create(attachment.getUrl()).toURL().openStream()) {
+            Files.copy(in, attachmentFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        attachment.setUrl(referenceWebUrl(attachmentFilePath));
+        return attachmentFilePath;
+    }
+
+    private Path getFileAttachmentPath(Attachment attachment, Path localStorePath) {
+        String randomFileName = UUID.randomUUID().toString() + getFileExtension(attachment);
+        return Paths.get(localStorePath.toString(), randomFileName);
     }
 
     private String referenceWebUrl(Path attachmentFilePath) {
@@ -121,7 +140,7 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
 
     private boolean isRadiologyFile(Attachment attachment) {
         String extension = mediaTypeToFileExtnMap.get(attachment.getContentType().toUpperCase());
-        return (extension != null) ? extension.equals(".dcm") : false;
+        return (extension != null) && extension.equals(".dcm");
     }
 
     private boolean isRadiologyCategory(DiagnosticReport diagnosticReport) {
@@ -140,4 +159,14 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         return String.format("/dicom-server/studies/%s", studyInstanceUid);
     }
 
+    public static void main(String [] args){
+        String randomFileName = UUID.randomUUID().toString() + ".dcm";
+        Path attachmentFilePath = Paths.get("/tmp/", randomFileName);
+        try (InputStream in = URI.create("http://medistim.com/wp-content/uploads/2016/07/bmode.dcm").toURL().openStream()) {
+            Files.copy(in, attachmentFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
 }

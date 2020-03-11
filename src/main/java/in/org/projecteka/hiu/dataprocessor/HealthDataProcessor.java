@@ -81,7 +81,8 @@ public class HealthDataProcessor {
                             .block();
                 }
             }
-            //TODO: else part. download the content from entry.getLink().getHref(), and essentially call processEntryContent()
+            //TODO: else part. download the content from entry.getLink().getHref(), and essentially call
+            // processEntryContent()
         });
 
         if (!dataErrors.isEmpty()) {
@@ -117,7 +118,8 @@ public class HealthDataProcessor {
     }
 
 
-    private ProcessedResource processEntryContent(DataContext context, Entry entry, DataFlowRequestKeyMaterial keyMaterial) {
+    private ProcessedResource processEntryContent(DataContext context, Entry entry,
+                                                  DataFlowRequestKeyMaterial keyMaterial) {
         ProcessedResource result = new ProcessedResource();
         IParser parser = getEntryParser(entry.getMedia());
         if (parser == null) {
@@ -131,8 +133,8 @@ public class HealthDataProcessor {
                     entry.getContent());
         } catch (Exception e) {
             logger.error("Error while decrypting {exception}", e);
-            e.printStackTrace();
-            throw new RuntimeException(e);
+            result.getErrors().add("Could not decrypt content");
+            return result;
         }
         Bundle bundle = (Bundle) parser.parseResource(decryptedContent);
         if (!isValidBundleType(bundle.getType())) {
@@ -140,15 +142,20 @@ public class HealthDataProcessor {
                     "DOCUMENT");
             return result;
         }
-
-        bundle.getEntry().forEach(bundleEntry -> {
-            ResourceType resourceType = bundleEntry.getResource().getResourceType();
-            System.out.println("bundle entry resource type:  " + resourceType);
-            HITypeResourceProcessor processor = identifyResourceProcessor(resourceType);
-            if (processor != null) {
-                processor.process(bundleEntry.getResource(), context);
-            }
-        });
+        try {
+            bundle.getEntry().forEach(bundleEntry -> {
+                ResourceType resourceType = bundleEntry.getResource().getResourceType();
+                System.out.println("bundle entry resource type:  " + resourceType);
+                HITypeResourceProcessor processor = identifyResourceProcessor(resourceType);
+                if (processor != null) {
+                    processor.process(bundleEntry.getResource(), context);
+                }
+            });
+        } catch (Exception e) {
+            logger.error("Could not process bundle {exception}", e);
+            result.getErrors().add("Could not process bundle");
+            return result;
+        }
         result.addResource(bundle);
         return result;
     }
@@ -170,7 +177,6 @@ public class HealthDataProcessor {
         }
         return null;
     }
-
 
     private boolean hasContent(Entry entry) {
         return (entry.getContent() != null) && !entry.getContent().isBlank();
