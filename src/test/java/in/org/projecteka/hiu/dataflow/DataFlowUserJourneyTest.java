@@ -121,7 +121,7 @@ public class DataFlowUserJourneyTest {
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
-                .isOk();
+                .isAccepted();
     }
 
     @Test
