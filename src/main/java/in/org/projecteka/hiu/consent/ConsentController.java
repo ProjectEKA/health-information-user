@@ -39,4 +39,3 @@ public class ConsentController {
         return consentService.requestsFrom(TokenUtils.decode(authorization));
     }
 }
-
