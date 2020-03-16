@@ -5,7 +5,7 @@ import in.org.projecteka.hiu.dicomweb.DicomStudy;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -117,12 +117,13 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
     @SneakyThrows
     private Path downloadAndSaveFile(Attachment attachment, Path localStorePath) {
         Path attachmentFilePath = getFileAttachmentPath(attachment, localStorePath);
-        CloseableHttpClient client = HttpClientBuilder.create().build();
         HttpGet request = new HttpGet(URI.create(attachment.getUrl()));
-        HttpResponse response = client.execute(request);
-        HttpEntity entity = response.getEntity();
-        InputStream inputStream = entity.getContent();
-        Files.copy(inputStream, attachmentFilePath);
+        try (CloseableHttpClient client = HttpClientBuilder.create().build();
+             CloseableHttpResponse response = client.execute(request)) {
+            HttpEntity entity = response.getEntity();
+            InputStream inputStream = entity.getContent();
+            Files.copy(inputStream, attachmentFilePath);
+        }
         attachment.setUrl(referenceWebUrl(attachmentFilePath));
         return attachmentFilePath;
     }

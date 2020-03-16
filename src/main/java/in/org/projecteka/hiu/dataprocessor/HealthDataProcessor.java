@@ -145,7 +145,7 @@ public class HealthDataProcessor {
         try {
             bundle.getEntry().forEach(bundleEntry -> {
                 ResourceType resourceType = bundleEntry.getResource().getResourceType();
-                System.out.println("bundle entry resource type:  " + resourceType);
+                logger.info("bundle entry resource type:  " + resourceType);
                 HITypeResourceProcessor processor = identifyResourceProcessor(resourceType);
                 if (processor != null) {
                     processor.process(bundleEntry.getResource(), context);
