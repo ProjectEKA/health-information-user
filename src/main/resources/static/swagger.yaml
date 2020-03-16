@@ -265,7 +265,6 @@ components:
         - DENIED
         - GRANTED
         - REVOKED
-
     ConsentArtefactReference:
       type: object
       properties:
@@ -342,7 +341,15 @@ components:
         - transactionId
         - entries
         - keyMaterial
+        - pageNumber
+        - pageCount
       properties:
+        pageNumber:
+          type: integer
+          description: Current page number.
+        pageCount:
+          type: integer
+          description: Total number of pages.
         transactionId:
           type: string
           format: uuid
@@ -364,7 +371,7 @@ components:
         content:
           type: string
           description: Encrypted content
-          example: afafaeqrdfasfasfasfasfasfasdfa
+          example: Encrypted content of data packaged in FHIR bundle
         media:
           type: string
           enum: ['application/fhir+json']
@@ -380,22 +387,17 @@ components:
         - media
       properties:
         link:
-          type: object
-          required:
-            - href
-          properties:
-            href:
-              type: string
-              description: Encrypted content
-              example: https://data-from.net/sa2321afaf12e13
-            carecontextReference:
-              type: string
-              description: care context reference number.
+          type: string
+          description: Encrypted content
+          example: https://data-from.net/sa2321afaf12e13
         media:
           type: string
           enum: ['application/fhir+json']
         checksum:
           type: string
+        carecontextReference:
+          type: string
+          description: care context reference number.
     KeyMaterial:
       type: object
       required:
