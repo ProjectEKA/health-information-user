@@ -8,20 +8,19 @@ info:
     information for providing services to the patient .
 
 servers:
-  - url: http://localhost:8000
+  - url: https://ncg-dev.projecteka.in/hiu-api
     description: Dev
 
 tags:
-  - name: discover
-  - name: consent
-  - name: notification
+  - name: frontend
+  - name: consent notification
+  - name: data notification
 
 paths:
-  # consent-manager service
   /consent-requests:
     post:
       tags:
-        - consent
+        - frontend
       summary: Create consent request
       description: Creates a consent request to get data about a patient by HIU user.
       operationId: createConsentRequest
@@ -44,12 +43,10 @@ paths:
                   id:
                     type: string
                     format: uuid
-
-  # discover service
   /patients/{patient-id}:
     get:
       tags:
-        - discover
+        - frontend
       summary: Search patient
       description: Search patients in the respective health information consent manager.
       parameters:
@@ -68,11 +65,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PatientSearchRepresentation'
-  # notification service
   /consent/notification/:
     post:
       tags:
-        - notification
+        - consent notification
       summary: Consent notification
       description: Call back url from consent manager when consent artefact gets created.
       parameters:
@@ -83,17 +79,36 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ConsentArtefactNotification'
-
       responses:
         '200':
           description: Notification successful.
-        '400':
-          description: Unauthorized.
+        '401':
+          description: >
+            **Causes:**
+              * Invalid/Expired/Empty token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: >
+            **Causes:**
+              * Downstream services are down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /health-information/fetch/{consent-request-id}/:
     get:
       tags:
-        - data flow
-      summary: Get health information for a granted consent request.
+        - frontend
+      summary: Get health information.
       description: This API can be used to fetch the health information for a consent request once the request is granted by the patient.
       parameters:
         - $ref: '#/components/parameters/authorization'
@@ -111,6 +126,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthInformation'
+  /data/notification:
+    post:
+      tags:
+        - data notification
+      summary: data notification
+      description: Once data is prepared at HIP, will be passed to HIU.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataNotification'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/DataNotification'
+      responses:
+        '202':
+          description: Data accepted.
+        '401':
+          description: >
+            **Causes:**
+              * Invalid/Expired/Empty token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: >
+            **Causes:**
+              * Downstream services are down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   parameters:
     authorization:
@@ -136,14 +194,12 @@ components:
       schema:
         type: integer
         format: int32
-
   schemas:
     PatientSearchRepresentation:
       type: object
       properties:
         patient:
           $ref: '#/components/schemas/PatientRepresentation'
-
     ConsentManagerPatientID:
       type: object
       properties:
@@ -151,7 +207,6 @@ components:
           type: string
           format: <user-id>@<ncg-id>
           example: batman@ncg
-
     PatientRepresentation:
       allOf:
         - $ref: '#/components/schemas/ConsentManagerPatientID'
@@ -159,7 +214,6 @@ components:
           properties:
             display:
               type: string
-
     HITypeEnum:
       type: string
       enum:
@@ -169,7 +223,6 @@ components:
         - HIType4
         - HIType5
       example: "DiagnosticReport"
-
     ConsentRequest:
       type: object
       properties:
@@ -212,7 +265,6 @@ components:
         - DENIED
         - GRANTED
         - REVOKED
-
     ConsentArtefactReference:
       type: object
       properties:
@@ -263,3 +315,125 @@ components:
         data:
           type: object
           description: data is a FHIR bundle. https://www.hl7.org/fhir/bundle.html
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+      xml:
+        name: ErrorResponse
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          enum: [1000, 10001]
+          description: >
+            1. Error code 1000 : No patient found
+            2. Error code 1001: Multiple patients found
+        message:
+          type: string
+      xml:
+        name: Error
+    DataNotification:
+      type: object
+      required:
+        - transactionId
+        - entries
+        - keyMaterial
+        - pageNumber
+        - pageCount
+      properties:
+        pageNumber:
+          type: integer
+          description: Current page number.
+        pageCount:
+          type: integer
+          description: Total number of pages.
+        transactionId:
+          type: string
+          format: uuid
+          description: Transaction Id issued when data requested.
+        entries:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/EntryContent'
+              - $ref: '#/components/schemas/EntryLink'
+        keyMaterial:
+          $ref: '#/components/schemas/KeyMaterial'
+    EntryContent:
+      type: object
+      required:
+        - content
+        - media
+      properties:
+        content:
+          type: string
+          description: Encrypted content
+          example: Encrypted content of data packaged in FHIR bundle
+        media:
+          type: string
+          enum: ['application/fhir+json']
+        checksum:
+          type: string
+        carecontextReference:
+          type: string
+          description: care context reference number.
+    EntryLink:
+      type: object
+      required:
+        - link
+        - media
+      properties:
+        link:
+          type: string
+          description: Encrypted content
+          example: https://data-from.net/sa2321afaf12e13
+        media:
+          type: string
+          enum: ['application/fhir+json']
+        checksum:
+          type: string
+        carecontextReference:
+          type: string
+          description: care context reference number.
+    KeyMaterial:
+      type: object
+      required:
+        - cryptoAlg
+        - curve
+        - dhPublicKey
+        - nonce
+      properties:
+        cryptoAlg:
+          type: string
+          format: string
+          example: ECDH
+        curve:
+          type: string
+          format: string
+          example: Curve25519
+        dhPublicKey:
+          $ref: '#/components/schemas/KeyObject'
+        nonce:
+          type: string
+          format: 32 byte string
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+    KeyObject:
+      type: object
+      required:
+        - expiry
+        - parameters
+        - keyValue
+      properties:
+        expiry:
+          type: string
+          format: date-time
+        parameters:
+          type: string
+          format: string
+          example: Curve25519/32byte random key
+        keyValue:
+          type: string
+          format: string

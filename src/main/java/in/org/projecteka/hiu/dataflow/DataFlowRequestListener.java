@@ -13,6 +13,7 @@ import in.org.projecteka.hiu.dataflow.model.KeyStructure;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
@@ -72,6 +73,7 @@ public class DataFlowRequestListener {
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.fatal("Exception on key creation {exception}", exception);
+                throw new AmqpRejectAndDontRequeueException(exception);
             }
         };
 
