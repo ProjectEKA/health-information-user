@@ -2,18 +2,17 @@ package in.org.projecteka.hiu.clients;
 
 import in.org.projecteka.hiu.ClientError;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.apache.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.Properties;
 
 import static java.lang.String.format;
-import static org.springframework.web.reactive.function.BodyInserters.fromFormData;
 
 @AllArgsConstructor
 public class CentralRegistryClient {
@@ -23,24 +22,27 @@ public class CentralRegistryClient {
     public Mono<Token> getTokenFor(String clientId, String clientSecret) {
         return builder.build()
                 .post()
-                .uri("/realms/consent-manager/protocol/openid-connect/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .uri("/api/1.0/sessions")
+                .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .body(fromFormData(requestWith(clientId, clientSecret)))
+                .body(BodyInserters.fromValue(requestWith(clientId, clientSecret)))
                 .retrieve()
                 .onStatus(HttpStatus::isError, clientResponse -> clientResponse.bodyToMono(Properties.class)
                         .doOnNext(properties -> logger.error(properties.toString()))
                         .thenReturn(ClientError.authenticationFailed()))
                 .bodyToMono(Properties.class)
-                .map(properties -> new Token(format("Bearer %s", properties.getProperty("access_token"))));
+                .map(properties -> new Token(format("Bearer %s", properties.getProperty("accessToken"))));
     }
 
-    private MultiValueMap<String, String> requestWith(String clientId, String clientSecret) {
-        var formData = new LinkedMultiValueMap<String, String>();
-        formData.add("grant_type", "client_credentials");
-        formData.add("scope", "openid");
-        formData.add("client_id", clientId);
-        formData.add("client_secret", clientSecret);
-        return formData;
+    private SessionRequest requestWith(String clientId, String clientSecret) {
+        return new SessionRequest(clientId, clientSecret, "password");
+    }
+
+    @AllArgsConstructor
+    @Data
+    private static class SessionRequest {
+        private String clientId;
+        private String clientSecret;
+        private String grantType;
     }
 }

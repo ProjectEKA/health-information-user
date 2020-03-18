@@ -9,9 +9,9 @@ hiu:
     maxPageSize: 100
     localStoragePath: /tmp/
   centralregistry:
-    url: http://localhost:9001/auth
+    url: http://host.docker.internal:8080
     clientId: 10000005
-    clientSecret: 435cbced-9d57-4e35-9de8-0c2315d841df
+    clientSecret: b435af20-5006-4932-bca7-74aabdf8a78d
   database:
     host: localhost
     port: 5432
