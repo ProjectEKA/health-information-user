@@ -257,7 +257,7 @@ components:
                 dataExpiryAt:
                   type: string
                   format: date-time
-    ConsentStatus:
+    NotificationType:
       type: string
       enum:
         - REQUESTED
@@ -271,19 +271,22 @@ components:
         id:
           type: string
           example: '<consent-artefact-id>'
-        status:
-          $ref: '#/components/schemas/ConsentStatus'
 
     ConsentArtefactNotification:
       type: object
       properties:
-        consentRequestId:
-          type: string
-          example: '<consent-request-id>'
-        consentArtefacts:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConsentArtefactReference'
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        notification:
+          type: object
+          properties:
+            consentRequestId:
+              type: string
+              example: '<consent-request-id>'
+            consentArtefacts:
+              type: array
+              items:
+                $ref: '#/components/schemas/ConsentArtefactReference'
     HealthInformation:
       type: object
       properties:
