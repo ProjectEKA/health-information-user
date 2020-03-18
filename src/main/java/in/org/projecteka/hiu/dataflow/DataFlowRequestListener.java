@@ -37,7 +37,6 @@ public class DataFlowRequestListener {
     private final DataFlowProperties dataFlowProperties;
     private final CentralRegistry centralRegistry;
 
-
     @PostConstruct
     @SneakyThrows
     public void subscribe() {
