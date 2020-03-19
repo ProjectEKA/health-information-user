@@ -259,6 +259,7 @@ components:
                   format: date-time
     ConsentStatus:
       type: string
+      example: 'GRANTED'
       enum:
         - REQUESTED
         - EXPIRED
@@ -291,7 +292,7 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/Type'
-        timeStamp:
+        timestamp:
           type: string
           format: date-time
           description: Denotes the time at which consent was granted/revoked
