@@ -259,48 +259,31 @@ components:
                   format: date-time
     ConsentStatus:
       type: string
-      example: 'GRANTED'
+      example: 'REQUESTED | EXPIRED | DENIED | GRANTED | REVOKED'
       enum:
         - REQUESTED
         - EXPIRED
         - DENIED
         - GRANTED
         - REVOKED
-    Type:
-      type: string
-      enum:
-        - CONSENTARTEFACT
-        - CONSENTREQUEST
-    ConsentRequestReference:
-      type: object
-      properties:
-        id:
-          type: string
-          example: '<consent-request-id>'
-        status:
-          $ref: '#/components/schemas/ConsentStatus'
     ConsentArtefactReference:
       type: object
       properties:
         id:
           type: string
           example: '<consent-artefact-id>'
-        status:
-          $ref: '#/components/schemas/ConsentStatus'
     ConsentNotification:
       type: object
       properties:
-        type:
-          $ref: '#/components/schemas/Type'
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
         timestamp:
           type: string
           format: date-time
           description: Denotes the time at which consent was granted/revoked
-          oneOf:
-            - $ref: '#/components/schemas/ConsentRequestReference'
-            - $ref: '#/components/schemas/ConsentArtefactReference'
-        consentRequest:
-          $ref: '#/components/schemas/ConsentRequestReference'
+        consentRequestId:
+          type: string
+          example: '<consent-request-id>'
         consentArtefacts:
           type: array
           items:
