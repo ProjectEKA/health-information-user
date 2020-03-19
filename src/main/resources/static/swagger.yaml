@@ -78,7 +78,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConsentArtefactNotification'
+              $ref: '#/components/schemas/ConsentNotification'
       responses:
         '200':
           description: Notification successful.
@@ -257,7 +257,7 @@ components:
                 dataExpiryAt:
                   type: string
                   format: date-time
-    NotificationType:
+    ConsentStatus:
       type: string
       enum:
         - REQUESTED
@@ -265,28 +265,33 @@ components:
         - DENIED
         - GRANTED
         - REVOKED
-    ConsentArtefactReference:
+    Type:
+      type: string
+      enum:
+        - CONSENTARTEFACT
+        - CONSENTREQUEST
+    ConsentReference:
       type: object
       properties:
         id:
           type: string
-          example: '<consent-artefact-id>'
-
-    ConsentArtefactNotification:
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+    ConsentNotification:
       type: object
       properties:
         type:
-          $ref: '#/components/schemas/NotificationType'
-        notification:
-          type: object
-          properties:
-            consentRequestId:
-              type: string
-              example: '<consent-request-id>'
-            consentArtefacts:
-              type: array
-              items:
-                $ref: '#/components/schemas/ConsentArtefactReference'
+          $ref: '#/components/schemas/Type'
+        timeStamp:
+          type: string
+          format: date-time
+          description: Denotes the time at which consent was granted/revoked
+        consentRequest:
+          $ref: '#/components/schemas/ConsentReference'
+        consentArtefacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentReference'
     HealthInformation:
       type: object
       properties:
