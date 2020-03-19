@@ -270,11 +270,20 @@ components:
       enum:
         - CONSENTARTEFACT
         - CONSENTREQUEST
-    ConsentReference:
+    ConsentRequestReference:
       type: object
       properties:
         id:
           type: string
+          example: '<consent-request-id>'
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+    ConsentArtefactReference:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '<consent-artefact-id>'
         status:
           $ref: '#/components/schemas/ConsentStatus'
     ConsentNotification:
@@ -286,12 +295,15 @@ components:
           type: string
           format: date-time
           description: Denotes the time at which consent was granted/revoked
+          oneOf:
+            - $ref: '#/components/schemas/ConsentRequestReference'
+            - $ref: '#/components/schemas/ConsentArtefactReference'
         consentRequest:
-          $ref: '#/components/schemas/ConsentReference'
+          $ref: '#/components/schemas/ConsentRequestReference'
         consentArtefacts:
           type: array
           items:
-            $ref: '#/components/schemas/ConsentReference'
+            $ref: '#/components/schemas/ConsentArtefactReference'
     HealthInformation:
       type: object
       properties:
