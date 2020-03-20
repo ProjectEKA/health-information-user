@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
@@ -81,6 +82,9 @@ public class DataFlowUserJourneyTest {
     @MockBean
     LocalDataStore localDataStore;
 
+    @SuppressWarnings("unused")
+    @MockBean
+    private JWKSet centralRegistryJWKSet;
 
     @AfterAll
     public static void tearDown() throws IOException {

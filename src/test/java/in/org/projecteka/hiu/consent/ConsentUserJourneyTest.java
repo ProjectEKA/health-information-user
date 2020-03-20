@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.consent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
@@ -77,6 +78,10 @@ public class ConsentUserJourneyTest {
 
     @MockBean
     private CentralRegistry centralRegistry;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    private JWKSet centralRegistryJWKSet;
 
     @AfterAll
     public static void tearDown() throws IOException {

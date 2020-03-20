@@ -15,7 +15,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
-import static in.org.projecteka.hiu.ClientError.invalidConsentManager;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 
 @AllArgsConstructor
@@ -45,12 +44,11 @@ public class ConsentService {
                 .map(ConsentCreationResponse::new);
     }
 
-    public Mono<Void> handleNotification(String consentManagerId,
-                                         ConsentNotificationRequest consentNotificationRequest) {
+    public Mono<Void> handleNotification(ConsentNotificationRequest consentNotificationRequest) {
+        // TODO: Need to figure out how we are going to figure out consent manager id.
+        // most probably need to have a mapping of @ncg = consent manager id
         return validateRequest(consentNotificationRequest.getConsentRequestId())
-                .flatMap(consentRequest -> isValidConsentManager(consentManagerId, consentRequest)
-                                           ? upsertConsentArtefacts(consentNotificationRequest).then()
-                                           : Mono.error(invalidConsentManager()));
+                .flatMap(consentRequest -> upsertConsentArtefacts(consentNotificationRequest).then());
     }
 
     public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
@@ -103,10 +101,5 @@ public class ConsentService {
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> validateRequest(String consentRequestId) {
         return consentRepository.get(consentRequestId).switchIfEmpty(Mono.error(consentRequestNotFound()));
-    }
-
-    private boolean isValidConsentManager(String consentManagerId,
-                                          in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
-        return consentRequest.getPatient().getId().contains(consentManagerId);
     }
 }

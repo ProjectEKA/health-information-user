@@ -14,6 +14,7 @@ hiu:
     url: ${CENTRAL_REGISTRY_URL}
     clientId: ${HIU_CLIENT_ID}
     clientSecret: ${HIU_CLIENT_SECRET}
+    jwkUrl: ${CENTRAL_REGISTRY_JWK_URL}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}

@@ -3,10 +3,13 @@ package in.org.projecteka.hiu;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.clients.CentralRegistryClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
+import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
@@ -38,6 +41,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.context.ApplicationContext;
@@ -47,6 +51,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.io.IOException;
+import java.net.URL;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -296,5 +303,21 @@ public class HiuConfiguration {
     public CentralRegistry connector(CentralRegistryProperties centralRegistryProperties,
                                      CentralRegistryClient centralRegistryClient) {
         return new CentralRegistry(centralRegistryProperties, centralRegistryClient);
+    }
+
+    @Bean("centralRegistryJWKSet")
+    public JWKSet jwkSet(CentralRegistryProperties clientRegistryProperties) throws IOException, ParseException {
+        return JWKSet.load(new URL(clientRegistryProperties.getJwkUrl()));
+    }
+
+
+    @Bean
+    public CentralRegistryTokenVerifier centralRegistryTokenVerifier(@Qualifier("centralRegistryJWKSet") JWKSet jwkSet) {
+        return new CentralRegistryTokenVerifier(jwkSet);
+    }
+
+    @Bean
+    public Authenticator authenticator() {
+        return new Authenticator();
     }
 }
