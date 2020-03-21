@@ -24,6 +24,6 @@ public class JWTGenerator {
                 .build();
         JWSObject jwsObject = new JWSObject(new JWSHeader(JWSAlgorithm.HS256), new Payload(claims.toJSONObject()));
         jwsObject.sign(signer);
-        return jwsObject.serialize();
+        return "Bearer " + jwsObject.serialize();
     }
 }
