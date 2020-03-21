@@ -3,6 +3,7 @@ package in.org.projecteka.hiu;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;

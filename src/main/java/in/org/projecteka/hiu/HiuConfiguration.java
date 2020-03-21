@@ -3,13 +3,17 @@ package in.org.projecteka.hiu;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.clients.CentralRegistryClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.Base64Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
+import in.org.projecteka.hiu.common.UserAuthenticator;
+import in.org.projecteka.hiu.common.UserBase64Authenticator;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
@@ -45,6 +49,7 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.context.ApplicationContext;
@@ -315,15 +320,27 @@ public class HiuConfiguration {
         return JWKSet.load(new URL(clientRegistryProperties.getJwkUrl()));
     }
 
-
     @Bean
     public CentralRegistryTokenVerifier centralRegistryTokenVerifier(@Qualifier("centralRegistryJWKSet") JWKSet jwkSet) {
         return new CentralRegistryTokenVerifier(jwkSet);
     }
 
     @Bean
-    public Authenticator authenticator() {
-        return new Authenticator();
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "jwt")
+    public Authenticator userAuthenticator(byte[] sharedSecret) throws JOSEException {
+        return new UserAuthenticator(sharedSecret);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "base64")
+    public Authenticator base64Authenticator() {
+        return new Base64Authenticator();
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
+    public Authenticator userBase64Authenticator(byte[] sharedSecret) throws JOSEException {
+        return new UserBase64Authenticator(new Base64Authenticator(), new UserAuthenticator(sharedSecret));
     }
 
     @Bean
