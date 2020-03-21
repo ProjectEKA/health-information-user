@@ -6,6 +6,6 @@ import reactor.core.publisher.Mono;
 
 public class Authenticator {
     public Mono<Caller> verify(String token) {
-        return Mono.justOrEmpty(new Caller(TokenUtils.decode(token), false));
+        return Mono.justOrEmpty(new Caller(TokenUtils.decode(token), false, null));
     }
 }

@@ -49,7 +49,7 @@ public class CentralRegistryTokenVerifier {
                 return Mono.justOrEmpty(jwtProcessor.process(credentials, null))
                         .flatMap(jwtClaimsSet -> {
                             try {
-                                return Mono.just(new Caller(jwtClaimsSet.getStringClaim("clientId"), true));
+                                return Mono.just(new Caller(jwtClaimsSet.getStringClaim("clientId"), true, null));
                             } catch (ParseException e) {
                                 logger.error(e);
                                 return Mono.empty();

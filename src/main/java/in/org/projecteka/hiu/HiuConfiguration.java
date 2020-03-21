@@ -27,6 +27,9 @@ import in.org.projecteka.hiu.dataflow.LocalDataStore;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
+import in.org.projecteka.hiu.user.JWTGenerator;
+import in.org.projecteka.hiu.user.SessionService;
+import in.org.projecteka.hiu.user.UserRepository;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -49,10 +52,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.codec.ServerCodecConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Optional;
@@ -319,5 +324,35 @@ public class HiuConfiguration {
     @Bean
     public Authenticator authenticator() {
         return new Authenticator();
+    }
+
+    @Bean
+    public SessionService sessionService(BCryptPasswordEncoder bCryptPasswordEncoder,
+                                         UserRepository userRepository,
+                                         JWTGenerator jwtGenerator) {
+        return new SessionService(userRepository, bCryptPasswordEncoder, jwtGenerator);
+    }
+
+    @Bean
+    public BCryptPasswordEncoder bCryptPasswordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserRepository userRepository(PgPool pgPool) {
+        return new UserRepository(pgPool);
+    }
+
+    @Bean
+    public static byte[] sharedSecret() {
+        SecureRandom random = new SecureRandom();
+        byte[] sharedSecret = new byte[32];
+        random.nextBytes(sharedSecret);
+        return sharedSecret;
+    }
+
+    @Bean
+    public JWTGenerator jwt(byte[] sharedSecret) {
+        return new JWTGenerator(sharedSecret);
     }
 }

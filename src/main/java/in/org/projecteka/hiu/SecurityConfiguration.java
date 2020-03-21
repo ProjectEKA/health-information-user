@@ -48,7 +48,8 @@ public class SecurityConfiguration {
                                            "/**.yaml",
                                            "/**.css",
                                            "/**.png",
-                                           "/health-information/fetch/**/attachments/**"};
+                                           "/health-information/fetch/**/attachments/**",
+                                           "/sessions"};
         httpSecurity.authorizeExchange().pathMatchers(WHITELISTED_URLS).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers("/**").authenticated();
