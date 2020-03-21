@@ -15,6 +15,7 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 public class UserRepository {
     private static final String SELECT_USER_BY_USERNAME = "SELECT username, password, role FROM " +
             "\"user\" WHERE username = $1";
+    private static final String INSERT_USER = "Insert into \"user\" values ($1, $2, $3)";
 
     private PgPool dbClient;
     private final Logger logger = Logger.getLogger(UserRepository.class);
@@ -33,6 +34,21 @@ public class UserRepository {
                             StreamSupport.stream(handler.result().spliterator(), false)
                                     .map(this::tryFrom)
                                     .forEach(monoSink::success);
+                            monoSink.success();
+                        }));
+    }
+
+    public Mono<Void> save(User user) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(
+                        INSERT_USER,
+                        Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString()),
+                        handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause());
+                                monoSink.error(dbOperationFailure("Failed to save user."));
+                                return;
+                            }
                             monoSink.success();
                         }));
     }
