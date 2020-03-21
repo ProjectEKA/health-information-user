@@ -36,7 +36,7 @@ public class ConsentRepository {
     private static final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
             "FROM consent_request WHERE consent_request ->> 'id' = $1";
     private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
-            "select consent_request FROM consent_request where consent_request ->> 'requesterId' = $1";
+            "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY date_created DESC";
     private PgPool dbClient;
 
     @SneakyThrows
