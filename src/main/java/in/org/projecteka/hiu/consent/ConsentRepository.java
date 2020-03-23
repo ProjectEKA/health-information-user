@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
@@ -90,12 +91,14 @@ public class ConsentRepository {
                         }));
     }
 
-    public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference) {
+    public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference,
+                                   ConsentStatus status,
+                                   Date timestamp) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         UPDATE_CONSENT_ARTEFACT_STATUS_QUERY,
-                        Tuple.of(consentArtefactReference.getStatus().toString(),
-                                LocalDateTime.now(),
+                        Tuple.of(status.toString(),
+                                timestamp,
                                 consentArtefactReference.getId()),
                         handler -> {
                             if (handler.failed())

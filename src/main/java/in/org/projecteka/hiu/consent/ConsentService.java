@@ -14,6 +14,8 @@ import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Date;
+
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.invalidConsentManager;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
@@ -26,6 +28,7 @@ public class ConsentService {
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
     private final PatientService patientService;
     private final CentralRegistry centralRegistry;
+    private final HealthInfoDeletionPublisher healthInfoDeletionPublisher;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
@@ -73,16 +76,33 @@ public class ConsentService {
     }
 
     private Flux<Void> upsertConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {
-        return Flux.fromIterable(consentNotificationRequest.getConsents())
-                .flatMap(consentArtefactReference ->
-                        consentArtefactReference.getStatus() == ConsentStatus.GRANTED
-                        ? processGrantedConsent(consentArtefactReference,
-                                consentNotificationRequest.getConsentRequestId())
-                        : processRejectedConsent(consentArtefactReference));
+        return Flux.fromIterable(consentNotificationRequest.getConsentArtefacts())
+                .flatMap(consentArtefactReference -> {
+                    if(consentNotificationRequest.getStatus() == ConsentStatus.GRANTED)
+                        return processGrantedConsent(consentArtefactReference,
+                                consentNotificationRequest.getConsentRequestId());
+                    else if(consentNotificationRequest.getStatus() == ConsentStatus.REVOKED)
+                        return processRevokedConsent(consentArtefactReference,
+                                consentNotificationRequest.getStatus(),
+                                consentNotificationRequest.getTimestamp());
+                    else
+                        return processRejectedConsent(consentArtefactReference,
+                                consentNotificationRequest.getStatus(),
+                                consentNotificationRequest.getTimestamp());
+                });
     }
 
-    private Mono<Void> processRejectedConsent(ConsentArtefactReference consentArtefactReference) {
-        return consentRepository.updateStatus(consentArtefactReference).then();
+    private Mono<Void> processRevokedConsent(ConsentArtefactReference consentArtefactReference,
+                                             ConsentStatus status,
+                                             Date timestamp) {
+        return consentRepository.updateStatus(consentArtefactReference, status, timestamp)
+                .then(healthInfoDeletionPublisher.broadcastHealthInfoDeletionRequest(consentArtefactReference));
+    }
+
+    private Mono<Void> processRejectedConsent(ConsentArtefactReference consentArtefactReference,
+                                              ConsentStatus status,
+                                              Date timestamp) {
+        return consentRepository.updateStatus(consentArtefactReference, status, timestamp).then();
     }
 
     private Mono<Void> processGrantedConsent(ConsentArtefactReference consentArtefactReference,

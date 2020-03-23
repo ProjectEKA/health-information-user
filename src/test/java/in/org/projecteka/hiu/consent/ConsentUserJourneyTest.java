@@ -161,7 +161,7 @@ public class ConsentUserJourneyTest {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
+                .consentArtefacts(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
                 .build();
         ConsentRequest consentRequest = consentRequest()
                 .id(consentRequestId)
@@ -196,7 +196,7 @@ public class ConsentUserJourneyTest {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().build()))
+                .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
 
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
@@ -220,7 +220,7 @@ public class ConsentUserJourneyTest {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().build()))
+                .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
 
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
@@ -253,7 +253,7 @@ public class ConsentUserJourneyTest {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
+                .consentArtefacts(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
                 .build();
         ConsentRequest consentRequest = consentRequest()
                 .id(consentRequestId)
@@ -286,7 +286,7 @@ public class ConsentUserJourneyTest {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().build()))
+                .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
         ConsentRequest consentRequest = consentRequest()
                 .id(consentRequestId)

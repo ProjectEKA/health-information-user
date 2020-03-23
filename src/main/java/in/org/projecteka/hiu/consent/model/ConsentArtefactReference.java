@@ -16,6 +16,4 @@ import javax.validation.constraints.NotNull;
 public class ConsentArtefactReference {
     @NotNull
     private String id;
-    @NotNull
-    private ConsentStatus status;
 }
