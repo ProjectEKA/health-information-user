@@ -40,7 +40,7 @@ public class ConsentService {
                                         consentCreationResponse.getId(),
                                         requesterId,
                                         hiuProperties.getCallBackUrl()))
-                                .thenReturn(consentCreationResponse.getId()))
+                                .then(Mono.fromCallable(consentCreationResponse::getId)))
                 .map(ConsentCreationResponse::new);
     }
 
@@ -91,11 +91,11 @@ public class ConsentService {
                         consentArtefactResponse.getConsentDetail(),
                         consentArtefactResponse.getStatus(),
                         consentRequestId)
-                        .then(dataFlowRequestPublisher.broadcastDataFlowRequest(
+                        .then(Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
                                 consentArtefactResponse.getConsentDetail().getConsentId(),
                                 consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
                                 consentArtefactResponse.getSignature(),
-                                hiuProperties.getCallBackUrl())))
+                                hiuProperties.getCallBackUrl()))))
                 .then();
     }
 

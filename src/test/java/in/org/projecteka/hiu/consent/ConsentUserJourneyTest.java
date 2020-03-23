@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
+@AutoConfigureWebTestClient(timeout = "5000")
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
     private static MockWebServer consentManagerServer = new MockWebServer();
@@ -284,34 +284,6 @@ public class ConsentUserJourneyTest {
                 .exchange()
                 .expectStatus()
                 .is5xxServerError();
-    }
-
-    @Test
-    public void shouldReturn401WhenConsentManagerIsInvalid() {
-        String consentRequestId = "consent-request-id-1";
-        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
-                .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().build()))
-                .build();
-        ConsentRequest consentRequest = consentRequest()
-                .id(consentRequestId)
-                .patient(consentArtefactPatient().id("5@ncg").build())
-                .build();
-
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
-        when(consentRepository.get(eq(consentRequestId)))
-                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
-
-        webTestClient
-                .post()
-                .uri("/consent/notification/")
-                .header("Authorization", "abcd")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(consentNotificationRequest)
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus()
-                .isUnauthorized();
     }
 
     public static class ContextInitializer
