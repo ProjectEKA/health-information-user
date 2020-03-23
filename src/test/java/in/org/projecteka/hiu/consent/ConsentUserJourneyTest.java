@@ -174,15 +174,16 @@ public class ConsentUserJourneyTest {
                 .build();
 
         when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
-        when(consentRepository.get(eq(consentRequestId)))
-                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
-        when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()), anyString(), anyString()))
-                .thenReturn(Mono.empty());
+        when(consentRepository.get(eq(consentRequestId))).thenReturn(Mono.just(consentRequest));
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(
+                anyString(),
+                eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()),
+                anyString(),
+                anyString())).thenReturn(Mono.empty());
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()),
                 eq(consentArtefactResponse.getStatus()),
-                eq(consentRequestId)))
-                .thenReturn(Mono.create(MonoSink::success));
+                eq(consentRequestId))).thenReturn(Mono.empty());
 
         webTestClient
                 .post()
@@ -284,34 +285,6 @@ public class ConsentUserJourneyTest {
                 .exchange()
                 .expectStatus()
                 .is5xxServerError();
-    }
-
-    @Test
-    public void shouldReturn401WhenConsentManagerIsInvalid() {
-        String consentRequestId = "consent-request-id-1";
-        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
-                .consentRequestId(consentRequestId)
-                .consents(singletonList(consentArtefactReference().build()))
-                .build();
-        ConsentRequest consentRequest = consentRequest()
-                .id(consentRequestId)
-                .patient(consentArtefactPatient().id("5@ncg").build())
-                .build();
-
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
-        when(consentRepository.get(eq(consentRequestId)))
-                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
-
-        webTestClient
-                .post()
-                .uri("/consent/notification/")
-                .header("Authorization", "abcd")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(consentNotificationRequest)
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus()
-                .isUnauthorized();
     }
 
     public static class ContextInitializer

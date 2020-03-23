@@ -153,7 +153,7 @@ public class HealthDataProcessor {
             });
         } catch (Exception e) {
             logger.error("Could not process bundle {exception}", e);
-            result.getErrors().add("Could not process bundle");
+            result.getErrors().add(String.format("Could not process bundle with id: %s, error-message: %s", bundle.getId(), e.getMessage()));
             return result;
         }
         result.addResource(bundle);
