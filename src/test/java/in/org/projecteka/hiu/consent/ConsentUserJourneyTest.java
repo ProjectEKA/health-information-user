@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient(timeout = "5000")
+@AutoConfigureWebTestClient
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
     private static MockWebServer consentManagerServer = new MockWebServer();
@@ -174,15 +174,16 @@ public class ConsentUserJourneyTest {
                 .build();
 
         when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
-        when(consentRepository.get(eq(consentRequestId)))
-                .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
-        when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()), anyString(), anyString()))
-                .thenReturn(Mono.empty());
+        when(consentRepository.get(eq(consentRequestId))).thenReturn(Mono.just(consentRequest));
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(
+                anyString(),
+                eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()),
+                anyString(),
+                anyString())).thenReturn(Mono.empty());
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()),
                 eq(consentArtefactResponse.getStatus()),
-                eq(consentRequestId)))
-                .thenReturn(Mono.create(MonoSink::success));
+                eq(consentRequestId))).thenReturn(Mono.empty());
 
         webTestClient
                 .post()
