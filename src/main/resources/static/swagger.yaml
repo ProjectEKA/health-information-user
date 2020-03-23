@@ -78,7 +78,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConsentArtefactNotification'
+              $ref: '#/components/schemas/ConsentNotification'
       responses:
         '200':
           description: Notification successful.
@@ -259,6 +259,7 @@ components:
                   format: date-time
     ConsentStatus:
       type: string
+      example: 'REQUESTED | EXPIRED | DENIED | GRANTED | REVOKED'
       enum:
         - REQUESTED
         - EXPIRED
@@ -271,12 +272,15 @@ components:
         id:
           type: string
           example: '<consent-artefact-id>'
-        status:
-          $ref: '#/components/schemas/ConsentStatus'
-
-    ConsentArtefactNotification:
+    ConsentNotification:
       type: object
       properties:
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+        timestamp:
+          type: string
+          format: date-time
+          description: Denotes the time at which consent was granted/revoked
         consentRequestId:
           type: string
           example: '<consent-request-id>'

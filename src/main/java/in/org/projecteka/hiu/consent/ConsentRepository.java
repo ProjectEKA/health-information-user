@@ -31,16 +31,20 @@ public class ConsentRepository {
             " VALUES ($1, $2, $3, $4, $5)";
     private static final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
             "consent_artefact set status=$1, date_modified=$2 where consent_artefact_id=$3";
+    private static final String INSERT_CONSENT_REQUEST_QUERY = "INSERT INTO " +
+            "consent_request (consent_request, consent_request_id) VALUES ($1, $2)";
+    private static final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
+            "FROM consent_request WHERE consent_request ->> 'id' = $1";
+    private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
+            "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY date_created DESC";
     private PgPool dbClient;
 
     @SneakyThrows
     public Mono<Void> insert(ConsentRequest consentRequest) {
-        final String INSERT_CONSENT_REQUEST_QUERY = "INSERT INTO " +
-                "consent_request (consent_request) VALUES ($1)";
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         INSERT_CONSENT_REQUEST_QUERY,
-                        Tuple.of(JsonObject.mapFrom(consentRequest)),
+                        Tuple.of(JsonObject.mapFrom(consentRequest), consentRequest.getId()),
                         handler -> {
                             if (handler.failed())
                                 monoSink.error(new Exception("Failed to insert to consent request"));
@@ -51,8 +55,6 @@ public class ConsentRepository {
 
     @SneakyThrows
     public Mono<ConsentRequest> get(String consentRequestId) {
-        final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
-                "FROM consent_request WHERE consent_request ->> 'id' = $1";
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         SELECT_CONSENT_REQUEST_QUERY,
@@ -130,8 +132,6 @@ public class ConsentRepository {
     }
 
     public Flux<ConsentRequest> requestsFrom(String requesterId) {
-        final String CONSENT_REQUEST_BY_REQUESTER_ID =
-                "select consent_request FROM consent_request where consent_request ->> 'requesterId' = $1";
         return Flux.create(fluxSink -> dbClient.preparedQuery(
                 CONSENT_REQUEST_BY_REQUESTER_ID,
                 Tuple.of(requesterId),
