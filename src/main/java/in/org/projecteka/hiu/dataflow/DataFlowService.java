@@ -93,6 +93,6 @@ public class DataFlowService {
     }
 
     private boolean hasLink(Entry entry) {
-        return (entry.getLink() != null) && !entry.getLink().getHref().isBlank();
+        return (entry.getLink() != null) && !entry.getLink().isBlank();
     }
 }

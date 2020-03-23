@@ -13,5 +13,5 @@ public class Entry {
     private String content;
     private String media;
     private String checksum;
-    private Link link;
+    private String link;
 }
