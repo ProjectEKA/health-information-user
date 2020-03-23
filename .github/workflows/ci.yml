@@ -18,6 +18,8 @@ jobs:
       - name: Code coverage
         run: ./gradlew jacocoTestReport
       - name: Sonarcube Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew sonarqube
       - name: Set env
         run: echo ::set-env name=RELEASE_VERSION::$(echo $GITHUB_SHA | head -c7)
