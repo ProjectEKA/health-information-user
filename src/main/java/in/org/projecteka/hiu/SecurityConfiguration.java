@@ -55,7 +55,6 @@ public class SecurityConfiguration {
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers("/**").authenticated();
-
         return httpSecurity
                 .authenticationManager(authenticationManager)
                 .securityContextRepository(securityContextRepository)
@@ -129,7 +128,6 @@ public class SecurityConfiguration {
                     .anyMatch(pattern ->
                             antPathMatcher.match(pattern.getKey(), url) && pattern.getValue().equals(method));
         }
-
     }
 
     private static class AuthenticationManager implements ReactiveAuthenticationManager {
