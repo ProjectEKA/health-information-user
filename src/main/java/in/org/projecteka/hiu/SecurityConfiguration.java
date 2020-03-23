@@ -2,6 +2,7 @@ package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
+import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,6 +53,7 @@ public class SecurityConfiguration {
                                            "/sessions"};
         httpSecurity.authorizeExchange().pathMatchers(WHITELISTED_URLS).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
+        httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers("/**").authenticated();
         return httpSecurity
                 .authenticationManager(authenticationManager)
@@ -100,11 +102,13 @@ public class SecurityConfiguration {
 
         private Mono<SecurityContext> check(String token) {
             return authenticator.verify(token)
-                    .map(caller -> new UsernamePasswordAuthenticationToken(
-                            caller,
-                            token,
-                            new ArrayList<SimpleGrantedAuthority>()))
-                    .flatMap(authToken -> manager.authenticate(authToken))
+                    .map(caller ->
+                    {
+                        var grantedAuthority = new ArrayList<SimpleGrantedAuthority>();
+                        caller.getRole().map(role ->
+                                grantedAuthority.add(new SimpleGrantedAuthority("ROLE_".concat(role))));
+                        return new UsernamePasswordAuthenticationToken(caller, token, grantedAuthority);
+                    })
                     .map(SecurityContextImpl::new);
         }
 
@@ -115,7 +119,6 @@ public class SecurityConfiguration {
                                     caller,
                                     token,
                                     new ArrayList<SimpleGrantedAuthority>()))
-                    .flatMap(authToken -> manager.authenticate(authToken))
                     .map(SecurityContextImpl::new);
         }
 
@@ -125,7 +128,6 @@ public class SecurityConfiguration {
                     .anyMatch(pattern ->
                             antPathMatcher.match(pattern.getKey(), url) && pattern.getValue().equals(method));
         }
-
     }
 
     private static class AuthenticationManager implements ReactiveAuthenticationManager {

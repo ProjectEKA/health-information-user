@@ -321,7 +321,6 @@ public class HiuConfiguration {
     }
 
     @Bean
-
     public CentralRegistryTokenVerifier centralRegistryTokenVerifier(@Qualifier("centralRegistryJWKSet") JWKSet jwkSet) {
         return new CentralRegistryTokenVerifier(jwkSet);
     }
