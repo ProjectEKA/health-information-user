@@ -67,6 +67,7 @@ public class ConsentRepository {
                                         .map(row -> (JsonObject) row.getValue("consent_request"))
                                         .map(json -> json.mapTo(ConsentRequest.class))
                                         .forEach(monoSink::success);
+                                monoSink.success();
                             }
                         }));
     }

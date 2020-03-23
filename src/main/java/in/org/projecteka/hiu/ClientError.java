@@ -16,14 +16,6 @@ public class ClientError extends Throwable {
         error = errorRepresentation;
     }
 
-    public static ClientError invalidConsentManager() {
-        return new ClientError(
-                HttpStatus.UNAUTHORIZED,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.INVALID_CONSENT_MANAGER,
-                        "Cannot find the consent request")));
-    }
-
     public static ClientError consentRequestNotFound() {
         return new ClientError(
                 HttpStatus.NOT_FOUND,
