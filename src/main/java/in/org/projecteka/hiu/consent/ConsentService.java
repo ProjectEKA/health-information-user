@@ -50,10 +50,13 @@ public class ConsentService {
 
     public Mono<Void> handleNotification(String consentManagerId,
                                          ConsentNotificationRequest consentNotificationRequest) {
-        return validateRequest(consentNotificationRequest.getConsentRequestId())
-                .flatMap(consentRequest -> isValidConsentManager(consentManagerId, consentRequest)
-                                           ? upsertConsentArtefacts(consentNotificationRequest).then()
-                                           : Mono.error(invalidConsentManager()));
+        if (consentNotificationRequest.getStatus() == ConsentStatus.GRANTED) {
+            return validateRequest(consentNotificationRequest.getConsentRequestId())
+                    .flatMap(consentRequest -> isValidConsentManager(consentManagerId, consentRequest)
+                            ? upsertConsentArtefacts(consentNotificationRequest).then()
+                            : Mono.error(invalidConsentManager()));
+        }
+        return upsertConsentArtefacts(consentNotificationRequest).then();
     }
 
     public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
