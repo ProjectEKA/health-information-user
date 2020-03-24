@@ -51,6 +51,9 @@ public class ConsentServiceTest {
     @Mock
     private CentralRegistry centralRegistry;
 
+    @Mock
+    private HealthInfoDeletionPublisher healthInfoDeletionPublisher;
+
     @BeforeEach
     public void setUp() {
         initMocks(this);
@@ -67,7 +70,8 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 null,
-                centralRegistry);
+                centralRegistry,
+                healthInfoDeletionPublisher);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
         ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()
@@ -96,7 +100,8 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
-                centralRegistry);
+                centralRegistry,
+                healthInfoDeletionPublisher);
         Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
         Patient patient = patient().build();
         var consentRequest = consentRequest()
@@ -130,7 +135,8 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
-                centralRegistry);
+                centralRegistry,
+                healthInfoDeletionPublisher);
         Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
         Patient patient = patient().build();
         var consentRequest = consentRequest()

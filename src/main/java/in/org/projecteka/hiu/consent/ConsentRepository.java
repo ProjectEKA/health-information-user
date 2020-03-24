@@ -13,7 +13,9 @@ import lombok.SneakyThrows;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,7 +101,7 @@ public class ConsentRepository {
                 dbClient.preparedQuery(
                         UPDATE_CONSENT_ARTEFACT_STATUS_QUERY,
                         Tuple.of(status.toString(),
-                                timestamp,
+                                convertToLocalDateTime(timestamp),
                                 consentArtefactReference.getId()),
                         handler -> {
                             if (handler.failed())
@@ -149,5 +151,12 @@ public class ConsentRepository {
                         fluxSink.complete();
                     }
                 }));
+    }
+
+    private LocalDateTime convertToLocalDateTime(Date date) {
+        if (date != null) {
+            return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        }
+        return null;
     }
 }

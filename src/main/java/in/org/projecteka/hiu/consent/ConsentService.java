@@ -47,8 +47,7 @@ public class ConsentService {
                 .map(ConsentCreationResponse::new);
     }
 
-    public Mono<Void> handleNotification(String consentManagerId,
-                                         ConsentNotificationRequest consentNotificationRequest) {
+    public Mono<Void> handleNotification(ConsentNotificationRequest consentNotificationRequest) {
         if (consentNotificationRequest.getStatus() == ConsentStatus.GRANTED) {
             // TODO: Need to figure out how we are going to figure out consent manager id.
             // most probably need to have a mapping of @ncg = consent manager id

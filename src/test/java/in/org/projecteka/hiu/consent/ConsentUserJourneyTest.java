@@ -138,7 +138,8 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
-        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId, "requesterId", "localhost:8080"))).
+        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId,
+                "requesterId", "localhost:8080"))).
                 thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
 
         webTestClient
@@ -167,8 +168,9 @@ public class ConsentUserJourneyTest {
 
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .status(ConsentStatus.GRANTED)
                 .consentRequestId(consentRequestId)
-                .consentArtefacts(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
+                .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
         ConsentRequest consentRequest = consentRequest()
                 .id(consentRequestId)
@@ -203,6 +205,7 @@ public class ConsentUserJourneyTest {
     public void shouldReturn404OnNotificationWhenConsentRequestNotFound() {
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .status(ConsentStatus.GRANTED)
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
@@ -260,8 +263,9 @@ public class ConsentUserJourneyTest {
 
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .status(ConsentStatus.GRANTED)
                 .consentRequestId(consentRequestId)
-                .consentArtefacts(singletonList(consentArtefactReference().status(ConsentStatus.GRANTED).build()))
+                .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
         ConsentRequest consentRequest = consentRequest()
                 .id(consentRequestId)
@@ -288,7 +292,7 @@ public class ConsentUserJourneyTest {
                 .expectStatus()
                 .is5xxServerError();
     }
-    
+
     public static class ContextInitializer
             implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         @Override

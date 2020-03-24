@@ -51,37 +51,27 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("dev")
 public class DataFlowUserJourneyTest {
     private static MockWebServer dataFlowServer = new MockWebServer();
-
+    @MockBean
+    LocalDataStore localDataStore;
     @Autowired
     private WebTestClient webTestClient;
-
     @MockBean
     private DataFlowRepository dataFlowRepository;
-
     @MockBean
     private HealthInformationRepository healthInformationRepository;
-
     @MockBean
     private ConsentRepository consentRepository;
-
     @SuppressWarnings("unused")
     @MockBean
     private DestinationsConfig destinationsConfig;
-
     @SuppressWarnings("unused")
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
-
     @MockBean
     private DataAvailabilityPublisher dataAvailabilityPublisher;
-
     @SuppressWarnings("unused")
     @MockBean
     private DataAvailabilityListener dataAvailabilityListener;
-
-    @MockBean
-    LocalDataStore localDataStore;
-
     @SuppressWarnings("unused")
     @MockBean
     private JWKSet centralRegistryJWKSet;
@@ -106,7 +96,7 @@ public class DataFlowUserJourneyTest {
         String transactionId = "transactionId";
         KeyMaterial keyMaterial = keyMaterial().build();
         DataNotificationRequest dataNotificationRequest =
-        DataNotificationRequest.builder().transactionId(transactionId).entries(entries).keyMaterial(keyMaterial).build();
+                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).keyMaterial(keyMaterial).build();
 
         Map<String, Object> flowRequestMap = new HashMap<>();
         flowRequestMap.put("consentRequestId", "consentRequestId");
@@ -141,6 +131,7 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("hipId", hipId);
         consentDetailsMap.put("hipName", hipName);
         consentDetailsMap.put("requester", "1");
+        consentDetailsMap.put("status", "GRANTED");
         consentDetails.add(consentDetailsMap);
         Map<String, Object> healthInfo = new HashMap<>();
         String content = "Some dummy content";
