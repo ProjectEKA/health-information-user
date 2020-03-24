@@ -18,4 +18,5 @@ public class CentralRegistryProperties {
     public String url;
     public String clientId;
     public String clientSecret;
+    private String jwkUrl;
 }

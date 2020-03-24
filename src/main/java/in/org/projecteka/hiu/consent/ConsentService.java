@@ -17,7 +17,6 @@ import reactor.core.publisher.Mono;
 import java.util.Date;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
-import static in.org.projecteka.hiu.ClientError.invalidConsentManager;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 
 @AllArgsConstructor
@@ -44,17 +43,17 @@ public class ConsentService {
                                         consentCreationResponse.getId(),
                                         requesterId,
                                         hiuProperties.getCallBackUrl()))
-                                .thenReturn(consentCreationResponse.getId()))
+                                .then(Mono.fromCallable(consentCreationResponse::getId)))
                 .map(ConsentCreationResponse::new);
     }
 
     public Mono<Void> handleNotification(String consentManagerId,
                                          ConsentNotificationRequest consentNotificationRequest) {
         if (consentNotificationRequest.getStatus() == ConsentStatus.GRANTED) {
+            // TODO: Need to figure out how we are going to figure out consent manager id.
+            // most probably need to have a mapping of @ncg = consent manager id
             return validateRequest(consentNotificationRequest.getConsentRequestId())
-                    .flatMap(consentRequest -> isValidConsentManager(consentManagerId, consentRequest)
-                            ? upsertConsentArtefacts(consentNotificationRequest).then()
-                            : Mono.error(invalidConsentManager()));
+                    .flatMap(consentRequest -> upsertConsentArtefacts(consentNotificationRequest).then());
         }
         return upsertConsentArtefacts(consentNotificationRequest).then();
     }
@@ -116,20 +115,15 @@ public class ConsentService {
                         consentArtefactResponse.getConsentDetail(),
                         consentArtefactResponse.getStatus(),
                         consentRequestId)
-                        .then(dataFlowRequestPublisher.broadcastDataFlowRequest(
+                        .then(Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
                                 consentArtefactResponse.getConsentDetail().getConsentId(),
                                 consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
                                 consentArtefactResponse.getSignature(),
-                                hiuProperties.getCallBackUrl())))
+                                hiuProperties.getCallBackUrl()))))
                 .then();
     }
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> validateRequest(String consentRequestId) {
         return consentRepository.get(consentRequestId).switchIfEmpty(Mono.error(consentRequestNotFound()));
-    }
-
-    private boolean isValidConsentManager(String consentManagerId,
-                                          in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
-        return consentRequest.getPatient().getId().contains(consentManagerId);
     }
 }

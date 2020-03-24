@@ -11,9 +11,13 @@ public enum ErrorCode {
     CONSENT_REQUEST_NOT_FOUND(1003),
     QUEUE_NOT_FOUND(1004),
     UNAUTHORIZED_REQUESTER(1005),
-    INVALID_DATA_FLOW_ENTRY(1006),
-    UNAUTHORIZED(1007);
+    INVALID_DATA_FLOW_ENTRY(5001),
+    INVALID_USERNAME_OR_PASSWORD(1006),
+    INVALID_REQUEST(1007),
+    UNAUTHORIZED(1008);
+
     private int value;
+
     ErrorCode(int val) {
         value = val;
     }

@@ -12,6 +12,7 @@ hiu:
     url: http://host.docker.internal:8080
     clientId: 10000005
     clientSecret: b435af20-5006-4932-bca7-74aabdf8a78d
+    jwkUrl: http://host.docker.internal:8080/certs
   database:
     host: localhost
     port: 5432
