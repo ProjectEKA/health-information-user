@@ -71,15 +71,20 @@ public class HealthDataProcessor {
             } else {
                 String url = String.format("%s?transactionId=%s", entry.getLink(), context.getTransactionId());
                 HealthInformation healthInformation = healthInformationClient.getHealthInformationFor(url).block();
-                if (healthInformation != null) {
-                    Entry healthInformationEntry = Entry.builder()
-                            .content(healthInformation.getContent())
-                            .checksum(entry.getChecksum())
-                            .media(entry.getMedia())
-                            .build();
-                    processedResource = processEntryContent(context, healthInformationEntry, keyMaterial);
-                } else {
-                    processedResource.addError("");
+                try {
+                    if (healthInformation != null) {
+                        Entry healthInformationEntry = Entry.builder()
+                                .content(healthInformation.getContent())
+                                .checksum(entry.getChecksum())
+                                .media(entry.getMedia())
+                                .build();
+                        processedResource = processEntryContent(context, healthInformationEntry, keyMaterial);
+                    } else {
+                        processedResource.addError("Health Information not found");
+                    }
+                } catch (Exception e) {
+                    processedResource.addError(e.getMessage());
+                    logger.error(e);
                 }
             }
             if (!processedResource.hasErrors()) {
