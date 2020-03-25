@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataprocessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
+import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
@@ -44,6 +45,9 @@ class HealthDataProcessorTest {
     @Mock
     private Decryptor decryptor;
 
+    @Mock
+    private HealthInformationClient healthInformationClient;
+
     @AfterAll
     public static void cleanUp() throws IOException {
         /**
@@ -80,7 +84,7 @@ class HealthDataProcessorTest {
         List<HITypeResourceProcessor> resourceProcessors = Collections.singletonList(
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())));
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor,
-                resourceProcessors);
+                resourceProcessors, healthInformationClient);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
@@ -114,7 +118,8 @@ class HealthDataProcessorTest {
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository,
                 dataFlowRepository,
                 decryptor,
-                resourceProcessors);
+                resourceProcessors,
+                healthInformationClient);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
@@ -148,7 +153,8 @@ class HealthDataProcessorTest {
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository,
                 dataFlowRepository,
                 decryptor,
-                resourceProcessors);
+                resourceProcessors,
+                healthInformationClient);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
