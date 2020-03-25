@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
@@ -34,6 +35,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactPatient;
@@ -83,6 +85,9 @@ public class ConsentUserJourneyTest {
     @SuppressWarnings("unused")
     @MockBean
     private JWKSet centralRegistryJWKSet;
+
+    @MockBean
+    private HealthInfoDeletionPublisher healthInfoDeletionPublisher;
 
     @AfterAll
     public static void tearDown() throws IOException {
@@ -250,6 +255,7 @@ public class ConsentUserJourneyTest {
                 .is5xxServerError();
     }
 
+
     @Test
     public void shouldReturn500OnNotificationWhenConsentArtefactCouldNotBeInserted() throws JsonProcessingException {
         ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse()
@@ -280,6 +286,66 @@ public class ConsentUserJourneyTest {
                 eq(consentArtefactResponse.getStatus()),
                 eq(consentRequestId)))
                 .thenReturn(Mono.error(new Exception("Failed to insert consent artefact")));
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .is5xxServerError();
+    }
+
+    @Test
+    public void shouldUpdateConsentStatus() {
+        String consentRequestId = "consent-request-id-1";
+        ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
+        Date date = new Date();
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .status(ConsentStatus.REVOKED)
+                .timestamp(date)
+                .consentRequestId(consentRequestId)
+                .consentArtefacts(singletonList(consentArtefactReference))
+                .build();
+
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
+                .thenReturn(Mono.empty());
+        when(healthInfoDeletionPublisher.broadcastHealthInfoDeletionRequest(consentArtefactReference))
+                .thenReturn(Mono.empty());
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isOk();
+    }
+
+    @Test
+    public void shouldReturn500OnNotificationWhenConsentUpdateFails() {
+        String consentRequestId = "consent-request-id-1";
+        Date date = new Date();
+        ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .status(ConsentStatus.REVOKED)
+                .timestamp(date)
+                .consentRequestId(consentRequestId)
+                .consentArtefacts(singletonList(consentArtefactReference))
+                .build();
+
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
+                .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
+        when(healthInfoDeletionPublisher.broadcastHealthInfoDeletionRequest(consentArtefactReference))
+                .thenReturn(Mono.empty());
 
         webTestClient
                 .post()

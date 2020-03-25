@@ -12,7 +12,6 @@ import javax.validation.constraints.NotNull;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class ConsentArtefactReference {
     @NotNull
     private String id;

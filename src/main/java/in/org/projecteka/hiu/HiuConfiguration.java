@@ -77,6 +77,7 @@ public class HiuConfiguration {
     public static final String HIU_DEAD_LETTER_QUEUE = "hiu-dead-letter-queue";
     private static final String HIU_DEAD_LETTER_EXCHANGE = "hiu-dead-letter-exchange";
     public static final String HIU_DEAD_LETTER_ROUTING_KEY = "deadLetter";
+    public static final String EXCHANGE = "exchange";
 
     @Bean
     public PatientServiceClient patientServiceClient(
@@ -175,11 +176,9 @@ public class HiuConfiguration {
     @Bean
     public DestinationsConfig destinationsConfig(AmqpAdmin amqpAdmin) {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
-        queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
-                DATA_FLOW_REQUEST_QUEUE));
-        queues.put(DATA_FLOW_PROCESS_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
-                DATA_FLOW_PROCESS_QUEUE));
-        queues.put(HEALTH_INFO_DELETION_QUEUE, new DestinationsConfig.DestinationInfo("exchange",
+        queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_REQUEST_QUEUE));
+        queues.put(DATA_FLOW_PROCESS_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_PROCESS_QUEUE));
+        queues.put(HEALTH_INFO_DELETION_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE,
                 HEALTH_INFO_DELETION_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
