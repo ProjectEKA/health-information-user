@@ -1,9 +1,6 @@
 package in.org.projecteka.hiu.clients;
 
-import in.org.projecteka.hiu.common.CentralRegistry;
 import lombok.AllArgsConstructor;
-import org.apache.log4j.Logger;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -25,7 +22,7 @@ public class HealthInformationClient {
                         clientResponse -> Mono.error(new Throwable("Unauthorized")))
                 .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse ->
                         Mono.error(new Throwable("Unknown error occured")))
-                .bodyToMono(HealthInformation.class));
+                .bodyToMono(HealthInformation.class);
     }
 
 }

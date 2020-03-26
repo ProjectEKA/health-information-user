@@ -296,14 +296,13 @@ public class HiuConfiguration {
                                                              HealthDataRepository healthDataRepository,
                                                              DataFlowRepository dataFlowRepository,
                                                              LocalDicomServerProperties dicomServerProperties,
-                                                             WebClient.Builder builder,
-                                                             CentralRegistry centralRegistry) {
+                                                             WebClient.Builder builder) {
         return new DataAvailabilityListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
                 healthDataRepository,
                 dataFlowRepository,
-                dicomServerProperties, new HealthInformationClient(builder, centralRegistry));
+                dicomServerProperties, new HealthInformationClient(builder));
     }
 
     @Bean
