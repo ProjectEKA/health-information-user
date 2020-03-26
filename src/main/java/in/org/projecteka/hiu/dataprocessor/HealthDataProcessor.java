@@ -69,8 +69,8 @@ public class HealthDataProcessor {
             if (hasContent(entry)) {
                 processedResource = processEntryContent(context, entry, keyMaterial);
             } else {
-                String url = String.format("%s?transactionId=%s", entry.getLink(), context.getTransactionId());
-                HealthInformation healthInformation = healthInformationClient.getHealthInformationFor(url).block();
+                HealthInformation healthInformation = healthInformationClient.getHealthInformationFor(entry.getLink())
+                        .block();
                 try {
                     if (healthInformation != null) {
                         Entry healthInformationEntry = Entry.builder()
