@@ -9,21 +9,21 @@ import org.springframework.amqp.core.AmqpTemplate;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
-import static in.org.projecteka.hiu.HiuConfiguration.HEALTH_INFO_DELETION_QUEUE;
+import static in.org.projecteka.hiu.HiuConfiguration.HEALTH_INFO_QUEUE;
 
 @AllArgsConstructor
-public class HealthInfoDeletionPublisher {
-    private static final Logger logger = Logger.getLogger(HealthInfoDeletionPublisher.class);
+public class HealthInformationPublisher {
+    private static final Logger logger = Logger.getLogger(HealthInformationPublisher.class);
     private AmqpTemplate amqpTemplate;
     private DestinationsConfig destinationsConfig;
 
     @SneakyThrows
-    public Mono<Void> broadcastHealthInfoDeletionRequest(ConsentArtefactReference consentArtefactReference) {
+    public Mono<Void> publish(ConsentArtefactReference consentArtefactReference) {
         DestinationsConfig.DestinationInfo destinationInfo =
-                destinationsConfig.getQueues().get(HEALTH_INFO_DELETION_QUEUE);
+                destinationsConfig.getQueues().get(HEALTH_INFO_QUEUE);
 
         if (destinationInfo == null) {
-            logger.info(HEALTH_INFO_DELETION_QUEUE + " not found");
+            logger.info(HEALTH_INFO_QUEUE + " not found");
             throw queueNotFound();
         }
 

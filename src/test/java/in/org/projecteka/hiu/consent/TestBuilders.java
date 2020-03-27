@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
@@ -54,6 +55,9 @@ public class TestBuilders {
         return easyRandom.nextObject(in.org.projecteka.hiu.clients.Patient.PatientBuilder.class);
     }
 
+    public static ConsentArtefact.ConsentArtefactBuilder consentArtefact() {
+        return easyRandom.nextObject(ConsentArtefact.ConsentArtefactBuilder.class);
+    }
     public static String randomString() {
         return easyRandom.nextObject(String.class);
     }

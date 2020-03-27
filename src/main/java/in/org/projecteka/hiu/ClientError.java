@@ -24,6 +24,14 @@ public class ClientError extends Throwable {
                         "Cannot find the consent request")));
     }
 
+    public static ClientError consentArtefactNotFound() {
+        return new ClientError(
+                HttpStatus.NOT_FOUND,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,
+                        "Cannot find the consent artefact")));
+    }
+
     public static ClientError dbOperationFailure(String message) {
         return new ClientError(
                 HttpStatus.INTERNAL_SERVER_ERROR,

@@ -18,7 +18,7 @@ import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
-import in.org.projecteka.hiu.consent.HealthInfoDeletionPublisher;
+import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
@@ -73,7 +73,7 @@ import java.util.concurrent.TimeUnit;
 public class HiuConfiguration {
     public static final String DATA_FLOW_REQUEST_QUEUE = "data-flow-request-queue";
     public static final String DATA_FLOW_PROCESS_QUEUE = "data-flow-process-queue";
-    public static final String HEALTH_INFO_DELETION_QUEUE = "health-info-deletion-queue";
+    public static final String HEALTH_INFO_QUEUE = "health-info-queue";
     public static final String HIU_DEAD_LETTER_QUEUE = "hiu-dead-letter-queue";
     private static final String HIU_DEAD_LETTER_EXCHANGE = "hiu-dead-letter-exchange";
     public static final String HIU_DEAD_LETTER_ROUTING_KEY = "deadLetter";
@@ -108,9 +108,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public HealthInfoDeletionPublisher healthInformationDeletionPublisher(AmqpTemplate amqpTemplate,
-                                                                          DestinationsConfig destinationsConfig) {
-        return new HealthInfoDeletionPublisher(amqpTemplate, destinationsConfig);
+    public HealthInformationPublisher healthInformationDeletionPublisher(AmqpTemplate amqpTemplate,
+                                                                         DestinationsConfig destinationsConfig) {
+        return new HealthInformationPublisher(amqpTemplate, destinationsConfig);
     }
 
     @Bean
@@ -122,7 +122,7 @@ public class HiuConfiguration {
             DataFlowRequestPublisher dataFlowRequestPublisher,
             PatientService patientService,
             CentralRegistry centralRegistry,
-            HealthInfoDeletionPublisher healthInfoDeletionPublisher) {
+            HealthInformationPublisher healthInformationPublisher) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
@@ -130,7 +130,7 @@ public class HiuConfiguration {
                 dataFlowRequestPublisher,
                 patientService,
                 centralRegistry,
-                healthInfoDeletionPublisher);
+                healthInformationPublisher);
     }
 
     @Bean
@@ -178,8 +178,7 @@ public class HiuConfiguration {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
         queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_REQUEST_QUEUE));
         queues.put(DATA_FLOW_PROCESS_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_PROCESS_QUEUE));
-        queues.put(HEALTH_INFO_DELETION_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE,
-                HEALTH_INFO_DELETION_QUEUE));
+        queues.put(HEALTH_INFO_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, HEALTH_INFO_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
         Queue deadLetterQueue = QueueBuilder.durable(HIU_DEAD_LETTER_QUEUE).build();

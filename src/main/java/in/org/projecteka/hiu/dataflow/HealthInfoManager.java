@@ -18,17 +18,15 @@ public class HealthInfoManager {
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return consentRepository.getConsentDetails(consentRequestId)
-                .flatMap(consentDetail -> {
-                    if (!isValidRequester(requesterId, consentDetail))
-                        return Flux.error(ClientError.unauthorizedRequester());
-                    if (!isGrantedConsent(consentDetail))
-                        return Flux.error(ClientError.unauthorized());
-                    return dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
+                .filter(consentDetail -> isValidRequester(requesterId, consentDetail))
+                .switchIfEmpty(Flux.error(ClientError.unauthorizedRequester()))
+                .filter(this::isGrantedConsent)
+                .switchIfEmpty(Flux.error(ClientError.unauthorized()))
+                .flatMap(consentDetail -> dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
                             .flatMapMany(transactionId -> getDataEntries(
                                     transactionId,
                                     consentDetail.get("hipId"),
-                                    consentDetail.get("hipName")));
-                });
+                                    consentDetail.get("hipName"))));
     }
 
     private boolean isGrantedConsent(Map<String, String> consentDetail) {

@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
@@ -15,7 +16,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Date;
+import java.util.List;
 
+import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 
@@ -27,7 +30,7 @@ public class ConsentService {
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
     private final PatientService patientService;
     private final CentralRegistry centralRegistry;
-    private final HealthInfoDeletionPublisher healthInfoDeletionPublisher;
+    private final HealthInformationPublisher healthInformationPublisher;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
@@ -53,8 +56,12 @@ public class ConsentService {
             // most probably need to have a mapping of @ncg = consent manager id
             return validateRequest(consentNotificationRequest.getConsentRequestId())
                     .flatMap(consentRequest -> upsertConsentArtefacts(consentNotificationRequest).then());
+        } else if (consentNotificationRequest.getStatus().equals(ConsentStatus.REVOKED)) {
+            return validateConsents(consentNotificationRequest.getConsentArtefacts())
+                    .flatMap(consentArtefacts -> upsertConsentArtefacts(consentNotificationRequest).then());
         }
-        return upsertConsentArtefacts(consentNotificationRequest).then();
+        //TODO: Need to validate for all scenarios
+        return Mono.empty();
     }
 
     public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
@@ -79,10 +86,10 @@ public class ConsentService {
     private Flux<Void> upsertConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {
         return Flux.fromIterable(consentNotificationRequest.getConsentArtefacts())
                 .flatMap(consentArtefactReference -> {
-                    if(consentNotificationRequest.getStatus() == ConsentStatus.GRANTED)
+                    if (consentNotificationRequest.getStatus().equals(ConsentStatus.GRANTED))
                         return processGrantedConsent(consentArtefactReference,
                                 consentNotificationRequest.getConsentRequestId());
-                    else if(consentNotificationRequest.getStatus() == ConsentStatus.REVOKED)
+                    else if (consentNotificationRequest.getStatus().equals(ConsentStatus.REVOKED))
                         return processRevokedConsent(consentArtefactReference,
                                 consentNotificationRequest.getStatus(),
                                 consentNotificationRequest.getTimestamp());
@@ -97,7 +104,7 @@ public class ConsentService {
                                              ConsentStatus status,
                                              Date timestamp) {
         return consentRepository.updateStatus(consentArtefactReference, status, timestamp)
-                .then(healthInfoDeletionPublisher.broadcastHealthInfoDeletionRequest(consentArtefactReference));
+                .then(healthInformationPublisher.publish(consentArtefactReference));
     }
 
     private Mono<Void> processRejectedConsent(ConsentArtefactReference consentArtefactReference,
@@ -124,5 +131,12 @@ public class ConsentService {
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> validateRequest(String consentRequestId) {
         return consentRepository.get(consentRequestId).switchIfEmpty(Mono.error(consentRequestNotFound()));
+    }
+
+    private Mono<List<ConsentArtefact>> validateConsents(List<ConsentArtefactReference> consentArtefacts) {
+        return Flux.fromIterable(consentArtefacts)
+                .flatMap(consentArtifact -> consentRepository.getConsent(consentArtifact.getId(), ConsentStatus.GRANTED)
+                        .switchIfEmpty(Mono.error(consentArtefactNotFound())))
+                .collectList();
     }
 }
