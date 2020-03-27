@@ -35,6 +35,7 @@ public class SecurityConfiguration {
     private static final List<Map.Entry<String, HttpMethod>> SERVICE_ONLY_URLS = new ArrayList<>() {
         {
             add(Map.entry("/consent/notification", HttpMethod.POST));
+            add(Map.entry("/data/notification", HttpMethod.POST));
         }
     };
 
@@ -126,7 +127,7 @@ public class SecurityConfiguration {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return SERVICE_ONLY_URLS.stream()
                     .anyMatch(pattern ->
-                            antPathMatcher.match(pattern.getKey(), url) && pattern.getValue().equals(method));
+                            antPathMatcher.matchStart(pattern.getKey(), url) && pattern.getValue().equals(method));
         }
     }
 

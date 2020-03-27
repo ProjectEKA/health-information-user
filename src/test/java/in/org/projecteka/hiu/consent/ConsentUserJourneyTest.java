@@ -3,12 +3,12 @@ package in.org.projecteka.hiu.consent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWKSet;
+import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
-import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
+@AutoConfigureWebTestClient(timeout = "300000")
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
     private static MockWebServer consentManagerServer = new MockWebServer();
@@ -82,6 +82,9 @@ public class ConsentUserJourneyTest {
     @MockBean
     private CentralRegistry centralRegistry;
 
+    @MockBean
+    private CentralRegistryTokenVerifier centralRegistryTokenVerifier;
+
     @SuppressWarnings("unused")
     @MockBean
     private JWKSet centralRegistryJWKSet;
@@ -101,10 +104,9 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldCreateConsentRequest() throws JsonProcessingException {
-        String consentRequestId = "consent-request-id";
-        String requesterId = "1";
-        String callBackUrl = "localhost:8080";
-
+        var consentRequestId = "consent-request-id";
+        var requesterId = "1";
+        var callBackUrl = "localhost:8080";
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
@@ -135,13 +137,13 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldThrowInsertionError() throws JsonProcessingException {
-        String consentRequestId = "consent-request-id";
+        var consentRequestId = "consent-request-id";
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
-
         consentManagerServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
+
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId,
                 "requesterId", "localhost:8080"))).
@@ -162,26 +164,26 @@ public class ConsentUserJourneyTest {
     @Test
     @Disabled
     public void shouldCreateConsentArtefacts() throws JsonProcessingException {
-        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse()
+        var consentArtefactResponse = consentArtefactResponse()
                 .status(ConsentStatus.GRANTED)
                 .build();
         var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consentArtefactResponse);
-
         consentManagerServer.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json")
                 .setBody(consentArtefactResponseJson));
-
+        var token = randomString();
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.GRANTED)
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
-        ConsentRequest consentRequest = consentRequest()
+        var consentRequest = consentRequest()
                 .id(consentRequestId)
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
         when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
         when(consentRepository.get(eq(consentRequestId))).thenReturn(Mono.just(consentRequest));
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(
@@ -196,8 +198,8 @@ public class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .uri("/consent/notification")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -208,6 +210,7 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldReturn404OnNotificationWhenConsentRequestNotFound() {
+        var token = randomString();
         String consentRequestId = "consent-request-id-1";
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.GRANTED)
@@ -215,14 +218,14 @@ public class ConsentUserJourneyTest {
                 .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
 
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(null)));
 
         webTestClient
                 .post()
-                .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .uri("/consent/notification")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -233,20 +236,21 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldReturn500OnNotificationWhenConsentRequestCouldNotBeFetched() {
-        String consentRequestId = "consent-request-id-1";
-        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+        var consentRequestId = "consent-request-id-1";
+        var consentNotificationRequest = consentNotificationRequest()
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
+        var token = randomString();
 
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.error(new Exception("Failed to fetch consent request")));
 
         webTestClient
                 .post()
-                .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .uri("/consent/notification")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -255,14 +259,14 @@ public class ConsentUserJourneyTest {
                 .is5xxServerError();
     }
 
-
     @Test
     public void shouldReturn500OnNotificationWhenConsentArtefactCouldNotBeInserted() throws JsonProcessingException {
-        ConsentArtefactResponse consentArtefactResponse = consentArtefactResponse()
+        var consentArtefactResponse = consentArtefactResponse()
                 .status(ConsentStatus.GRANTED)
                 .build();
         var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consentArtefactResponse);
-
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
         consentManagerServer.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json")
                 .setBody(consentArtefactResponseJson));
@@ -273,14 +277,13 @@ public class ConsentUserJourneyTest {
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
-        ConsentRequest consentRequest = consentRequest()
+        var consentRequest = consentRequest()
                 .id(consentRequestId)
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()),
                 eq(consentArtefactResponse.getStatus()),
@@ -290,7 +293,7 @@ public class ConsentUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
