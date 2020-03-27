@@ -7,13 +7,17 @@ import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
@@ -35,8 +39,11 @@ public class ConsentRepository {
             "consent_request (consent_request, consent_request_id) VALUES ($1, $2)";
     private static final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
             "FROM consent_request WHERE consent_request ->> 'id' = $1";
+    private static final String SELECT_CONSENT_ARTEFACT_QUERY = "SELECT consent_artefact FROM consent_artefact WHERE " +
+            "consent_artefact_id = $1 AND status = $2";
     private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
-            "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY date_created DESC";
+            "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY " +
+                    "date_created DESC";
     private PgPool dbClient;
 
     @SneakyThrows
@@ -72,6 +79,29 @@ public class ConsentRepository {
                         }));
     }
 
+    @SneakyThrows
+    public Mono<ConsentArtefact> getConsent(String consentId, ConsentStatus status) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(
+                        SELECT_CONSENT_ARTEFACT_QUERY,
+                        Tuple.of(consentId, status.toString()),
+                        handler -> {
+                            if (handler.failed())
+                                monoSink.error(dbOperationFailure("Failed to fetch consent artefact"));
+                            else {
+                                RowSet<Row> results = handler.result();
+                                if (results.iterator().hasNext()) {
+                                    Row row = results.iterator().next();
+                                    JsonObject artefact = (JsonObject) row.getValue("consent_artefact");
+                                    ConsentArtefact consentArtefact = artefact.mapTo(ConsentArtefact.class);
+                                    monoSink.success(consentArtefact);
+                                } else {
+                                    monoSink.success(null);
+                                }
+                            }
+                        }));
+    }
+
     public Mono<Void> insertConsentArtefact(ConsentArtefact consentArtefact,
                                             ConsentStatus status,
                                             String consentRequestId) {
@@ -91,12 +121,14 @@ public class ConsentRepository {
                         }));
     }
 
-    public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference) {
+    public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference,
+                                   ConsentStatus status,
+                                   Date timestamp) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         UPDATE_CONSENT_ARTEFACT_STATUS_QUERY,
-                        Tuple.of(consentArtefactReference.getStatus().toString(),
-                                LocalDateTime.now(),
+                        Tuple.of(status.toString(),
+                                convertToLocalDateTime(timestamp),
                                 consentArtefactReference.getId()),
                         handler -> {
                             if (handler.failed())
@@ -146,5 +178,12 @@ public class ConsentRepository {
                         fluxSink.complete();
                     }
                 }));
+    }
+
+    private LocalDateTime convertToLocalDateTime(Date date) {
+        if (date != null) {
+            return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        }
+        return null;
     }
 }
