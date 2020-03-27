@@ -314,7 +314,9 @@ public class ConsentUserJourneyTest {
                 .consentArtefacts(singletonList(consentArtefactReference))
                 .build();
 
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new Caller("", true, "")));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
                 .thenReturn(Mono.empty());
         when(healthInfoDeletionPublisher.broadcastHealthInfoDeletionRequest(consentArtefactReference))
@@ -344,7 +346,9 @@ public class ConsentUserJourneyTest {
                 .consentArtefacts(singletonList(consentArtefactReference))
                 .build();
 
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new Caller("", true, "")));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
                 .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
         when(healthInfoDeletionPublisher.broadcastHealthInfoDeletionRequest(consentArtefactReference))
