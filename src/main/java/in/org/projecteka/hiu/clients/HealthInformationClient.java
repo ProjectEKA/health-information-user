@@ -13,7 +13,7 @@ public class HealthInformationClient {
 
     public Mono<HealthInformation> getHealthInformationFor(String url) {
         return builder.build()
-                .post()
+                .get()
                 .uri(url)
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus == HttpStatus.NOT_FOUND,
