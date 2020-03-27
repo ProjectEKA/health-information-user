@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.2.5.RELEASE'
+    id 'org.springframework.boot' version '2.2.6.RELEASE'
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
     id 'java'
     id "org.sonarqube" version "2.8"
@@ -52,7 +52,7 @@ dependencies {
     implementation 'ca.uhn.hapi.fhir:hapi-fhir-base:4.2.0'
     implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-r4:4.2.0'
     implementation 'org.apache.httpcomponents:httpclient:4.5.12'
-    implementation 'com.nimbusds:nimbus-jose-jwt:8.10'
+    implementation 'com.nimbusds:nimbus-jose-jwt:8.11'
 }
 
 test {
