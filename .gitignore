@@ -31,3 +31,7 @@ bin/
 
 ### VS Code ###
 .vscode/
+
+### Others ###
+src/test/resources/*.pdf
+src/test/resources/*.dcm

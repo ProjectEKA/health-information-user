@@ -24,6 +24,14 @@ public class ClientError extends Throwable {
                         "Cannot find the consent request")));
     }
 
+    public static ClientError consentArtefactNotFound() {
+        return new ClientError(
+                HttpStatus.NOT_FOUND,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,
+                        "Cannot find the consent artefact")));
+    }
+
     public static ClientError dbOperationFailure(String message) {
         return new ClientError(
                 HttpStatus.INTERNAL_SERVER_ERROR,
@@ -48,6 +56,14 @@ public class ClientError extends Throwable {
                         "Requester is not authorized to perform this action")));
     }
 
+    public static ClientError unauthorized() {
+        return new ClientError(
+                HttpStatus.UNAUTHORIZED,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.UNAUTHORIZED,
+                        "Action can't be performed, unauthorized")));
+    }
+
     public static ClientError invalidEntryError(String errorMessage) {
         return new ClientError(
                 HttpStatus.BAD_REQUEST,
@@ -61,5 +77,13 @@ public class ClientError extends Throwable {
                 new ErrorRepresentation(new Error(
                         ErrorCode.UNKNOWN_ERROR,
                         "Something went wrong")));
+    }
+
+    public static ClientError validationFailed() {
+        return new ClientError(
+                HttpStatus.NOT_FOUND,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.VALIDATION_FAILED,
+                        "Validation Failed")));
     }
 }
