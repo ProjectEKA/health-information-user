@@ -78,4 +78,12 @@ public class ClientError extends Throwable {
                         ErrorCode.UNKNOWN_ERROR,
                         "Something went wrong")));
     }
+
+    public static ClientError validationFailed() {
+        return new ClientError(
+                HttpStatus.NOT_FOUND,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.VALIDATION_FAILED,
+                        "Validation Failed")));
+    }
 }

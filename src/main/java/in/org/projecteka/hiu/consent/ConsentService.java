@@ -20,6 +20,7 @@ import java.util.List;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
+import static in.org.projecteka.hiu.ClientError.validationFailed;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 
 @AllArgsConstructor
@@ -61,7 +62,7 @@ public class ConsentService {
                     .flatMap(consentArtefacts -> upsertConsentArtefacts(consentNotificationRequest).then());
         }
         //TODO: Need to validate for all scenarios
-        return Mono.empty();
+        return Mono.error(validationFailed());
     }
 
     public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
