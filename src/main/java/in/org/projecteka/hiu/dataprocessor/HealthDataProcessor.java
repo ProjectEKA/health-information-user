@@ -3,6 +3,8 @@ package in.org.projecteka.hiu.dataprocessor;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.org.projecteka.hiu.clients.HealthInformationClient;
+import in.org.projecteka.hiu.clients.HealthInformation;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -31,6 +33,7 @@ public class HealthDataProcessor {
     private HealthDataRepository healthDataRepository;
     private DataFlowRepository dataFlowRepository;
     private Decryptor decryptor;
+    private HealthInformationClient healthInformationClient;
     private FhirContext fhirContext = FhirContext.forR4();
     private static final Logger logger = Logger.getLogger(HealthDataProcessor.class);
 
@@ -38,10 +41,12 @@ public class HealthDataProcessor {
 
     public HealthDataProcessor(HealthDataRepository healthDataRepository,
                                DataFlowRepository dataFlowRepository,
-                               Decryptor decryptor, List<HITypeResourceProcessor> hiTypeResourceProcessors) {
+                               Decryptor decryptor, List<HITypeResourceProcessor> hiTypeResourceProcessors,
+                               HealthInformationClient healthInformationClient) {
         this.healthDataRepository = healthDataRepository;
         this.dataFlowRepository = dataFlowRepository;
         this.decryptor = decryptor;
+        this.healthInformationClient = healthInformationClient;
         this.resourceProcessors.addAll(hiTypeResourceProcessors);
     }
 
@@ -60,29 +65,46 @@ public class HealthDataProcessor {
         DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(context.getTransactionId()).block();
         List<String> dataErrors = new ArrayList<>();
         context.getNotifiedData().getEntries().forEach(entry -> {
+            ProcessedResource processedResource = new ProcessedResource();
             if (hasContent(entry)) {
-                ProcessedResource processedResource = processEntryContent(context, entry, keyMaterial);
-                if (!processedResource.hasErrors()) {
-                    String resource =
-                            getEntryParser(entry.getMedia()).encodeResourceToString(processedResource.getResource());
-                    healthDataRepository.insertHealthData(
-                            context.getTransactionId(),
-                            context.getDataPartNumber(),
-                            resource,
-                            EntryStatus.SUCCEEDED)
-                            .block();
-                } else {
-                    dataErrors.addAll(processedResource.getErrors());
-                    healthDataRepository.insertHealthData(
-                            context.getTransactionId(),
-                            context.getDataPartNumber(),
-                            "",
-                            EntryStatus.ERRORED)
-                            .block();
+                processedResource = processEntryContent(context, entry, keyMaterial);
+            } else {
+                HealthInformation healthInformation = healthInformationClient.getHealthInformationFor(entry.getLink())
+                        .block();
+                try {
+                    if (healthInformation != null) {
+                        Entry healthInformationEntry = Entry.builder()
+                                .content(healthInformation.getContent())
+                                .checksum(entry.getChecksum())
+                                .media(entry.getMedia())
+                                .build();
+                        processedResource = processEntryContent(context, healthInformationEntry, keyMaterial);
+                    } else {
+                        processedResource.addError("Health Information not found");
+                    }
+                } catch (Exception e) {
+                    processedResource.addError(e.getMessage());
+                    logger.error(e);
                 }
             }
-            //TODO: else part. download the content from entry.getLink().getHref(), and essentially call
-            // processEntryContent()
+            if (!processedResource.hasErrors()) {
+                String resource =
+                        getEntryParser(entry.getMedia()).encodeResourceToString(processedResource.getResource());
+                healthDataRepository.insertHealthData(
+                        context.getTransactionId(),
+                        context.getDataPartNumber(),
+                        resource,
+                        EntryStatus.SUCCEEDED)
+                        .block();
+            } else {
+                dataErrors.addAll(processedResource.getErrors());
+                healthDataRepository.insertHealthData(
+                        context.getTransactionId(),
+                        context.getDataPartNumber(),
+                        "",
+                        EntryStatus.ERRORED)
+                        .block();
+            }
         });
 
         if (!dataErrors.isEmpty()) {

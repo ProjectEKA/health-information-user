@@ -6,6 +6,7 @@ import com.google.common.cache.CacheLoader;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.clients.CentralRegistryClient;
+import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Authenticator;
@@ -304,13 +305,14 @@ public class HiuConfiguration {
                                                              DestinationsConfig destinationsConfig,
                                                              HealthDataRepository healthDataRepository,
                                                              DataFlowRepository dataFlowRepository,
-                                                             LocalDicomServerProperties dicomServerProperties) {
+                                                             LocalDicomServerProperties dicomServerProperties,
+                                                             WebClient.Builder builder) {
         return new DataAvailabilityListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
                 healthDataRepository,
                 dataFlowRepository,
-                dicomServerProperties);
+                dicomServerProperties, new HealthInformationClient(builder));
     }
 
     @Bean

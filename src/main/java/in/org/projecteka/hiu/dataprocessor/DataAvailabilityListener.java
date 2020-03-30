@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
+import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
@@ -31,6 +32,7 @@ public class DataAvailabilityListener {
     private final HealthDataRepository healthDataRepository;
     private final DataFlowRepository dataFlowRepository;
     private final LocalDicomServerProperties dicomServerProperties;
+    private final HealthInformationClient healthInformationClient;
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
 
@@ -57,7 +59,8 @@ public class DataAvailabilityListener {
                         healthDataRepository,
                         dataFlowRepository,
                         new Decryptor(),
-                        allResourceProcessors());
+                        allResourceProcessors(),
+                        healthInformationClient);
                 healthDataProcessor.process(dataAvailableMessage);
             } catch (Exception exception) {
                 logger.error(exception);
