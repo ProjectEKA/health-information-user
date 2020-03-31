@@ -21,31 +21,33 @@ public class LocalDataStore {
     public Mono<Void> serializeDataToFile(DataNotificationRequest dataNotificationRequest, Path outFileName) {
         return Mono.create(monoSink ->
                 contentFromRequest(dataNotificationRequest)
-                        .ifPresent(bytes -> {
-                            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-                            //TODO: find location from application properties.
-                            // also create the filename under a directory that's relevant to transaction
-                            try {
-                                createParentDirectoriesIfNotExists(outFileName);
-                                var channel = AsynchronousFileChannel.open(outFileName,
-                                        StandardOpenOption.CREATE,
-                                        StandardOpenOption.WRITE);
-                                channel.write(byteBuffer, 0, byteBuffer, new CompletionHandler<>() {
-                                    @Override
-                                    public void completed(Integer result, ByteBuffer attachment) {
-                                        monoSink.success();
-                                    }
+                        .ifPresentOrElse(
+                                bytes -> {
+                                    ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+                                    //TODO: find location from application properties.
+                                    // also create the filename under a directory that's relevant to transaction
+                                    try {
+                                        createParentDirectoriesIfNotExists(outFileName);
+                                        var channel = AsynchronousFileChannel.open(outFileName,
+                                                StandardOpenOption.CREATE,
+                                                StandardOpenOption.WRITE);
+                                        channel.write(byteBuffer, 0, byteBuffer, new CompletionHandler<>() {
+                                            @Override
+                                            public void completed(Integer result, ByteBuffer attachment) {
+                                                monoSink.success();
+                                            }
 
-                                    @Override
-                                    public void failed(Throwable exc, ByteBuffer attachment) {
-                                        monoSink.error(exc);
+                                            @Override
+                                            public void failed(Throwable exc, ByteBuffer attachment) {
+                                                monoSink.error(exc);
+                                            }
+                                        });
+                                    } catch (IOException e) {
+                                        logger.error(e);
+                                        monoSink.error(e);
                                     }
-                                });
-                            } catch (IOException e) {
-                                logger.error(e);
-                                monoSink.error(e);
-                            }
-                        }));
+                                },
+                                () -> monoSink.error(new Exception("Not able to process the request"))));
     }
 
     private void createParentDirectoriesIfNotExists(Path outFileName) throws IOException {
