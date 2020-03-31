@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import com.google.common.cache.Cache;
+import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
@@ -23,14 +24,18 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentNotificationRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
 import static in.org.projecteka.hiu.consent.TestBuilders.patient;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.springframework.http.HttpStatus.CONFLICT;
 
 public class ConsentServiceTest {
     @Mock
@@ -124,7 +129,6 @@ public class ConsentServiceTest {
                 .verifyComplete();
     }
 
-
     @Test
     void returnsRequestsWithConsentArtefactStatus() {
         var requesterId = randomString();
@@ -159,5 +163,55 @@ public class ConsentServiceTest {
         StepVerifier.create(consents)
                 .assertNext(request -> assertThat(request.getStatus()).isEqualTo(ConsentStatus.GRANTED))
                 .verifyComplete();
+    }
+
+    @Test
+    void handleDeniedConsentRequest() {
+        var consentNotificationRequest = consentNotificationRequest().status(DENIED).build();
+        var consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties().build(),
+                consentRepository,
+                dataFlowRequestPublisher,
+                new PatientService(patientServiceClient, cache, centralRegistry),
+                centralRegistry,
+                healthInformationPublisher);
+        var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
+        when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
+                .thenReturn(Mono.just(consentRequest.build()));
+        when(consentRepository.updateConsent(consentNotificationRequest.getConsentRequestId(),
+                consentRequest.status(DENIED).build()))
+                .thenReturn(Mono.empty());
+
+        var publisher = consentService.handleNotification(consentNotificationRequest);
+
+        StepVerifier.create(publisher)
+                .verifyComplete();
+    }
+
+    @Test
+    void returnConflictWhenConsentRequestAlreadyUpdated() {
+        var consentNotificationRequest = consentNotificationRequest().status(DENIED).build();
+        var consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties().build(),
+                consentRepository,
+                dataFlowRequestPublisher,
+                new PatientService(patientServiceClient, cache, centralRegistry),
+                centralRegistry,
+                healthInformationPublisher);
+        var consentRequest = consentRequest()
+                .status(DENIED)
+                .id(consentNotificationRequest.getConsentRequestId())
+                .build();
+        when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
+                .thenReturn(Mono.just(consentRequest));
+
+        var publisher = consentService.handleNotification(consentNotificationRequest);
+
+        StepVerifier.create(publisher)
+                .expectErrorMatches(e -> (e instanceof ClientError) &&
+                        ((ClientError) e).getHttpStatus() == CONFLICT)
+                .verify();
     }
 }

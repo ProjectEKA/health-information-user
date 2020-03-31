@@ -1,5 +1,9 @@
 package in.org.projecteka.hiu.consent;
 
+import in.org.projecteka.hiu.ClientError;
+import in.org.projecteka.hiu.Error;
+import in.org.projecteka.hiu.ErrorCode;
+import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
@@ -12,6 +16,7 @@ import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -21,7 +26,11 @@ import java.util.List;
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.validationFailed;
+import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
+import static org.springframework.http.HttpStatus.CONFLICT;
 
 @AllArgsConstructor
 public class ConsentService {
@@ -60,6 +69,15 @@ public class ConsentService {
         } else if (consentNotificationRequest.getStatus().equals(ConsentStatus.REVOKED)) {
             return validateConsents(consentNotificationRequest.getConsentArtefacts())
                     .flatMap(consentArtefacts -> upsertConsentArtefacts(consentNotificationRequest).then());
+        } else if (DENIED == consentNotificationRequest.getStatus()) {
+            return validateRequest(consentNotificationRequest.getConsentRequestId())
+                    .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
+                    .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
+                            new ErrorRepresentation(new Error(VALIDATION_FAILED,
+                                    "Consent request is already updated.")))))
+                    .flatMap(consentRequest ->
+                            consentRepository.updateConsent(consentRequest.getId(),
+                                    consentRequest.toBuilder().status(DENIED).build()));
         }
         //TODO: Need to validate for all scenarios
         return Mono.error(validationFailed());
@@ -80,7 +98,7 @@ public class ConsentService {
                 .take(1)
                 .next()
                 .map(map -> ConsentStatus.valueOf(map.get("status")))
-                .switchIfEmpty(Mono.just(ConsentStatus.REQUESTED))
+                .switchIfEmpty(Mono.just(consentRequest.getStatus()))
                 .map(status -> consentRequest.toBuilder().status(status).build());
     }
 
