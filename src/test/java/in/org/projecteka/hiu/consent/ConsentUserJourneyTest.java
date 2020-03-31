@@ -11,6 +11,8 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
+import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import okhttp3.mockwebserver.MockResponse;
@@ -72,10 +74,17 @@ public class ConsentUserJourneyTest {
 
     @SuppressWarnings("unused")
     @MockBean
+    private DataFlowDeleteListener dataFlowDeleteListener;
+
+    @SuppressWarnings("unused")
+    @MockBean
     private DestinationsConfig destinationsConfig;
 
     @MockBean
     private DataFlowRequestPublisher dataFlowRequestPublisher;
+
+    @MockBean
+    private DataFlowDeletePublisher dataFlowDeletePublisher;
 
     @SuppressWarnings("unused")
     @MockBean
@@ -123,6 +132,7 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
         var consentRequestDetails = consentRequestDetails().build();
+        consentRequestDetails.getConsent().getPermission().setDataEraseAt("9999-01-15T08:47:48.373+0000");
         when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(
                 consentRequestId,
                 requesterId,
@@ -171,8 +181,14 @@ public class ConsentUserJourneyTest {
     @Test
     @Disabled
     public void shouldCreateConsentArtefacts() throws JsonProcessingException {
+        var dataEraseAt = "9999-01-15T08:47:48.373+0000";
         var consentArtefactResponse = consentArtefactResponse()
                 .status(ConsentStatus.GRANTED)
+                .consentDetail(ConsentArtefact.builder()
+                        .permission(Permission.builder()
+                                .dataEraseAt(dataEraseAt)
+                                .build())
+                        .build())
                 .build();
         var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consentArtefactResponse);
         consentManagerServer.enqueue(new MockResponse()
@@ -193,11 +209,8 @@ public class ConsentUserJourneyTest {
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
         when(consentRepository.get(eq(consentRequestId))).thenReturn(Mono.just(consentRequest));
-        when(dataFlowRequestPublisher.broadcastDataFlowRequest(
-                anyString(),
-                eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()),
-                anyString(),
-                anyString())).thenReturn(Mono.empty());
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()),
+                anyString(), anyString())).thenReturn(Mono.empty());
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()),
                 eq(consentArtefactResponse.getStatus()),
@@ -366,6 +379,78 @@ public class ConsentUserJourneyTest {
                 .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
                 .thenReturn(Mono.just(consentArtefact));
+        when(healthInformationPublisher.publish(consentArtefactReference))
+                .thenReturn(Mono.empty());
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .is5xxServerError();
+    }
+
+    @Test
+    public void shouldUpdateConsentStatusAndBroadcastConsentDeleteOnExpiry() {
+        String consentRequestId = "consent-request-id-1";
+        ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
+        Date date = new Date();
+        ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .status(ConsentStatus.EXPIRED)
+                .timestamp(date)
+                .consentRequestId(consentRequestId)
+                .consentArtefacts(singletonList(consentArtefactReference))
+                .build();
+
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new Caller("", true, "", true)));
+        when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
+                .thenReturn(Mono.empty());
+        when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
+                .thenReturn(Mono.just(consentArtefact));
+        when(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(), consentRequestId)).thenReturn(Mono.empty());
+        when(healthInformationPublisher.publish(consentArtefactReference))
+                .thenReturn(Mono.empty());
+
+        webTestClient
+                .post()
+                .uri("/consent/notification/")
+                .header("Authorization", "bmNn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentNotificationRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isOk();
+    }
+
+    @Test
+    public void shouldReturn500OnNotificationWhenConsentExpiryUpdateFails() {
+        String consentRequestId = "consent-request-id-1";
+        Date date = new Date();
+        ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
+        ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
+        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+                .status(ConsentStatus.EXPIRED)
+                .timestamp(date)
+                .consentRequestId(consentRequestId)
+                .consentArtefacts(singletonList(consentArtefactReference))
+                .build();
+
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new Caller("", true, "", true)));
+        when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
+                .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
+        when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
+                .thenReturn(Mono.just(consentArtefact));
+        when(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(), consentRequestId)).thenReturn(Mono.empty());
         when(healthInformationPublisher.publish(consentArtefactReference))
                 .thenReturn(Mono.empty());
 

@@ -70,6 +70,8 @@ public class DataFlowUserJourneyTest {
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
     @MockBean
+    private DataFlowDeleteListener dataFlowDeleteListener;
+    @MockBean
     private DataAvailabilityPublisher dataAvailabilityPublisher;
     @SuppressWarnings("unused")
     @MockBean
@@ -108,6 +110,8 @@ public class DataFlowUserJourneyTest {
         Map<String, Object> flowRequestMap = new HashMap<>();
         var token = randomString();
         flowRequestMap.put("consentRequestId", "consentRequestId");
+        flowRequestMap.put("consentExpiryDate", "9999-04-15T16:55:00.352+0000");
+
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
@@ -141,6 +145,7 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("hipName", hipName);
         consentDetailsMap.put("requester", "1");
         consentDetailsMap.put("status", "GRANTED");
+        consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48.363+0000");
         consentDetails.add(consentDetailsMap);
         Map<String, Object> healthInfo = new HashMap<>();
         String content = "Some dummy content";
@@ -166,6 +171,41 @@ public class DataFlowUserJourneyTest {
                 .value(HealthInformation::getOffset, Matchers.is(0))
                 .value(HealthInformation::getSize, Matchers.is(1))
                 .value(HealthInformation::getEntries, Matchers.is(dataEntries));
+    }
+
+    @Test
+    public void shouldNotFetchHealthInformationForExpiredConsent() throws JsonProcessingException {
+        var consentRequestId = "consentRequestId";
+        var consentId = "consentId";
+        var transactionId = "transactionId";
+        var hipId = "10000005";
+        var hipName = "Max health care";
+        List<Map<String, String>> consentDetails = new ArrayList<>();
+        Map<String, String> consentDetailsMap = new HashMap<>();
+        consentDetailsMap.put("consentId", consentId);
+        consentDetailsMap.put("hipId", hipId);
+        consentDetailsMap.put("hipName", hipName);
+        consentDetailsMap.put("requester", "1");
+        consentDetailsMap.put("status", "GRANTED");
+        consentDetailsMap.put("consentExpiryDate", "2019-01-15T08:47:48.363+0000");
+        consentDetails.add(consentDetailsMap);
+        var errorResponse = new ErrorRepresentation(new Error(
+                ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,
+                "Consent artefact expired"));
+        var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
+
+        when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
+        when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
+
+        webTestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
+                        .queryParam("limit", "20").build())
+                .header("Authorization", "MQ==")
+                .exchange()
+                .expectStatus().is4xxClientError()
+                .expectBody()
+                .json(errorResponseJson);
     }
 
     @Test

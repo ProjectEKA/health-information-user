@@ -29,7 +29,7 @@ public class DataFlowRepository {
     private static final String INSERT_HEALTH_DATA_AVAILABILITY = "INSERT INTO data_flow_parts (transaction_id, " +
             "part_number, status) VALUES ($1, $2, $3)";
     private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION =
-            "SELECT  ca.consent_request_id, dfr.data_flow_request " +
+            "SELECT  ca.consent_request_id, consent_artefact -> 'permission' ->> 'dataEraseAt' as consent_expiry_date, dfr.data_flow_request " +
                     "FROM data_flow_request dfr " +
                     "INNER JOIN consent_artefact ca ON dfr.consent_artefact_id=ca.consent_artefact_id " +
                     "WHERE dfr.transaction_id=$1";
@@ -145,10 +145,12 @@ public class DataFlowRepository {
                             Row row = iterator.next();
                             Map<String, Object> flowRequestTransaction = new HashMap<>();
                             flowRequestTransaction.put("consentRequestId", row.getString("consent_request_id"));
-                            var jsonObject = (JsonObject) row.getValue("data_flow_request");
-                            flowRequestTransaction.put("dataFlowRequest",
-                                    jsonObject.mapTo(DataFlowRequest.class));
-                            monoSink.success(flowRequestTransaction);
+                            flowRequestTransaction.put("consentExpiryDate", row.getString("consent_expiry_date"));
+                                var jsonObject = (JsonObject) row.getValue("data_flow_request");
+                                flowRequestTransaction.put("dataFlowRequest",
+                                        jsonObject.mapTo(DataFlowRequest.class));
+                                monoSink.success(flowRequestTransaction);
+
                         }));
     }
 

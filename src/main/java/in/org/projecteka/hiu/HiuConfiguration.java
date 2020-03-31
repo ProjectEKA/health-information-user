@@ -19,10 +19,12 @@ import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
+import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
+import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.DataFlowService;
@@ -75,6 +77,7 @@ import java.util.concurrent.TimeUnit;
 public class HiuConfiguration {
     public static final String DATA_FLOW_REQUEST_QUEUE = "data-flow-request-queue";
     public static final String DATA_FLOW_PROCESS_QUEUE = "data-flow-process-queue";
+    public static final String DATA_FLOW_DELETE_QUEUE = "data-flow-delete-queue";
     public static final String HEALTH_INFO_QUEUE = "health-info-queue";
     public static final String HIU_DEAD_LETTER_QUEUE = "hiu-dead-letter-queue";
     private static final String HIU_DEAD_LETTER_EXCHANGE = "hiu-dead-letter-exchange";
@@ -110,6 +113,12 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public DataFlowDeletePublisher dataFlowDeletePublisher(AmqpTemplate amqpTemplate,
+                                                           DestinationsConfig destinationsConfig) {
+        return new DataFlowDeletePublisher(amqpTemplate, destinationsConfig);
+    }
+
+    @Bean
     public HealthInformationPublisher healthInformationDeletionPublisher(AmqpTemplate amqpTemplate,
                                                                          DestinationsConfig destinationsConfig) {
         return new HealthInformationPublisher(amqpTemplate, destinationsConfig);
@@ -122,6 +131,7 @@ public class HiuConfiguration {
             HiuProperties hiuProperties,
             ConsentRepository consentRepository,
             DataFlowRequestPublisher dataFlowRequestPublisher,
+            DataFlowDeletePublisher dataFlowDeletePublisher,
             PatientService patientService,
             CentralRegistry centralRegistry,
             HealthInformationPublisher healthInformationPublisher,
@@ -131,6 +141,7 @@ public class HiuConfiguration {
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
+                dataFlowDeletePublisher,
                 patientService,
                 centralRegistry,
                 healthInformationPublisher,
@@ -182,6 +193,7 @@ public class HiuConfiguration {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
         queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_REQUEST_QUEUE));
         queues.put(DATA_FLOW_PROCESS_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_PROCESS_QUEUE));
+        queues.put(DATA_FLOW_DELETE_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_DELETE_QUEUE));
         queues.put(HEALTH_INFO_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, HEALTH_INFO_QUEUE));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
@@ -269,6 +281,23 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public DataFlowDeleteListener dataFlowDeleteListener(
+            MessageListenerContainerFactory messageListenerContainerFactory,
+            DestinationsConfig destinationsConfig,
+            DataFlowRepository dataFlowRepository,
+            HealthInformationRepository healthInformationRepository,
+            DataFlowServiceProperties dataFlowServiceProperties,
+            LocalDataStore localDataStore) {
+        return new DataFlowDeleteListener(
+                messageListenerContainerFactory,
+                destinationsConfig,
+                dataFlowRepository,
+                healthInformationRepository,
+                dataFlowServiceProperties,
+                localDataStore);
+    }
+
+    @Bean
     public LocalDataStore localDataStore() {
         return new LocalDataStore();
     }
@@ -333,9 +362,10 @@ public class HiuConfiguration {
 
     @Bean
     public HealthInformationClient healthInformationClient(WebClient.Builder builder,
-                                                       ConsentManagerServiceProperties consentManagerServiceProperties) {
+                                                           ConsentManagerServiceProperties consentManagerServiceProperties) {
         return new HealthInformationClient(builder, consentManagerServiceProperties);
     }
+
     @Bean
     public CentralRegistry connector(CentralRegistryProperties centralRegistryProperties,
                                      CentralRegistryClient centralRegistryClient) {

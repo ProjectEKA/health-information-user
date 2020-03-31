@@ -39,6 +39,7 @@ public class ConsentService {
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
+    private final DataFlowDeletePublisher dataFlowDeletePublisher;
     private final PatientService patientService;
     private final CentralRegistry centralRegistry;
     private final HealthInformationPublisher healthInformationPublisher;
@@ -77,31 +78,33 @@ public class ConsentService {
                 .flatMap(result -> result.booleanValue()
                         ? Mono.empty()
                         : Mono.error(new ClientError(BAD_REQUEST,
-                                        new ErrorRepresentation(new Error(INVALID_PURPOSE_OF_USE,
-                                                "Invalid Purpose Of Use")))));
+                        new ErrorRepresentation(new Error(INVALID_PURPOSE_OF_USE,
+                                "Invalid Purpose Of Use")))));
     }
 
     public Mono<Void> handleNotification(ConsentNotificationRequest consentNotificationRequest) {
-        if (consentNotificationRequest.getStatus() == ConsentStatus.GRANTED) {
-            // TODO: Need to figure out how we are going to figure out consent manager id.
-            // most probably need to have a mapping of @ncg = consent manager id
-            return validateRequest(consentNotificationRequest.getConsentRequestId())
-                    .flatMap(consentRequest -> upsertConsentArtefacts(consentNotificationRequest).then());
-        } else if (consentNotificationRequest.getStatus().equals(ConsentStatus.REVOKED)) {
-            return validateConsents(consentNotificationRequest.getConsentArtefacts())
-                    .flatMap(consentArtefacts -> upsertConsentArtefacts(consentNotificationRequest).then());
-        } else if (DENIED == consentNotificationRequest.getStatus()) {
-            return validateRequest(consentNotificationRequest.getConsentRequestId())
-                    .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
-                    .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
-                            new ErrorRepresentation(new Error(VALIDATION_FAILED,
-                                    "Consent request is already updated.")))))
-                    .flatMap(consentRequest ->
-                            consentRepository.updateConsent(consentRequest.getId(),
-                                    consentRequest.toBuilder().status(DENIED).build()));
+        switch (consentNotificationRequest.getStatus()) {
+            case GRANTED:
+                // TODO: Need to figure out how we are going to figure out consent manager id.
+                // most probably need to have a mapping of @ncg = consent manager id
+                return validateRequest(consentNotificationRequest.getConsentRequestId())
+                        .flatMap(consentRequest -> upsertConsentArtefacts(consentNotificationRequest).then());
+            case REVOKED:
+            case EXPIRED:
+                return validateConsents(consentNotificationRequest.getConsentArtefacts())
+                        .flatMap(consentArtefacts -> upsertConsentArtefacts(consentNotificationRequest).then());
+            case DENIED:
+                return validateRequest(consentNotificationRequest.getConsentRequestId())
+                        .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
+                        .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
+                                new ErrorRepresentation(new Error(VALIDATION_FAILED,
+                                        "Consent request is already updated.")))))
+                        .flatMap(consentRequest ->
+                                consentRepository.updateConsent(consentRequest.getId(),
+                                        consentRequest.toBuilder().status(DENIED).build()));
+            default:
+                return Mono.error(validationFailed());
         }
-        //TODO: Need to validate for all scenarios
-        return Mono.error(validationFailed());
     }
 
     public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
@@ -126,18 +129,32 @@ public class ConsentService {
     private Flux<Void> upsertConsentArtefacts(ConsentNotificationRequest consentNotificationRequest) {
         return Flux.fromIterable(consentNotificationRequest.getConsentArtefacts())
                 .flatMap(consentArtefactReference -> {
-                    if (consentNotificationRequest.getStatus().equals(ConsentStatus.GRANTED))
-                        return processGrantedConsent(consentArtefactReference,
-                                consentNotificationRequest.getConsentRequestId());
-                    else if (consentNotificationRequest.getStatus().equals(ConsentStatus.REVOKED))
-                        return processRevokedConsent(consentArtefactReference,
-                                consentNotificationRequest.getStatus(),
-                                consentNotificationRequest.getTimestamp());
-                    else
-                        return processRejectedConsent(consentArtefactReference,
-                                consentNotificationRequest.getStatus(),
-                                consentNotificationRequest.getTimestamp());
+                    switch (consentNotificationRequest.getStatus()) {
+                        case GRANTED:
+                            return processGrantedConsent(consentArtefactReference,
+                                    consentNotificationRequest.getConsentRequestId());
+                        case REVOKED:
+                            return processRevokedConsent(consentArtefactReference,
+                                    consentNotificationRequest.getStatus(),
+                                    consentNotificationRequest.getTimestamp());
+                        case EXPIRED:
+                            return processExpiredConsent(consentArtefactReference,
+                                    consentNotificationRequest.getConsentRequestId(),
+                                    consentNotificationRequest.getStatus(),
+                                    consentNotificationRequest.getTimestamp());
+                        default:
+                            return processRejectedConsent(consentArtefactReference,
+                                    consentNotificationRequest.getStatus(),
+                                    consentNotificationRequest.getTimestamp());
+                    }
                 });
+    }
+
+    private Mono<Void> processExpiredConsent(ConsentArtefactReference consentArtefactReference,
+                                             String consentRequestId, ConsentStatus status, Date timestamp) {
+        return consentRepository.updateStatus(consentArtefactReference, status, timestamp)
+                .then(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(),
+                        consentRequestId));
     }
 
     private Mono<Void> processRevokedConsent(ConsentArtefactReference consentArtefactReference,
@@ -175,7 +192,7 @@ public class ConsentService {
 
     private Mono<List<ConsentArtefact>> validateConsents(List<ConsentArtefactReference> consentArtefacts) {
         return Flux.fromIterable(consentArtefacts)
-                .flatMap(consentArtifact -> consentRepository.getConsent(consentArtifact.getId(), ConsentStatus.GRANTED)
+                .flatMap(consentArtefact -> consentRepository.getConsent(consentArtefact.getId(), ConsentStatus.GRANTED)
                         .switchIfEmpty(Mono.error(consentArtefactNotFound())))
                 .collectList();
     }

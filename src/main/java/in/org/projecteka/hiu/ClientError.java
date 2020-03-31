@@ -41,6 +41,11 @@ public class ClientError extends Throwable {
                 new ErrorRepresentation(new Error(CONSENT_ARTEFACT_NOT_FOUND, "Cannot find the consent artefact")));
     }
 
+    public static ClientError consentArtefactGone() {
+        return new ClientError(HttpStatus.GONE,
+                new ErrorRepresentation(new Error(ErrorCode.CONSENT_ARTEFACT_NOT_FOUND, "Consent artefact expired")));
+    }
+
     public static ClientError dbOperationFailure(String message) {
         return new ClientError(INTERNAL_SERVER_ERROR, new ErrorRepresentation(new Error(UNKNOWN_ERROR, message)));
     }

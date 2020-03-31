@@ -5,7 +5,6 @@ import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
@@ -28,7 +27,7 @@ import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 
 @AllArgsConstructor
 public class DataFlowRequestListener {
-    private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
+    private static final Logger logger = Logger.getLogger(DataFlowRequestListener.class);
     private final MessageListenerContainerFactory messageListenerContainerFactory;
     private final DestinationsConfig destinationsConfig;
     private final DataFlowClient dataFlowClient;
@@ -52,19 +51,20 @@ public class DataFlowRequestListener {
 
         MessageListener messageListener = message -> {
             DataFlowRequest dataFlowRequest = convertToDataFlowRequest(message.getBody());
-            logger.info("Received data flow request with consent id : " + dataFlowRequest.getConsent().getId());
+            String consentId = dataFlowRequest.getConsent().getId();
+            logger.info("Received data flow request with consent id : " + consentId);
+
             try {
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
                 dataFlowRequest.setKeyMaterial(keyMaterial);
 
                 logger.info("Initiating data flow request to consent manager");
-
                 centralRegistry.token()
                         .flatMap(token -> dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
                                 .flatMap(dataFlowRequestResponse ->
                                         dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                                dataFlowRequest.getConsent().getId(),
+                                                consentId,
                                                 dataFlowRequest)
                                                 .then(dataFlowRepository.addKeys(
                                                         dataFlowRequestResponse.getTransactionId(),
