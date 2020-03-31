@@ -44,6 +44,9 @@ public class ConsentRepository {
     private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
             "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY " +
                     "date_created DESC";
+    private static final String UPDATE_CONSENT_REQUEST_QUERY = "UPDATE " +
+            "consent_request set consent_request = $1 where consent_request_id = $2";
+
     private PgPool dbClient;
 
     @SneakyThrows
@@ -178,6 +181,21 @@ public class ConsentRepository {
                         fluxSink.complete();
                     }
                 }));
+    }
+
+    public Mono<Void> updateConsent(String requestId, ConsentRequest consentRequest) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(
+                        UPDATE_CONSENT_REQUEST_QUERY,
+                        Tuple.of(JsonObject.mapFrom(consentRequest),
+                                requestId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to update consent request status"));
+                                return;
+                            }
+                            monoSink.success();
+                        }));
     }
 
     private LocalDateTime convertToLocalDateTime(Date date) {

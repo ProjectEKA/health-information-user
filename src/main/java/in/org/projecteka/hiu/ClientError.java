@@ -1,9 +1,11 @@
 package in.org.projecteka.hiu;
 
 import lombok.Getter;
+import lombok.ToString;
 import org.springframework.http.HttpStatus;
 
 @Getter
+@ToString
 public class ClientError extends Throwable {
 
     private static final String CANNOT_PROCESS_REQUEST_TRY_LATER = "Cannot process the request at the moment, please " +
