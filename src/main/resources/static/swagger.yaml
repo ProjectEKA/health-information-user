@@ -90,10 +90,6 @@ paths:
       responses:
         '200':
           description: Successful creation of consent artefact.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PatientSearchRepresentation'
         '401':
           description: Unauthorized request
           content:
@@ -106,7 +102,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /patients/{patient-id}:
     get:
       tags:
