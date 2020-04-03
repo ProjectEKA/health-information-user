@@ -18,20 +18,24 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
             "consent_artefact_id, data_flow_request) VALUES ($1, $2, $3)";
-    private static final String INSERT_TO_DATA_FLOW_REQUEST_KEYS = "INSERT INTO data_flow_request_keys (transaction_id, " +
+    private static final String INSERT_TO_DATA_FLOW_REQUEST_KEYS = "INSERT INTO data_flow_request_keys " +
+            "(transaction_id, " +
             "key_pairs) VALUES ($1, $2)";
-    private static final String GET_KEY_FOR_ID = "SELECT key_pairs " +
-            "FROM data_flow_request_keys WHERE transaction_id = $1";;
+    private static final String GET_KEY_FOR_ID = "SELECT key_pairs FROM data_flow_request_keys WHERE transaction_id =" +
+            " $1";
     private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
             "data_flow_request WHERE consent_artefact_id = $1";
     private static final String INSERT_HEALTH_DATA_AVAILABILITY = "INSERT INTO data_flow_parts (transaction_id, " +
             "part_number, status) VALUES ($1, $2, $3)";
     private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION =
             "SELECT  ca.consent_request_id, dfr.data_flow_request " +
-            "FROM data_flow_request dfr " +
-            "INNER JOIN consent_artefact ca ON dfr.consent_artefact_id=ca.consent_artefact_id " +
-            "WHERE dfr.transaction_id=$1";
-    private static final String UPDATE_HEALTH_DATA_AVAILABILITY = "UPDATE data_flow_parts SET status = $1, errors = $2 WHERE transaction_id = $3 AND part_number = $4";
+                    "FROM data_flow_request dfr " +
+                    "INNER JOIN consent_artefact ca ON dfr.consent_artefact_id=ca.consent_artefact_id " +
+                    "WHERE dfr.transaction_id=$1";
+    private static final String UPDATE_HEALTH_DATA_AVAILABILITY = "UPDATE data_flow_parts SET status = $1, errors = " +
+            "$2 WHERE transaction_id = $3 AND part_number = $4";
+    private static final String SELECT_CONSENT_ID = "SELECT consent_artefact_id FROM data_flow_request WHERE " +
+            "transaction_id = $1";
 
     private PgPool dbClient;
 
@@ -83,7 +87,8 @@ public class DataFlowRepository {
                                     keyPairs = keyPairsJson.mapTo(DataFlowRequestKeyMaterial.class);
                                 }
                                 monoSink.success(keyPairs);
-                            }}));
+                            }
+                        }));
     }
 
     public Mono<String> getTransactionId(String consentArtefactId) {
@@ -92,6 +97,18 @@ public class DataFlowRepository {
                 handler -> {
                     if (handler.failed()) {
                         monoSink.error(new Exception("Failed to get transaction Id from consent Id"));
+                    } else {
+                        monoSink.success(handler.result().iterator().next().getString(0));
+                    }
+                }));
+    }
+
+    public Mono<String> getConsentId(String transactionId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_ID,
+                Tuple.of(transactionId),
+                handler -> {
+                    if (handler.failed()) {
+                        monoSink.error(new Exception("Failed to get consent Id from transaction Id"));
                     } else {
                         monoSink.success(handler.result().iterator().next().getString(0));
                     }
@@ -135,7 +152,8 @@ public class DataFlowRepository {
         );
     }
 
-    public Mono<Void> updateDataFlowWithStatus(String transactionId, String dataPartNumber, String allErrors, HealthInfoStatus status) {
+    public Mono<Void> updateDataFlowWithStatus(String transactionId, String dataPartNumber, String allErrors,
+                                               HealthInfoStatus status) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(
                         UPDATE_HEALTH_DATA_AVAILABILITY,
