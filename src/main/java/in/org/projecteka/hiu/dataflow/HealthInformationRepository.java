@@ -19,17 +19,18 @@ public class HealthInformationRepository {
     private PgPool dbClient;
 
     public Flux<Map<String, Object>> getHealthInformation(String transactionId) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_HEALTH_INFORMATION, Tuple.of(transactionId),
-                handler -> {
-                    if (handler.failed()) {
-                        fluxSink.error(new Exception("Failed to get health information from transaction Id"));
-                    } else {
-                        StreamSupport.stream(handler.result().spliterator(), false)
-                                .map(this::toHealthInfo)
-                                .forEach(fluxSink::next);
-                        fluxSink.complete();
-                    }
-                }));
+        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_HEALTH_INFORMATION)
+                .execute(Tuple.of(transactionId),
+                        handler -> {
+                            if (handler.failed()) {
+                                fluxSink.error(new Exception("Failed to get health information from transaction Id"));
+                                return;
+                            }
+                            StreamSupport.stream(handler.result().spliterator(), false)
+                                    .map(this::toHealthInfo)
+                                    .forEach(fluxSink::next);
+                            fluxSink.complete();
+                        }));
     }
 
     @SneakyThrows
