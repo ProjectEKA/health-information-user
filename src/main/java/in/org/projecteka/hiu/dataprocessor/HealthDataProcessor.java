@@ -3,18 +3,18 @@ package in.org.projecteka.hiu.dataprocessor;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.org.projecteka.hiu.clients.HealthInformationClient;
+import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.HealthInformation;
+import in.org.projecteka.hiu.clients.HealthInformationClient;
+import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
-import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
-import in.org.projecteka.hiu.dataprocessor.model.DataContext;
-import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
-import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
+import in.org.projecteka.hiu.dataprocessor.model.*;
 import org.apache.log4j.Logger;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ResourceType;
@@ -25,29 +25,39 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class HealthDataProcessor {
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
     public static final String MEDIA_APPLICATION_FHIR_XML = "application/fhir+xml";
+    private static final Logger logger = Logger.getLogger(HealthDataProcessor.class);
     private HealthDataRepository healthDataRepository;
     private DataFlowRepository dataFlowRepository;
     private Decryptor decryptor;
     private HealthInformationClient healthInformationClient;
+    private CentralRegistry centralRegistry;
+    private HiuProperties hiuProperties;
+    private ConsentRepository consentRepository;
     private FhirContext fhirContext = FhirContext.forR4();
-    private static final Logger logger = Logger.getLogger(HealthDataProcessor.class);
-
     private List<HITypeResourceProcessor> resourceProcessors = new ArrayList<>();
 
     public HealthDataProcessor(HealthDataRepository healthDataRepository,
                                DataFlowRepository dataFlowRepository,
-                               Decryptor decryptor, List<HITypeResourceProcessor> hiTypeResourceProcessors,
-                               HealthInformationClient healthInformationClient) {
+                               Decryptor decryptor,
+                               List<HITypeResourceProcessor> hiTypeResourceProcessors,
+                               HealthInformationClient healthInformationClient,
+                               CentralRegistry centralRegistry,
+                               HiuProperties hiuProperties,
+                               ConsentRepository consentRepository) {
         this.healthDataRepository = healthDataRepository;
         this.dataFlowRepository = dataFlowRepository;
         this.decryptor = decryptor;
         this.healthInformationClient = healthInformationClient;
         this.resourceProcessors.addAll(hiTypeResourceProcessors);
+        this.centralRegistry = centralRegistry;
+        this.hiuProperties = hiuProperties;
+        this.consentRepository = consentRepository;
     }
 
     public void process(DataAvailableMessage message) {
@@ -64,6 +74,7 @@ public class HealthDataProcessor {
         updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING);
         DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(context.getTransactionId()).block();
         List<String> dataErrors = new ArrayList<>();
+        List<StatusResponse> statusResponses = new ArrayList<>();
         context.getNotifiedData().getEntries().forEach(entry -> {
             ProcessedResource processedResource = new ProcessedResource();
             if (hasContent(entry)) {
@@ -96,6 +107,8 @@ public class HealthDataProcessor {
                         resource,
                         EntryStatus.SUCCEEDED)
                         .block();
+
+                statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             } else {
                 dataErrors.addAll(processedResource.getErrors());
                 healthDataRepository.insertHealthData(
@@ -104,15 +117,48 @@ public class HealthDataProcessor {
                         "",
                         EntryStatus.ERRORED)
                         .block();
+                statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, "Couldn't receive data"));
             }
         });
 
         if (!dataErrors.isEmpty()) {
             String allErrors = "[ERROR]".concat(String.join("[ERROR]", dataErrors));
             updateDataProcessStatus(context, allErrors, HealthInfoStatus.ERRORED);
+            notifyHealthInfoStatus(context, statusResponses, SessionStatus.FAILED);
         } else {
             updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED);
+            notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
         }
+    }
+
+    private StatusResponse getStatusResponse(Entry entry, HiStatus hiStatus, String msg) {
+        return StatusResponse.builder()
+                .careContextReference(entry.getCareContextReference())
+                .hiStatus(hiStatus)
+                .description(msg)
+                .build();
+    }
+
+    private void notifyHealthInfoStatus(DataContext context,
+                                        List<StatusResponse> statusResponses,
+                                        SessionStatus sessionStatus) {
+        String consentId = dataFlowRepository.getConsentId(context.getTransactionId()).block();
+        String hipId = consentRepository.getHipId(consentId).block();
+        HealthInfoNotificationRequest healthInfoNotificationRequest = HealthInfoNotificationRequest.builder()
+                .transactionId(context.getTransactionId())
+                .doneAt(new Date())
+                .notifier(Notifier.builder()
+                        .type(Type.HIU)
+                        .id(hiuProperties.getId())
+                        .build())
+                .statusNotification(StatusNotification.builder()
+                        .sessionStatus(sessionStatus)
+                        .hipId(hipId)
+                        .statusResponses(statusResponses)
+                        .build())
+                .build();
+        String token = centralRegistry.token().block();
+        healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token).block();
     }
 
     private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status) {
@@ -175,7 +221,8 @@ public class HealthDataProcessor {
             });
         } catch (Exception e) {
             logger.error("Could not process bundle {exception}", e);
-            result.getErrors().add(String.format("Could not process bundle with id: %s, error-message: %s", bundle.getId(), e.getMessage()));
+            result.getErrors().add(String.format("Could not process bundle with id: %s, error-message: %s",
+                    bundle.getId(), e.getMessage()));
             return result;
         }
         result.addResource(bundle);

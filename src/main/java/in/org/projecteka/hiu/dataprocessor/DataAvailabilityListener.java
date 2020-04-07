@@ -2,9 +2,12 @@ package in.org.projecteka.hiu.dataprocessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
+import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
@@ -33,6 +36,9 @@ public class DataAvailabilityListener {
     private final DataFlowRepository dataFlowRepository;
     private final LocalDicomServerProperties dicomServerProperties;
     private final HealthInformationClient healthInformationClient;
+    private final CentralRegistry centralRegistry;
+    private final HiuProperties hiuProperties;
+    private final ConsentRepository consentRepository;
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
 
@@ -60,7 +66,10 @@ public class DataAvailabilityListener {
                         dataFlowRepository,
                         new Decryptor(),
                         allResourceProcessors(),
-                        healthInformationClient);
+                        healthInformationClient,
+                        centralRegistry,
+                        hiuProperties,
+                        consentRepository);
                 healthDataProcessor.process(dataAvailableMessage);
             } catch (Exception exception) {
                 logger.error(exception);

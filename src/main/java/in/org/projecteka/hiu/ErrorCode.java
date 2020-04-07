@@ -16,8 +16,8 @@ public enum ErrorCode {
     INVALID_REQUEST(1007),
     UNAUTHORIZED(1008),
     CONSENT_ARTEFACT_NOT_FOUND(1009),
-    VALIDATION_FAILED(1010);
-
+    VALIDATION_FAILED(1010),
+    FAILED_TO_NOTIFY_CM(1011);
     private int value;
 
     ErrorCode(int val) {
