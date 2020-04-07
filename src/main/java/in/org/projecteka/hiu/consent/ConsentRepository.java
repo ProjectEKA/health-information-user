@@ -69,15 +69,15 @@ public class ConsentRepository {
                 dbClient.preparedQuery(SELECT_CONSENT_REQUEST_QUERY)
                         .execute(Tuple.of(consentRequestId),
                                 handler -> {
-                                    if (handler.failed())
+                                    if (handler.failed()) {
                                         monoSink.error(dbOperationFailure("Failed to fetch consent request"));
-                                    else {
-                                        StreamSupport.stream(handler.result().spliterator(), false)
-                                                .map(row -> (JsonObject) row.getValue("consent_request"))
-                                                .map(json -> json.mapTo(ConsentRequest.class))
-                                                .forEach(monoSink::success);
-                                        monoSink.success();
+                                        return;
                                     }
+                                    StreamSupport.stream(handler.result().spliterator(), false)
+                                            .map(row -> (JsonObject) row.getValue("consent_request"))
+                                            .map(json -> json.mapTo(ConsentRequest.class))
+                                            .forEach(monoSink::success);
+                                    monoSink.success();
                                 }));
     }
 
@@ -87,19 +87,19 @@ public class ConsentRepository {
                 dbClient.preparedQuery(SELECT_CONSENT_ARTEFACT_QUERY)
                         .execute(Tuple.of(consentId, status.toString()),
                                 handler -> {
-                                    if (handler.failed())
+                                    if (handler.failed()) {
                                         monoSink.error(dbOperationFailure("Failed to fetch consent artefact"));
-                                    else {
-                                        RowSet<Row> results = handler.result();
-                                        if (results.iterator().hasNext()) {
-                                            Row row = results.iterator().next();
-                                            JsonObject artefact = (JsonObject) row.getValue("consent_artefact");
-                                            ConsentArtefact consentArtefact = artefact.mapTo(ConsentArtefact.class);
-                                            monoSink.success(consentArtefact);
-                                        } else {
-                                            monoSink.success(null);
-                                        }
+                                        return;
                                     }
+                                    RowSet<Row> results = handler.result();
+                                    if (results.iterator().hasNext()) {
+                                        Row row = results.iterator().next();
+                                        JsonObject artefact = (JsonObject) row.getValue("consent_artefact");
+                                        ConsentArtefact consentArtefact = artefact.mapTo(ConsentArtefact.class);
+                                        monoSink.success(consentArtefact);
+                                        return;
+                                    }
+                                    monoSink.success(null);
                                 }));
     }
 
@@ -114,10 +114,11 @@ public class ConsentRepository {
                                 status.toString(),
                                 LocalDateTime.now()),
                                 handler -> {
-                                    if (handler.failed())
+                                    if (handler.failed()) {
                                         monoSink.error(dbOperationFailure("Failed to insert consent artefact"));
-                                    else
-                                        monoSink.success();
+                                        return;
+                                    }
+                                    monoSink.success();
                                 }));
     }
 
@@ -130,10 +131,11 @@ public class ConsentRepository {
                                 convertToLocalDateTime(timestamp),
                                 consentArtefactReference.getId()),
                                 handler -> {
-                                    if (handler.failed())
+                                    if (handler.failed()) {
                                         monoSink.error(dbOperationFailure("Failed to update consent artefact status"));
-                                    else
-                                        monoSink.success();
+                                        return;
+                                    }
+                                    monoSink.success();
                                 }));
     }
 
@@ -143,12 +145,12 @@ public class ConsentRepository {
                         handler -> {
                             if (handler.failed()) {
                                 fluxSink.error(new Exception("Failed to get consent id from consent request Id"));
-                            } else {
-                                StreamSupport.stream(handler.result().spliterator(), false)
-                                        .map(this::toConsentDetail)
-                                        .forEach(fluxSink::next);
-                                fluxSink.complete();
+                                return;
                             }
+                            StreamSupport.stream(handler.result().spliterator(), false)
+                                    .map(this::toConsentDetail)
+                                    .forEach(fluxSink::next);
+                            fluxSink.complete();
                         }));
     }
 
@@ -166,15 +168,15 @@ public class ConsentRepository {
         return Flux.create(fluxSink -> dbClient.preparedQuery(CONSENT_REQUEST_BY_REQUESTER_ID)
                 .execute(Tuple.of(requesterId),
                         handler -> {
-                            if (handler.failed())
+                            if (handler.failed()) {
                                 fluxSink.error(dbOperationFailure("Failed to fetch consent requests"));
-                            else {
-                                StreamSupport.stream(handler.result().spliterator(), false)
-                                        .map(row -> (JsonObject) row.getValue("consent_request"))
-                                        .map(json -> json.mapTo(ConsentRequest.class))
-                                        .forEach(fluxSink::next);
-                                fluxSink.complete();
+                                return;
                             }
+                            StreamSupport.stream(handler.result().spliterator(), false)
+                                    .map(row -> (JsonObject) row.getValue("consent_request"))
+                                    .map(json -> json.mapTo(ConsentRequest.class))
+                                    .forEach(fluxSink::next);
+                            fluxSink.complete();
                         }));
     }
 
@@ -198,9 +200,9 @@ public class ConsentRepository {
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(new Exception("Failed to get hip Id from consent Id"));
-                            } else {
-                                monoSink.success(handler.result().iterator().next().getString(0));
+                                return;
                             }
+                            monoSink.success(handler.result().iterator().next().getString(0));
                         }));
     }
 
