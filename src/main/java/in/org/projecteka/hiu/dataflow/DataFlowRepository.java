@@ -45,124 +45,122 @@ public class DataFlowRepository {
 
     public Mono<Void> addDataRequest(String transactionId, String consentId, DataFlowRequest dataFlowRequest) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_TO_DATA_FLOW_REQUEST,
-                        Tuple.of(transactionId, consentId, JsonObject.mapFrom(dataFlowRequest)),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(new Exception("Failed to insert to data flow request"));
-                            else
-                                monoSink.success();
-                        })
-        );
+                dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST)
+                        .execute(Tuple.of(transactionId, consentId, JsonObject.mapFrom(dataFlowRequest)),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(new Exception("Failed to insert to data flow request"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     public Mono<Void> addKeys(String transactionId, DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_TO_DATA_FLOW_REQUEST_KEYS,
-                        Tuple.of(transactionId, JsonObject.mapFrom(dataFlowRequestKeyMaterial)),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(new Exception("Failed to insert to data flow request"));
-                            else
-                                monoSink.success();
-                        })
-        );
+                dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST_KEYS)
+                        .execute(Tuple.of(transactionId, JsonObject.mapFrom(dataFlowRequestKeyMaterial)),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(new Exception("Failed to insert to data flow request"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     public Mono<DataFlowRequestKeyMaterial> getKeys(String transactionId) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        GET_KEY_FOR_ID,
-                        Tuple.of(transactionId),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(dbOperationFailure("Failed to fetch consent request"));
-                            else {
-                                RowSet<Row> rows = handler.result();
-                                DataFlowRequestKeyMaterial keyPairs = null;
-                                for (Row row : rows) {
-                                    JsonObject keyPairsJson = (JsonObject) row.getValue("key_pairs");
-                                    keyPairs = keyPairsJson.mapTo(DataFlowRequestKeyMaterial.class);
-                                }
-                                monoSink.success(keyPairs);
-                            }
-                        }));
+                dbClient.preparedQuery(GET_KEY_FOR_ID)
+                        .execute(Tuple.of(transactionId),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to fetch consent request"));
+                                        return;
+                                    }
+                                    RowSet<Row> rows = handler.result();
+                                    DataFlowRequestKeyMaterial keyPairs = null;
+                                    for (Row row : rows) {
+                                        JsonObject keyPairsJson = (JsonObject) row.getValue("key_pairs");
+                                        keyPairs = keyPairsJson.mapTo(DataFlowRequestKeyMaterial.class);
+                                    }
+                                    monoSink.success(keyPairs);
+                                }));
     }
 
     public Mono<String> getTransactionId(String consentArtefactId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST,
-                Tuple.of(consentArtefactId),
-                handler -> {
-                    if (handler.failed()) {
-                        monoSink.error(new Exception("Failed to get transaction Id from consent Id"));
-                    } else {
-                        monoSink.success(handler.result().iterator().next().getString(0));
-                    }
-                }));
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST)
+                .execute(Tuple.of(consentArtefactId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(new Exception("Failed to get transaction Id from consent Id"));
+                                return;
+                            }
+                            monoSink.success(handler.result().iterator().next().getString(0));
+                        }));
     }
 
     public Mono<String> getConsentId(String transactionId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_ID,
-                Tuple.of(transactionId),
-                handler -> {
-                    if (handler.failed()) {
-                        monoSink.error(new Exception("Failed to get consent Id from transaction Id"));
-                    } else {
-                        monoSink.success(handler.result().iterator().next().getString(0));
-                    }
-                }));
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_ID)
+                .execute(Tuple.of(transactionId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(new Exception("Failed to get consent Id from transaction Id"));
+                                return;
+                            }
+                            monoSink.success(handler.result().iterator().next().getString(0));
+                        }));
     }
 
 
     public Mono<Map<String, Object>> retrieveDataFlowRequest(String transactionId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION,
-                Tuple.of(transactionId),
-                handler -> {
-                    if (handler.failed()) {
-                        monoSink.error(new Exception("Failed to identify data flow request for transaction Id"));
-                    } else {
-                        RowSet<Row> results = handler.result();
-                        if (results.iterator().hasNext()) {
-                            Row row = results.iterator().next();
-                            Map<String, Object> flowRequestTransaction = new HashMap<>();
-                            flowRequestTransaction.put("consentRequestId", row.getString("consent_request_id"));
-                            JsonObject jsonObject = (JsonObject) row.getValue("data_flow_request");
-                            flowRequestTransaction.put("dataFlowRequest", jsonObject.mapTo(DataFlowRequest.class));
-                            monoSink.success(flowRequestTransaction);
-                        } else {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION)
+                .execute(Tuple.of(transactionId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(new Exception("Failed to identify data " +
+                                        "flow request for transaction Id"));
+                                return;
+                            }
+                            RowSet<Row> results = handler.result();
+                            if (results.iterator().hasNext()) {
+                                Row row = results.iterator().next();
+                                Map<String, Object> flowRequestTransaction = new HashMap<>();
+                                flowRequestTransaction.put("consentRequestId", row.getString("consent_request_id"));
+                                var jsonObject = (JsonObject) row.getValue("data_flow_request");
+                                flowRequestTransaction.put("dataFlowRequest",
+                                        jsonObject.mapTo(DataFlowRequest.class));
+                                monoSink.success(flowRequestTransaction);
+                                return;
+                            }
                             monoSink.error(new Exception("Failed to identify data flow request for transaction Id"));
-                        }
-                    }
-                }));
+                        }));
     }
 
     public Mono<Void> insertDataPartAvailability(String transactionId, int partNumber, HealthInfoStatus status) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_HEALTH_DATA_AVAILABILITY,
-                        Tuple.of(transactionId, String.valueOf(partNumber), status.toString()),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(new Exception("Failed to insert health data availability"));
-                            else
-                                monoSink.success();
-                        })
-        );
+                dbClient.preparedQuery(INSERT_HEALTH_DATA_AVAILABILITY)
+                        .execute(Tuple.of(transactionId, String.valueOf(partNumber), status.toString()),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(new Exception("Failed to insert health data availability"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     public Mono<Void> updateDataFlowWithStatus(String transactionId, String dataPartNumber, String allErrors,
                                                HealthInfoStatus status) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        UPDATE_HEALTH_DATA_AVAILABILITY,
-                        Tuple.of(status.toString(), allErrors, transactionId, dataPartNumber),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(new Exception("Failed to update health data availability"));
-                            else
-                                monoSink.success();
-                        }));
+                dbClient.preparedQuery(UPDATE_HEALTH_DATA_AVAILABILITY)
+                        .execute(Tuple.of(status.toString(), allErrors, transactionId, dataPartNumber),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(new Exception("Failed to update health data availability"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 }
