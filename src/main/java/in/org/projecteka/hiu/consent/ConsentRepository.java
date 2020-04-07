@@ -46,7 +46,8 @@ public class ConsentRepository {
                     "date_created DESC";
     private static final String UPDATE_CONSENT_REQUEST_QUERY = "UPDATE " +
             "consent_request set consent_request = $1 where consent_request_id = $2";
-
+    private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
+            "FROM consent_artefact WHERE consent_artefact_id=$1";
     private PgPool dbClient;
 
     @SneakyThrows
@@ -196,6 +197,18 @@ public class ConsentRepository {
                             }
                             monoSink.success();
                         }));
+    }
+
+    public Mono<String> getHipId(String consentId){
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_HIP_ID_FOR_A_CONSENT,
+                Tuple.of(consentId),
+                handler -> {
+                    if (handler.failed()) {
+                        monoSink.error(new Exception("Failed to get hip Id from consent Id"));
+                    } else {
+                        monoSink.success(handler.result().iterator().next().getString(0));
+                    }
+                }));
     }
 
     private LocalDateTime convertToLocalDateTime(Date date) {

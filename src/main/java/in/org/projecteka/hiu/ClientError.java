@@ -88,4 +88,12 @@ public class ClientError extends Throwable {
                         ErrorCode.VALIDATION_FAILED,
                         "Validation Failed")));
     }
+
+    public static ClientError failedToNotifyCM() {
+        return new ClientError(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                new ErrorRepresentation(new Error(
+                        ErrorCode.FAILED_TO_NOTIFY_CM,
+                        "Failed to notify consent manager")));
+    }
 }
