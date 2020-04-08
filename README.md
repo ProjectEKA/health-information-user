@@ -60,7 +60,7 @@ or if you want to run in dev environment setup
 
 To run the tests
 ```
-./grdlew test
+./gradlew test
 ```
 
 ## Features
