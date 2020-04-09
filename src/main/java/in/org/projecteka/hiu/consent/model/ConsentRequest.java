@@ -20,5 +20,5 @@ public class ConsentRequest {
     private Permission permission;
     private ConsentStatus status;
     private String createdDate;
-    private String callBackUrl;
+    private String consentNotificationUrl;
 }

@@ -3,7 +3,8 @@ server:
 hiu:
   id: ${HIU_ID}
   name: ${HIU_NAME}
-  callbackurl: ${CALL_BACK_URL}
+  dataPushUrl: ${DATA_PUSH_URL}
+  consentNotificationUrl: ${CONSENT_NOTIFICATION_URL}
   consentmanager:
     url: ${CONSENT_MANAGEMENT_URL}
   dataflowservice:
