@@ -17,5 +17,6 @@ import org.springframework.context.annotation.Configuration;
 public class HiuProperties {
     private String id;
     private String name;
-    private String callBackUrl;
+    private String dataPushUrl;
+    private String consentNotificationUrl;
 }
