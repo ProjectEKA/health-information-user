@@ -24,6 +24,7 @@ public class ConsentArtefact {
     private PatientLinkedContext patient;
     private HIPReference hip;
     private HIU hiu;
+    private CMReference consentManager;
     private Requester requester;
     private HIType[] hiTypes;
     private Permission permission;
