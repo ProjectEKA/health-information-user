@@ -32,7 +32,6 @@ import static in.org.projecteka.hiu.consent.TestBuilders.patient;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -80,14 +79,14 @@ public class ConsentServiceTest {
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
         ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()
-                .to(requesterId, hiuProperties.getId(), hiuProperties.getName(), hiuProperties.getCallBackUrl()));
+                .to(requesterId, hiuProperties.getId(), hiuProperties.getName(), hiuProperties.getConsentNotificationUrl()));
 
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(consentManagerClient.createConsentRequest(consentRequest, token))
                 .thenReturn(Mono.just(consentCreationResponse));
         when(consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
                 consentCreationResponse.getId(),
-                requesterId, hiuProperties.getCallBackUrl())))
+                requesterId, hiuProperties.getConsentNotificationUrl())))
                 .thenReturn(Mono.create(MonoSink::success));
 
         StepVerifier.create(consentService.create(requesterId, consentRequestData))

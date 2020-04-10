@@ -21,7 +21,7 @@ public class DataFlowRequestPublisher {
     private DestinationsConfig destinationsConfig;
 
     @SneakyThrows
-    public Mono<Void> broadcastDataFlowRequest(String consentArtefactId, DateRange dateRange, String signature, String callBackUrl) {
+    public Mono<Void> broadcastDataFlowRequest(String consentArtefactId, DateRange dateRange, String signature, String dataPushUrl) {
         DestinationsConfig.DestinationInfo destinationInfo =
                 destinationsConfig.getQueues().get(DATA_FLOW_REQUEST_QUEUE);
 
@@ -43,7 +43,7 @@ public class DataFlowRequestPublisher {
                                     .from(dateRange.getFrom())
                                     .to(dateRange.getTo())
                                     .build())
-                            .callBackUrl(callBackUrl)
+                            .dataPushUrl(dataPushUrl)
                             .build());
             logger.info("Broadcasting data flow request with consent id : " + consentArtefactId);
             monoSink.success();
