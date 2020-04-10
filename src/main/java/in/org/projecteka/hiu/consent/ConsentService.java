@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
-import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.common.CentralRegistry;
@@ -16,7 +15,6 @@ import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -47,7 +45,7 @@ public class ConsentService {
                 requesterId,
                 hiuProperties.getId(),
                 hiuProperties.getName(),
-                hiuProperties.getCallBackUrl());
+                hiuProperties.getConsentNotificationUrl());
         return centralRegistry.token()
                 .flatMap(token -> consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest), token))
                 .flatMap(consentCreationResponse ->
@@ -55,7 +53,7 @@ public class ConsentService {
                                 .insert(consentRequestData.getConsent().toConsentRequest(
                                         consentCreationResponse.getId(),
                                         requesterId,
-                                        hiuProperties.getCallBackUrl()))
+                                        hiuProperties.getConsentNotificationUrl()))
                                 .then(Mono.fromCallable(consentCreationResponse::getId)))
                 .map(ConsentCreationResponse::new);
     }
@@ -144,7 +142,7 @@ public class ConsentService {
                                 consentArtefactResponse.getConsentDetail().getConsentId(),
                                 consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
                                 consentArtefactResponse.getSignature(),
-                                hiuProperties.getCallBackUrl()))))
+                                hiuProperties.getDataPushUrl()))))
                 .then();
     }
 

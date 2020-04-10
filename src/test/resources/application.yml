@@ -1,7 +1,8 @@
 hiu:
   id: 10000005
   name: Max Health Care
-  callbackurl: localhost:8080
+  dataPushUrl: localhost:8080
+  consentNotificationUrl: localhost:8080
   consentmanager:
     url: http://consent-manager
   dataflowservice:
