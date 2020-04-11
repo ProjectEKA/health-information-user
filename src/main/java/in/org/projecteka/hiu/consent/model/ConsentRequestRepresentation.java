@@ -21,7 +21,6 @@ public class ConsentRequestRepresentation {
             Patient patient,
             in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
         var format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         return new ConsentRequestRepresentation(
                 consentRequest.getId(),
                 new PatientRepresentation(
@@ -29,7 +28,7 @@ public class ConsentRequestRepresentation {
                         patient.getFirstName(),
                         patient.getLastName()),
                 consentRequest.getStatus(),
-                withMillSeconds.parse(consentRequest.getPermission().getDataExpiryAt()),
+                format.parse(consentRequest.getPermission().getDataExpiryAt()),
                 format.parse(consentRequest.getCreatedDate()),
                 format.parse(consentRequest.getCreatedDate()));
     }

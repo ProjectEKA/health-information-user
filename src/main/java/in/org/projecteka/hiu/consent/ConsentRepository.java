@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.StreamSupport;
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
+import static in.org.projecteka.hiu.common.Serializer.to;
 
 @AllArgsConstructor
 public class ConsentRepository {
@@ -172,10 +173,12 @@ public class ConsentRepository {
                                 fluxSink.error(dbOperationFailure("Failed to fetch consent requests"));
                                 return;
                             }
-                            StreamSupport.stream(handler.result().spliterator(), false)
-                                    .map(row -> (JsonObject) row.getValue("consent_request"))
-                                    .map(json -> json.mapTo(ConsentRequest.class))
-                                    .forEach(fluxSink::next);
+                            RowSet<Row> results = handler.result();
+                            for (Row result : results) {
+                                ConsentRequest consentRequest = to(
+                                        result.getValue("consent_request").toString(), ConsentRequest.class);
+                                fluxSink.next(consentRequest);
+                            }
                             fluxSink.complete();
                         }));
     }
