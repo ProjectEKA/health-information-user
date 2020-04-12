@@ -3,10 +3,9 @@ package in.org.projecteka.hiu.dataflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
-import in.org.projecteka.hiu.dataflow.model.HIDataRange;
+import in.org.projecteka.hiu.dataflow.model.DateRange;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -43,7 +42,7 @@ public class DataFlowClientTest {
                 DataFlowRequestResponse.builder().transactionId(transactionId).build();
         var dataFlowRequestResponseJson = new ObjectMapper().writeValueAsString(dataFlowRequestResponse);
         DataFlowRequest dataFlowRequest = dataFlowRequest().build();
-        dataFlowRequest.setHiDataRange(HIDataRange.builder().from(toDate("2020-01-14T08:47:48Z")).to(toDate("2020" +
+        dataFlowRequest.setDateRange(DateRange.builder().from(toDate("2020-01-14T08:47:48Z")).to(toDate("2020" +
                 "-01-20T08:47:48Z")).build());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)

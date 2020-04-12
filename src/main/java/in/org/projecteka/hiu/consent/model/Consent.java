@@ -50,7 +50,7 @@ public class Consent {
                 new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
-                        getPermission().getDataExpiryAt(),
+                        getPermission().getDataEraseAt(),
                         ONE_HOUR),
                 consentNotificationUrl);
     }
