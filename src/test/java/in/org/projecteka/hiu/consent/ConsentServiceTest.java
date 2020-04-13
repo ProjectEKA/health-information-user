@@ -106,7 +106,7 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher);
-        Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02Z").build();
+        Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
         Patient patient = patient().build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
@@ -140,7 +140,7 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher);
-        Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02Z").build();
+        Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
         Patient patient = patient().build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
