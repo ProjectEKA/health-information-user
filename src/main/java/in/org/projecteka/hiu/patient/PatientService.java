@@ -25,12 +25,12 @@ public class PatientService {
                 .orElseGet(() ->
                         centralRegistry.token()
                                 .flatMap(token -> client.patientWith(id, token))
-                                .map(patient -> {
-                                    cache.put(id, Optional.of(patient));
+                                .map(patientRep -> {
+                                    cache.put(id, Optional.of(patientRep.toPatient()));
                                     logger.debug(format("Updated cache for patient %s with id: %s",
-                                            patient.getFirstName(),
-                                            patient.getIdentifier()));
-                                    return patient;
+                                            patientRep.toPatient().getFirstName(),
+                                            patientRep.toPatient().getIdentifier()));
+                                    return patientRep.toPatient();
                                 }));
     }
 }
