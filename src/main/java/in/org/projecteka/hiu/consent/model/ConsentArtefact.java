@@ -18,6 +18,7 @@ import java.util.Date;
 @AllArgsConstructor
 @JsonIgnoreProperties
 public class ConsentArtefact {
+    private String schemaVersion;
     private String consentId;
     private Date createdAt;
     private Purpose purpose;
