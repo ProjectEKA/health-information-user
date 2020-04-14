@@ -254,7 +254,7 @@ components:
                     to:
                       type: string
                       format: datetime
-                dataExpiryAt:
+                dataEraseAt:
                   type: string
                   format: date-time
     ConsentStatus:
