@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.patient;
+import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.never;
@@ -60,10 +61,12 @@ class PatientServiceTest {
     void returnPatientFromDownstreamServiceIfCacheIsEmpty() {
         var patientId = randomString();
         var token = randomString();
-        var patient = patient().build();
+        var patientRep = patientRepresentation().name("arun").build();
+        var patient =
+                patient().identifier(patientRep.getIdentifier()).firstName(patientRep.getName()).lastName(null).build();
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
         when(centralRegistry.token()).thenReturn(Mono.just(token));
-        when(client.patientWith(patientId, token)).thenReturn(Mono.just(patient));
+        when(client.patientWith(patientId, token)).thenReturn(Mono.just(patientRep));
         var patientService = new PatientService(client, cache, centralRegistry);
 
         Mono<Patient> patientPublisher = patientService.patientWith(patientId);
