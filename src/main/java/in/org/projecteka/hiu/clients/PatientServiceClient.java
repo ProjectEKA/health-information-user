@@ -20,7 +20,7 @@ public class PatientServiceClient {
         this.builder = builder.baseUrl(properties.getUrl()).build();
     }
 
-    public Mono<Patient> patientWith(String id, String token) {
+    public Mono<PatientRepresentation> patientWith(String id, String token) {
         return builder.
                 get()
                 .uri(format("/users/%s", id))
@@ -29,6 +29,6 @@ public class PatientServiceClient {
                 .onStatus(httpStatus -> httpStatus == HttpStatus.NOT_FOUND,
                         clientResponse -> Mono.error(notFound()))
                 .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> Mono.error(unknown()))
-                .bodyToMono(Patient.class);
+                .bodyToMono(PatientRepresentation.class);
     }
 }

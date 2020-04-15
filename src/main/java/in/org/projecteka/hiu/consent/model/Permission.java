@@ -13,5 +13,5 @@ import lombok.NoArgsConstructor;
 @Data
 public class Permission {
     private DateRange dateRange;
-    private String dataExpiryAt;
+    private String dataEraseAt;
 }
