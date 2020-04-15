@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.StreamSupport;
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
+import static in.org.projecteka.hiu.common.Serializer.to;
 
 @AllArgsConstructor
 public class ConsentRepository {
@@ -46,114 +47,112 @@ public class ConsentRepository {
                     "date_created DESC";
     private static final String UPDATE_CONSENT_REQUEST_QUERY = "UPDATE " +
             "consent_request set consent_request = $1 where consent_request_id = $2";
-
+    private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
+            "FROM consent_artefact WHERE consent_artefact_id=$1";
     private PgPool dbClient;
 
     @SneakyThrows
     public Mono<Void> insert(ConsentRequest consentRequest) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_CONSENT_REQUEST_QUERY,
-                        Tuple.of(JsonObject.mapFrom(consentRequest), consentRequest.getId()),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(new Exception("Failed to insert to consent request"));
-                            else
-                                monoSink.success();
-                        }));
+                dbClient.preparedQuery(INSERT_CONSENT_REQUEST_QUERY)
+                        .execute(Tuple.of(JsonObject.mapFrom(consentRequest), consentRequest.getId()),
+                                handler -> {
+                                    if (handler.failed())
+                                        monoSink.error(new Exception("Failed to insert to consent request"));
+                                    else
+                                        monoSink.success();
+                                }));
     }
 
     @SneakyThrows
     public Mono<ConsentRequest> get(String consentRequestId) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        SELECT_CONSENT_REQUEST_QUERY,
-                        Tuple.of(consentRequestId),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(dbOperationFailure("Failed to fetch consent request"));
-                            else {
-                                StreamSupport.stream(handler.result().spliterator(), false)
-                                        .map(row -> (JsonObject) row.getValue("consent_request"))
-                                        .map(json -> json.mapTo(ConsentRequest.class))
-                                        .forEach(monoSink::success);
-                                monoSink.success();
-                            }
-                        }));
+                dbClient.preparedQuery(SELECT_CONSENT_REQUEST_QUERY)
+                        .execute(Tuple.of(consentRequestId),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to fetch consent request"));
+                                        return;
+                                    }
+                                    StreamSupport.stream(handler.result().spliterator(), false)
+                                            .map(row -> (JsonObject) row.getValue("consent_request"))
+                                            .map(json -> json.mapTo(ConsentRequest.class))
+                                            .forEach(monoSink::success);
+                                    monoSink.success();
+                                }));
     }
 
     @SneakyThrows
     public Mono<ConsentArtefact> getConsent(String consentId, ConsentStatus status) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        SELECT_CONSENT_ARTEFACT_QUERY,
-                        Tuple.of(consentId, status.toString()),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(dbOperationFailure("Failed to fetch consent artefact"));
-                            else {
-                                RowSet<Row> results = handler.result();
-                                if (results.iterator().hasNext()) {
-                                    Row row = results.iterator().next();
-                                    JsonObject artefact = (JsonObject) row.getValue("consent_artefact");
-                                    ConsentArtefact consentArtefact = artefact.mapTo(ConsentArtefact.class);
-                                    monoSink.success(consentArtefact);
-                                } else {
+                dbClient.preparedQuery(SELECT_CONSENT_ARTEFACT_QUERY)
+                        .execute(Tuple.of(consentId, status.toString()),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to fetch consent artefact"));
+                                        return;
+                                    }
+                                    RowSet<Row> results = handler.result();
+                                    if (results.iterator().hasNext()) {
+                                        Row row = results.iterator().next();
+                                        JsonObject artefact = (JsonObject) row.getValue("consent_artefact");
+                                        ConsentArtefact consentArtefact = artefact.mapTo(ConsentArtefact.class);
+                                        monoSink.success(consentArtefact);
+                                        return;
+                                    }
                                     monoSink.success(null);
-                                }
-                            }
-                        }));
+                                }));
     }
 
     public Mono<Void> insertConsentArtefact(ConsentArtefact consentArtefact,
                                             ConsentStatus status,
                                             String consentRequestId) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_CONSENT_ARTEFACT_QUERY,
-                        Tuple.of(consentRequestId,
+                dbClient.preparedQuery(INSERT_CONSENT_ARTEFACT_QUERY)
+                        .execute(Tuple.of(consentRequestId,
                                 JsonObject.mapFrom(consentArtefact),
                                 consentArtefact.getConsentId(),
                                 status.toString(),
                                 LocalDateTime.now()),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(dbOperationFailure("Failed to insert consent artefact"));
-                            else
-                                monoSink.success();
-                        }));
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to insert consent artefact"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference,
                                    ConsentStatus status,
                                    Date timestamp) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        UPDATE_CONSENT_ARTEFACT_STATUS_QUERY,
-                        Tuple.of(status.toString(),
+                dbClient.preparedQuery(UPDATE_CONSENT_ARTEFACT_STATUS_QUERY)
+                        .execute(Tuple.of(status.toString(),
                                 convertToLocalDateTime(timestamp),
                                 consentArtefactReference.getId()),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(dbOperationFailure("Failed to update consent artefact status"));
-                            else
-                                monoSink.success();
-                        }));
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to update consent artefact status"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     public Flux<Map<String, String>> getConsentDetails(String consentRequestId) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT,
-                Tuple.of(consentRequestId),
-                handler -> {
-                    if (handler.failed()) {
-                        fluxSink.error(new Exception("Failed to get consent id from consent request Id"));
-                    } else {
-                        StreamSupport.stream(handler.result().spliterator(), false)
-                                .map(this::toConsentDetail)
-                                .forEach(fluxSink::next);
-                        fluxSink.complete();
-                    }
-                }));
+        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT)
+                .execute(Tuple.of(consentRequestId),
+                        handler -> {
+                            if (handler.failed()) {
+                                fluxSink.error(new Exception("Failed to get consent id from consent request Id"));
+                                return;
+                            }
+                            StreamSupport.stream(handler.result().spliterator(), false)
+                                    .map(this::toConsentDetail)
+                                    .forEach(fluxSink::next);
+                            fluxSink.complete();
+                        }));
     }
 
     private Map<String, String> toConsentDetail(Row row) {
@@ -167,34 +166,46 @@ public class ConsentRepository {
     }
 
     public Flux<ConsentRequest> requestsFrom(String requesterId) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(
-                CONSENT_REQUEST_BY_REQUESTER_ID,
-                Tuple.of(requesterId),
-                handler -> {
-                    if (handler.failed())
-                        fluxSink.error(dbOperationFailure("Failed to fetch consent requests"));
-                    else {
-                        StreamSupport.stream(handler.result().spliterator(), false)
-                                .map(row -> (JsonObject) row.getValue("consent_request"))
-                                .map(json -> json.mapTo(ConsentRequest.class))
-                                .forEach(fluxSink::next);
-                        fluxSink.complete();
-                    }
-                }));
+        return Flux.create(fluxSink -> dbClient.preparedQuery(CONSENT_REQUEST_BY_REQUESTER_ID)
+                .execute(Tuple.of(requesterId),
+                        handler -> {
+                            if (handler.failed()) {
+                                fluxSink.error(dbOperationFailure("Failed to fetch consent requests"));
+                                return;
+                            }
+                            RowSet<Row> results = handler.result();
+                            for (Row result : results) {
+                                ConsentRequest consentRequest = to(
+                                        result.getValue("consent_request").toString(), ConsentRequest.class);
+                                fluxSink.next(consentRequest);
+                            }
+                            fluxSink.complete();
+                        }));
     }
 
     public Mono<Void> updateConsent(String requestId, ConsentRequest consentRequest) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        UPDATE_CONSENT_REQUEST_QUERY,
-                        Tuple.of(JsonObject.mapFrom(consentRequest),
+                dbClient.preparedQuery(UPDATE_CONSENT_REQUEST_QUERY)
+                        .execute(Tuple.of(JsonObject.mapFrom(consentRequest),
                                 requestId),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to update consent request status"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
+    }
+
+    public Mono<String> getHipId(String consentId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_HIP_ID_FOR_A_CONSENT)
+                .execute(Tuple.of(consentId),
                         handler -> {
                             if (handler.failed()) {
-                                monoSink.error(dbOperationFailure("Failed to update consent request status"));
+                                monoSink.error(new Exception("Failed to get hip Id from consent Id"));
                                 return;
                             }
-                            monoSink.success();
+                            monoSink.success(handler.result().iterator().next().getString(0));
                         }));
     }
 

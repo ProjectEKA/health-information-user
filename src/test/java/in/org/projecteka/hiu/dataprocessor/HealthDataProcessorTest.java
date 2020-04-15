@@ -1,8 +1,11 @@
 package in.org.projecteka.hiu.dataprocessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
+import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
@@ -29,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.string;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -47,6 +51,15 @@ class HealthDataProcessorTest {
 
     @Mock
     private HealthInformationClient healthInformationClient;
+
+    @Mock
+    private CentralRegistry centralRegistry;
+
+    @Mock
+    private HiuProperties hiuProperties;
+
+    @Mock
+    private ConsentRepository consentRepository;
 
     @AfterAll
     public static void cleanUp() throws IOException {
@@ -84,12 +97,14 @@ class HealthDataProcessorTest {
         List<HITypeResourceProcessor> resourceProcessors = Collections.singletonList(
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())));
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor,
-                resourceProcessors, healthInformationClient);
+                resourceProcessors, healthInformationClient, centralRegistry, hiuProperties, consentRepository);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
         var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
+        String consentId = "consentId";
+        String token = string();
 
         when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
                 .thenReturn(Mono.empty());
@@ -99,6 +114,12 @@ class HealthDataProcessorTest {
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
+        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(hiuProperties.getId()).thenReturn(string());
+        when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
+        when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
+        when(healthInformationClient.notifyHealthInfo(any(), eq(token))).thenReturn(Mono.empty());
+
         processor.process(message);
 
         verify(healthDataRepository, times(1))
@@ -119,12 +140,17 @@ class HealthDataProcessorTest {
                 dataFlowRepository,
                 decryptor,
                 resourceProcessors,
-                healthInformationClient);
+                healthInformationClient,
+                centralRegistry,
+                hiuProperties,
+                consentRepository);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
         var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
+        String consentId = "consentId";
+        String token = string();
 
         when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
                 .thenReturn(Mono.empty());
@@ -134,6 +160,12 @@ class HealthDataProcessorTest {
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
+        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(hiuProperties.getId()).thenReturn(string());
+        when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
+        when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
+        when(healthInformationClient.notifyHealthInfo(any(), eq(token))).thenReturn(Mono.empty());
+
         processor.process(message);
 
         verify(healthDataRepository, times(1))
@@ -154,12 +186,17 @@ class HealthDataProcessorTest {
                 dataFlowRepository,
                 decryptor,
                 resourceProcessors,
-                healthInformationClient);
+                healthInformationClient,
+                centralRegistry,
+                hiuProperties,
+                consentRepository);
         String transactionId = "123456";
         String partNumber = "1";
+        String consentId = "consentId";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
         var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
+        String token = string();
 
         when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
                 .thenReturn(Mono.empty());
@@ -169,6 +206,12 @@ class HealthDataProcessorTest {
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
+        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(hiuProperties.getId()).thenReturn(string());
+        when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
+        when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
+        when(healthInformationClient.notifyHealthInfo(any(), eq(token))).thenReturn(Mono.empty());
+
         processor.process(message);
 
         verify(healthDataRepository, times(1))

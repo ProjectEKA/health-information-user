@@ -22,5 +22,5 @@ public class Consent {
     private Requester requester;
     private List<HIType> hiTypes;
     private Permission permission;
-    private String callBackUrl;
+    private String consentNotificationUrl;
 }

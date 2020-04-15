@@ -55,6 +55,10 @@ public class TestBuilders {
         return easyRandom.nextObject(in.org.projecteka.hiu.clients.Patient.PatientBuilder.class);
     }
 
+    public static in.org.projecteka.hiu.clients.PatientRepresentation.PatientRepresentationBuilder patientRepresentation() {
+        return easyRandom.nextObject(in.org.projecteka.hiu.clients.PatientRepresentation.PatientRepresentationBuilder.class);
+    }
+
     public static ConsentArtefact.ConsentArtefactBuilder consentArtefact() {
         return easyRandom.nextObject(ConsentArtefact.ConsentArtefactBuilder.class);
     }

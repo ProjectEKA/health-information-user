@@ -22,26 +22,25 @@ public class UserRepository {
 
     public Mono<User> with(String username) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        SELECT_USER_BY_USERNAME,
-                        Tuple.of(username),
-                        handler -> {
-                            if (handler.failed()) {
-                                logger.error(handler.cause());
-                                monoSink.error(dbOperationFailure("Failed to fetch user."));
-                                return;
-                            }
-                            StreamSupport.stream(handler.result().spliterator(), false)
-                                    .map(this::tryFrom)
-                                    .forEach(monoSink::success);
-                            monoSink.success();
-                        }));
+                dbClient.preparedQuery(SELECT_USER_BY_USERNAME)
+                        .execute(Tuple.of(username),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        logger.error(handler.cause());
+                                        monoSink.error(dbOperationFailure("Failed to fetch user."));
+                                        return;
+                                    }
+                                    StreamSupport.stream(handler.result().spliterator(), false)
+                                            .map(this::tryFrom)
+                                            .forEach(monoSink::success);
+                                    monoSink.success();
+                                }));
     }
 
     public Mono<Void> save(User user) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_USER,
+                dbClient.preparedQuery(INSERT_USER)
+                .execute(
                         Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString()),
                         handler -> {
                             if (handler.failed()) {

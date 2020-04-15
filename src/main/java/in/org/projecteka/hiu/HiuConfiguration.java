@@ -306,13 +306,20 @@ public class HiuConfiguration {
                                                              HealthDataRepository healthDataRepository,
                                                              DataFlowRepository dataFlowRepository,
                                                              LocalDicomServerProperties dicomServerProperties,
-                                                             WebClient.Builder builder) {
+                                                             HealthInformationClient healthInformationClient,
+                                                             CentralRegistry centralRegistry,
+                                                             HiuProperties hiuProperties,
+                                                             ConsentRepository consentRepository) {
         return new DataAvailabilityListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
                 healthDataRepository,
                 dataFlowRepository,
-                dicomServerProperties, new HealthInformationClient(builder));
+                dicomServerProperties,
+                healthInformationClient,
+                centralRegistry,
+                hiuProperties,
+                consentRepository);
     }
 
     @Bean
@@ -321,6 +328,11 @@ public class HiuConfiguration {
         return new CentralRegistryClient(builder.baseUrl(centralRegistryProperties.url));
     }
 
+    @Bean
+    public HealthInformationClient healthInformationClient(WebClient.Builder builder,
+                                                       ConsentManagerServiceProperties consentManagerServiceProperties) {
+        return new HealthInformationClient(builder, consentManagerServiceProperties);
+    }
     @Bean
     public CentralRegistry connector(CentralRegistryProperties centralRegistryProperties,
                                      CentralRegistryClient centralRegistryClient) {

@@ -18,12 +18,14 @@ import java.util.Date;
 @AllArgsConstructor
 @JsonIgnoreProperties
 public class ConsentArtefact {
+    private String schemaVersion;
     private String consentId;
     private Date createdAt;
     private Purpose purpose;
     private PatientLinkedContext patient;
     private HIPReference hip;
     private HIU hiu;
+    private CMReference consentManager;
     private Requester requester;
     private HIType[] hiTypes;
     private Permission permission;

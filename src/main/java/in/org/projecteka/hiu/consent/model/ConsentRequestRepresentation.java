@@ -29,7 +29,7 @@ public class ConsentRequestRepresentation {
                         patient.getFirstName(),
                         patient.getLastName()),
                 consentRequest.getStatus(),
-                withMillSeconds.parse(consentRequest.getPermission().getDataExpiryAt()),
+                withMillSeconds.parse(consentRequest.getPermission().getDataEraseAt()),
                 format.parse(consentRequest.getCreatedDate()),
                 format.parse(consentRequest.getCreatedDate()));
     }
