@@ -5,4 +5,5 @@ import lombok.Value;
 @Value
 public class Session {
     String accessToken;
+    boolean activated;
 }
