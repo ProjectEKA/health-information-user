@@ -52,7 +52,7 @@ import static org.mockito.Mockito.when;
 @AutoConfigureWebTestClient
 @ActiveProfiles("dev")
 public class DataFlowUserJourneyTest {
-    private static MockWebServer dataFlowServer = new MockWebServer();
+    private static final MockWebServer dataFlowServer = new MockWebServer();
     @MockBean
     LocalDataStore localDataStore;
     @Autowired

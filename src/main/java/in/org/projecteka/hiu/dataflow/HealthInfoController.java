@@ -23,8 +23,8 @@ import java.nio.file.Paths;
 @RestController
 @AllArgsConstructor
 public class HealthInfoController {
-    private HealthInfoManager healthInfoManager;
-    private DataFlowServiceProperties serviceProperties;
+    private final HealthInfoManager healthInfoManager;
+    private final DataFlowServiceProperties serviceProperties;
 
     @GetMapping("/health-information/fetch/{consent-request-id}")
     public Mono<HealthInformation> fetchHealthInformation(

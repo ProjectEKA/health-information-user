@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @AllArgsConstructor
 public class SessionController {
-    private SessionService sessionService;
+    private final SessionService sessionService;
 
     @PostMapping("/sessions")
     public Mono<Session> forNew(@RequestBody SessionRequest sessionRequest) {

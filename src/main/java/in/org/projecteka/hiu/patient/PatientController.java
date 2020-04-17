@@ -12,7 +12,7 @@ import static in.org.projecteka.hiu.patient.PatientRepresentation.from;
 @AllArgsConstructor
 public class PatientController {
 
-    private PatientService patientService;
+    private final PatientService patientService;
 
     @GetMapping("patients/{id}")
     public Mono<SearchRepresentation> userWith(@PathVariable(name = "id") String consentManagerUserId) {

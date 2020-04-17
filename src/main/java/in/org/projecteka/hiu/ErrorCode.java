@@ -18,7 +18,7 @@ public enum ErrorCode {
     CONSENT_ARTEFACT_NOT_FOUND(1009),
     VALIDATION_FAILED(1010),
     FAILED_TO_NOTIFY_CM(1011);
-    private int value;
+    private final int value;
 
     ErrorCode(int val) {
         value = val;

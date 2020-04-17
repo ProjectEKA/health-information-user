@@ -8,9 +8,9 @@ import java.util.Optional;
 @AllArgsConstructor
 @Getter
 public class Caller {
-    private String userName;
-    private Boolean isServiceAccount;
-    private String role;
+    private final String userName;
+    private final Boolean isServiceAccount;
+    private final String role;
 
     public Optional<String> getRole() {
         return Optional.ofNullable(role);

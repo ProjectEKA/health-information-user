@@ -17,8 +17,8 @@ import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 @AllArgsConstructor
 public class DataFlowRequestPublisher {
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
-    private AmqpTemplate amqpTemplate;
-    private DestinationsConfig destinationsConfig;
+    private final AmqpTemplate amqpTemplate;
+    private final DestinationsConfig destinationsConfig;
 
     @SneakyThrows
     public Mono<Void> broadcastDataFlowRequest(String consentArtefactId, DateRange dateRange, String signature, String callBackUrl) {

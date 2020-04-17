@@ -6,8 +6,8 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class ConsentException extends Throwable {
-    private ErrorCode code;
-    private String message;
+    private final ErrorCode code;
+    private final String message;
 
     public static ConsentException creationFailed() {
         final String failedToCreateRequest = "Failed to create consent request";

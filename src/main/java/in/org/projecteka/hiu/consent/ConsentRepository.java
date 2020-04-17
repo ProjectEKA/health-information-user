@@ -48,7 +48,7 @@ public class ConsentRepository {
             "consent_request set consent_request = $1 where consent_request_id = $2";
     private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
             "FROM consent_artefact WHERE consent_artefact_id=$1";
-    private PgPool dbClient;
+    private final PgPool dbClient;
 
     @SneakyThrows
     public Mono<Void> insert(ConsentRequest consentRequest) {

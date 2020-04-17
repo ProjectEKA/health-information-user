@@ -13,7 +13,7 @@ import static java.util.function.Predicate.not;
 @AllArgsConstructor
 public class HealthInformationClient {
     private final WebClient.Builder builder;
-    private ConsentManagerServiceProperties consentManagerServiceProperties;
+    private final ConsentManagerServiceProperties consentManagerServiceProperties;
 
     public Mono<HealthInformation> getHealthInformationFor(String url) {
         return builder.build()

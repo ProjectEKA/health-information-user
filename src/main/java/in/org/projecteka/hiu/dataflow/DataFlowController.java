@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @AllArgsConstructor
 public class DataFlowController {
-    private DataFlowService dataFlowService;
+    private final DataFlowService dataFlowService;
 
     @ResponseStatus(HttpStatus.ACCEPTED)
     @PostMapping("/data/notification")

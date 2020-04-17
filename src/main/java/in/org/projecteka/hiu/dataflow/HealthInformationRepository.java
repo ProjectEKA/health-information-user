@@ -16,7 +16,7 @@ import java.util.stream.StreamSupport;
 public class HealthInformationRepository {
     private static final String SELECT_HEALTH_INFORMATION = "SELECT data, status FROM health_information WHERE " +
             "transaction_id=$1";
-    private PgPool dbClient;
+    private final PgPool dbClient;
 
     public Flux<Map<String, Object>> getHealthInformation(String transactionId) {
         return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_HEALTH_INFORMATION, Tuple.of(transactionId),

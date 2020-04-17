@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @AllArgsConstructor
 public class ConsentController {
-    private ConsentService consentService;
+    private final ConsentService consentService;
 
     @PostMapping("/consent-requests")
     public Mono<ConsentCreationResponse> createConsentRequest(@RequestBody ConsentRequestData consentRequestData) {

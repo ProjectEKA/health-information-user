@@ -17,7 +17,7 @@ public class UserRepository {
             "\"user\" WHERE username = $1";
     private static final String INSERT_USER = "Insert into \"user\" values ($1, $2, $3)";
 
-    private PgPool dbClient;
+    private final PgPool dbClient;
     private final Logger logger = Logger.getLogger(UserRepository.class);
 
     public Mono<User> with(String username) {
