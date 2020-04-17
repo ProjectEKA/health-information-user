@@ -16,6 +16,7 @@ public class UserRepository {
     private static final String SELECT_USER_BY_USERNAME = "SELECT username, password, role, activated FROM " +
             "\"user\" WHERE username = $1";
     private static final String INSERT_USER = "Insert into \"user\" values ($1, $2, $3, $4)";
+    private static final String UPDATE_PASSWORD = "UPDATE \"user\" SET password=$2 WHERE username=$1";
 
     private PgPool dbClient;
     private final Logger logger = Logger.getLogger(UserRepository.class);
@@ -50,6 +51,21 @@ public class UserRepository {
                             }
                             monoSink.success();
                         }));
+    }
+
+    public Mono<Void> changePassword(String username, String password) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(UPDATE_PASSWORD)
+                        .execute(
+                                Tuple.of(username, password),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        logger.error(handler.cause());
+                                        monoSink.error(dbOperationFailure("Failed to change password."));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     private User tryFrom(Row row) {
