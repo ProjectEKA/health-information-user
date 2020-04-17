@@ -31,6 +31,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
 import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -103,7 +104,7 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher);
         var patientRep = patientRepresentation().build();
-        Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
                 .status(ConsentStatus.REQUESTED)
@@ -136,7 +137,7 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher);
-        Permission permission = Permission.builder().dataExpiryAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var patientRep = patientRepresentation().build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
@@ -173,7 +174,7 @@ public class ConsentServiceTest {
                 healthInformationPublisher);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
-                .thenReturn(Mono.just(consentRequest.build()));
+                .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
         when(consentRepository.updateConsent(consentNotificationRequest.getConsentRequestId(),
                 consentRequest.status(DENIED).build()))
                 .thenReturn(Mono.empty());

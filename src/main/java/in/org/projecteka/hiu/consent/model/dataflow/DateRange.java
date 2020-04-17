@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class HIDataRange {
+public class DateRange {
     private String from;
     private String to;
 }
