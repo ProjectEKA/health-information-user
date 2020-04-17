@@ -21,7 +21,7 @@ public class DataFlowController {
     public Mono<Void> dataNotification(@RequestBody DataNotificationRequest dataNotificationRequest) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUserName)
+                .map(Caller::getUsername)
                 .flatMap(requesterId -> dataFlowService.handleNotification(dataNotificationRequest, requesterId));
     }
 }

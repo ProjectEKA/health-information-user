@@ -8,7 +8,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @Getter
 public class Caller {
-    private final String userName;
+    private final String username;
     private final Boolean isServiceAccount;
     private final String role;
 

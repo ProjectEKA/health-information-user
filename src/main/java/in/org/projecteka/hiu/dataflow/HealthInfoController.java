@@ -33,7 +33,7 @@ public class HealthInfoController {
             @RequestParam(defaultValue = "0") int offset) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUserName)
+                .map(Caller::getUsername)
                 .flatMapMany(username -> healthInfoManager.fetchHealthInformation(consentRequestId, username))
                 .collectList()
                 .map(dataEntries -> HealthInformation.builder()

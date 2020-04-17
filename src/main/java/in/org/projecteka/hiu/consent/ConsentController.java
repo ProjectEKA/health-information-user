@@ -23,7 +23,7 @@ public class ConsentController {
     public Mono<ConsentCreationResponse> createConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUserName)
+                .map(Caller::getUsername)
                 .flatMap(requesterId -> consentService.create(requesterId, consentRequestData));
     }
 
@@ -36,7 +36,7 @@ public class ConsentController {
     public Flux<ConsentRequestRepresentation> consentsFor() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUserName)
+                .map(Caller::getUsername)
                 .flatMapMany(username -> consentService.requestsFrom(username));
     }
 }
