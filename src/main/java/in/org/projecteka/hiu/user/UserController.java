@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_REQUEST;
+import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
@@ -39,11 +40,20 @@ public class UserController {
 
     @PutMapping("/users/password")
     public Mono<Void> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUserName)
-                .flatMap(username -> userRepository
-                        .changePassword(username, passwordEncoder.encode(changePasswordRequest.getNewPassword())));
+        var passwordValidation = PasswordValidator.validate(changePasswordRequest);
+        return passwordValidation.isValid() ?
+                ReactiveSecurityContextHolder.getContext()
+                        .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
+                        .map(Caller::getUserName)
+                        .flatMap(userRepository::with)
+                        .filter(user -> passwordEncoder.matches(changePasswordRequest.getOldPassword(), user.getPassword()))
+                        .switchIfEmpty(Mono.error(new ClientError(BAD_REQUEST,
+                                new ErrorRepresentation(new Error(INVALID_REQUEST, "Invalid Old password")))))
+                        .map(User::getUsername)
+                        .flatMap(username -> userRepository
+                                .changePassword(username, passwordEncoder.encode(changePasswordRequest.getNewPassword())))
+                : Mono.error(new ClientError(BAD_REQUEST,
+                new ErrorRepresentation(new Error(INVALID_REQUEST, passwordValidation.getError()))));
     }
 
     private Mono<Boolean> doesNotExists(User user) {
