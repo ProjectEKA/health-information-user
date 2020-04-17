@@ -43,6 +43,65 @@ paths:
                   id:
                     type: string
                     format: uuid
+  /sessions:
+    post:
+      tags:
+        - frontend
+      summary: Login user
+      description: Create a session for user / doctors.
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRequest'
+      responses:
+        '200':
+          description: Request created in the consent manager
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    example: bearer yJhbGciOiJSUzI1Ni.IsInR5cCIgOiAiSldUIiwia2lkIiA6ICJrVVp.2MXJQMjRyYXN1UW9wU2lWbkdZQUZIVFowYVZGVWpYNXFLMnNibTk0In0
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users:
+    post:
+      tags:
+        - frontend
+      summary: Create user
+      description: Create HIU user who can access HIU application
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreationRequest'
+      responses:
+        '200':
+          description: Successful creation of consent artefact.
+        '401':
+          description: Unauthorized request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Does not have enough permission to create user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /patients/{patient-id}:
     get:
       tags:
@@ -441,3 +500,29 @@ components:
         keyValue:
           type: string
           format: string
+    SessionRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: dr.manju
+        password:
+          type: string
+          example: SecretPassword
+    UserCreationRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [DOCTOR, ADMIN]
+          default: DOCTOR
