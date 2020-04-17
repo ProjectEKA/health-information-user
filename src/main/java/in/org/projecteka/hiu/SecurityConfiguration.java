@@ -45,6 +45,7 @@ public class SecurityConfiguration {
             ReactiveAuthenticationManager authenticationManager,
             ServerSecurityContextRepository securityContextRepository) {
         final String[] WHITELISTED_URLS = {"/**.json",
+                                           "/ValueSet/**.json",
                                            "/**.html",
                                            "/**.js",
                                            "/**.yaml",
