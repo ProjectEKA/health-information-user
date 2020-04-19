@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Mono;
 
-import java.util.stream.StreamSupport;
-
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
@@ -22,8 +20,7 @@ public class UserRepository {
 
     public Mono<User> with(String username) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        SELECT_USER_BY_USERNAME,
+                dbClient.preparedQuery(SELECT_USER_BY_USERNAME,
                         Tuple.of(username),
                         handler -> {
                             if (handler.failed()) {
@@ -31,10 +28,12 @@ public class UserRepository {
                                 monoSink.error(dbOperationFailure("Failed to fetch user."));
                                 return;
                             }
-                            StreamSupport.stream(handler.result().spliterator(), false)
-                                    .map(this::tryFrom)
-                                    .forEach(monoSink::success);
-                            monoSink.success();
+                            var iterator = handler.result().iterator();
+                            if (!iterator.hasNext()) {
+                                monoSink.success();
+                                return;
+                            }
+                            monoSink.success(tryFrom(iterator.next()));
                         }));
     }
 
