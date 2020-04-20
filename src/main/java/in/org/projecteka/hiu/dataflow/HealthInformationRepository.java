@@ -23,22 +23,24 @@ public class HealthInformationRepository {
     private final PgPool dbClient;
 
     public Flux<Map<String, Object>> getHealthInformation(String transactionId) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_HEALTH_INFORMATION, Tuple.of(transactionId),
-                handler -> {
-                    if (handler.failed()) {
-                        fluxSink.error(dbOperationFailure("Failed to get health information from transaction Id"));
-                    } else {
-                        for (Row row : handler.result()) {
-                            try {
-                                fluxSink.next(toHealthInfo(row));
-                            } catch (JsonProcessingException e) {
-                                logger.error(e.getMessage(), e);
-                                fluxSink.error(dbOperationFailure(e.getOriginalMessage()));
+        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_HEALTH_INFORMATION)
+                .execute(Tuple.of(transactionId),
+                        handler -> {
+                            if (handler.failed()) {
+                                fluxSink.error(
+                                        dbOperationFailure("Failed to get health information from transaction Id"));
+                            } else {
+                                for (Row row : handler.result()) {
+                                    try {
+                                        fluxSink.next(toHealthInfo(row));
+                                    } catch (JsonProcessingException e) {
+                                        logger.error(e.getMessage(), e);
+                                        fluxSink.error(dbOperationFailure(e.getOriginalMessage()));
+                                    }
+                                }
+                                fluxSink.complete();
                             }
-                        }
-                        fluxSink.complete();
-                    }
-                }));
+                        }));
     }
 
     private Map<String, Object> toHealthInfo(Row row) throws JsonProcessingException {

@@ -19,7 +19,7 @@ class ConsentRequestRepresentationTest {
         var expiryAt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(expiry);
         var todayAt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(today);
         var consentRequest = consentRequest()
-                .permission(Permission.builder().dataExpiryAt(expiry).build())
+                .permission(Permission.builder().dataEraseAt(expiry).build())
                 .createdDate(today).build();
         var patient = patient().identifier(consentRequest.getPatient().getId()).build();
         var expected = new ConsentRequestRepresentation(

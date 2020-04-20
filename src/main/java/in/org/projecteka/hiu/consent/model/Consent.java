@@ -38,7 +38,7 @@ public class Consent {
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
                                                                          String hiuName,
-                                                                         String callBackUrl) {
+                                                                         String consentNotificationUrl) {
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
                         getPurpose().getCode().name(),
@@ -50,12 +50,12 @@ public class Consent {
                 new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
-                        getPermission().getDataExpiryAt(),
+                        getPermission().getDataEraseAt(),
                         ONE_HOUR),
-                callBackUrl);
+                consentNotificationUrl);
     }
 
-    public ConsentRequest toConsentRequest(String id, String requesterId, String callBackUrl) {
+    public ConsentRequest toConsentRequest(String id, String requesterId, String consentNotificationUrl) {
         return new ConsentRequest(
                 id,
                 requesterId,
@@ -65,6 +65,6 @@ public class Consent {
                 getPermission(),
                 ConsentStatus.REQUESTED,
                 getCurrentDate(),
-                callBackUrl);
+                consentNotificationUrl);
     }
 }

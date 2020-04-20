@@ -20,36 +20,35 @@ public class UserRepository {
 
     public Mono<User> with(String username) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(SELECT_USER_BY_USERNAME,
-                        Tuple.of(username),
-                        handler -> {
-                            if (handler.failed()) {
-                                logger.error(handler.cause());
-                                monoSink.error(dbOperationFailure("Failed to fetch user."));
-                                return;
-                            }
-                            var iterator = handler.result().iterator();
-                            if (!iterator.hasNext()) {
-                                monoSink.success();
-                                return;
-                            }
-                            monoSink.success(tryFrom(iterator.next()));
-                        }));
+                dbClient.preparedQuery(SELECT_USER_BY_USERNAME)
+                        .execute(Tuple.of(username),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        logger.error(handler.cause());
+                                        monoSink.error(dbOperationFailure("Failed to fetch user."));
+                                        return;
+                                    }
+                                    var iterator = handler.result().iterator();
+                                    if (!iterator.hasNext()) {
+                                        monoSink.success();
+                                        return;
+                                    }
+                                    monoSink.success(tryFrom(iterator.next()));
+                                }));
     }
 
     public Mono<Void> save(User user) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_USER,
-                        Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString()),
-                        handler -> {
-                            if (handler.failed()) {
-                                logger.error(handler.cause());
-                                monoSink.error(dbOperationFailure("Failed to save user."));
-                                return;
-                            }
-                            monoSink.success();
-                        }));
+                dbClient.preparedQuery(INSERT_USER)
+                        .execute(Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString()),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        logger.error(handler.cause());
+                                        monoSink.error(dbOperationFailure("Failed to save user."));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     private User tryFrom(Row row) {

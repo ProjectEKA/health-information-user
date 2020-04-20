@@ -15,15 +15,15 @@ public class HealthDataRepository {
 
     public Mono<Void> insertHealthData(String transactionId, String dataPartNumber, String resource, EntryStatus entryStatus) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(
-                        INSERT_HEALTH_DATA,
-                        Tuple.of(transactionId, dataPartNumber, resource, entryStatus.toString()),
-                        handler -> {
-                            if (handler.failed())
-                                monoSink.error(new Exception("Failed to insert health information"));
-                            else
-                                monoSink.success();
-                        })
+                dbClient.preparedQuery(INSERT_HEALTH_DATA)
+                        .execute(Tuple.of(transactionId, dataPartNumber, resource, entryStatus.toString()),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(new Exception("Failed to insert health information"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                })
         );
     }
 }

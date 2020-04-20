@@ -108,7 +108,7 @@ public class ConsentUserJourneyTest {
     public void shouldCreateConsentRequest() throws JsonProcessingException {
         var consentRequestId = "consent-request-id";
         var requesterId = "1";
-        var callBackUrl = "localhost:8080";
+        var consentNotificationUrl = "localhost:8080";
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
@@ -120,8 +120,7 @@ public class ConsentUserJourneyTest {
         when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(
                 consentRequestId,
                 requesterId,
-                callBackUrl)))
-                .thenReturn(Mono.create(MonoSink::success));
+                consentNotificationUrl))).thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
                 .post()

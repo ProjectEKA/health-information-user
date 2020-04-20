@@ -15,6 +15,6 @@ import lombok.NoArgsConstructor;
 public class Permission {
     private AccessMode accessMode;
     private DateRange dateRange;
-    private String dataExpiryAt;
+    private String dataEraseAt;
     private Frequency frequency;
 }
