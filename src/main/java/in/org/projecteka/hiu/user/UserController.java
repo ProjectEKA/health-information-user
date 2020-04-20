@@ -44,7 +44,7 @@ public class UserController {
         return passwordValidation.isValid() ?
                 ReactiveSecurityContextHolder.getContext()
                         .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                        .map(Caller::getUserName)
+                        .map(Caller::getUsername)
                         .flatMap(userRepository::with)
                         .filter(user -> passwordEncoder.matches(changePasswordRequest.getOldPassword(), user.getPassword()))
                         .switchIfEmpty(Mono.error(new ClientError(BAD_REQUEST,
