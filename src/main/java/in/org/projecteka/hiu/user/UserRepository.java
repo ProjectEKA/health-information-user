@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Mono;
 
-import java.util.stream.StreamSupport;
-
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
@@ -17,7 +15,7 @@ public class UserRepository {
             "\"user\" WHERE username = $1";
     private static final String INSERT_USER = "Insert into \"user\" values ($1, $2, $3)";
 
-    private PgPool dbClient;
+    private final PgPool dbClient;
     private final Logger logger = Logger.getLogger(UserRepository.class);
 
     public Mono<User> with(String username) {
@@ -30,26 +28,27 @@ public class UserRepository {
                                         monoSink.error(dbOperationFailure("Failed to fetch user."));
                                         return;
                                     }
-                                    StreamSupport.stream(handler.result().spliterator(), false)
-                                            .map(this::tryFrom)
-                                            .forEach(monoSink::success);
-                                    monoSink.success();
+                                    var iterator = handler.result().iterator();
+                                    if (!iterator.hasNext()) {
+                                        monoSink.success();
+                                        return;
+                                    }
+                                    monoSink.success(tryFrom(iterator.next()));
                                 }));
     }
 
     public Mono<Void> save(User user) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(INSERT_USER)
-                .execute(
-                        Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString()),
-                        handler -> {
-                            if (handler.failed()) {
-                                logger.error(handler.cause());
-                                monoSink.error(dbOperationFailure("Failed to save user."));
-                                return;
-                            }
-                            monoSink.success();
-                        }));
+                        .execute(Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString()),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        logger.error(handler.cause());
+                                        monoSink.error(dbOperationFailure("Failed to save user."));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 
     private User tryFrom(Row row) {
@@ -65,4 +64,3 @@ public class UserRepository {
         }
     }
 }
-

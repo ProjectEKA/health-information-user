@@ -6,7 +6,7 @@ import org.hl7.fhir.r4.model.ResourceType;
 
 
 public interface HITypeResourceProcessor {
-    public boolean supports(ResourceType type);
+    boolean supports(ResourceType type);
 
     void process(Resource resource, DataContext context);
 }

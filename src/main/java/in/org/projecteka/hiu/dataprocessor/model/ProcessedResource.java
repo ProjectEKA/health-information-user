@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessedResource {
-    private List<String> errors = new ArrayList<>();
+    private final List<String> errors = new ArrayList<>();
     private Resource resource;
 
     public List<String> getErrors() {

@@ -17,8 +17,8 @@ import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
 public class DataAvailabilityPublisher {
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
-    private AmqpTemplate amqpTemplate;
-    private DestinationsConfig destinationsConfig;
+    private final AmqpTemplate amqpTemplate;
+    private final DestinationsConfig destinationsConfig;
 
     @SneakyThrows
     public Mono<Void> broadcastDataAvailability(Map<String, String> contentRef) {

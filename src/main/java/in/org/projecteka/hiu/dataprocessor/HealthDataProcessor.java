@@ -32,15 +32,15 @@ public class HealthDataProcessor {
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
     public static final String MEDIA_APPLICATION_FHIR_XML = "application/fhir+xml";
     private static final Logger logger = Logger.getLogger(HealthDataProcessor.class);
-    private HealthDataRepository healthDataRepository;
-    private DataFlowRepository dataFlowRepository;
-    private Decryptor decryptor;
-    private HealthInformationClient healthInformationClient;
-    private CentralRegistry centralRegistry;
-    private HiuProperties hiuProperties;
-    private ConsentRepository consentRepository;
-    private FhirContext fhirContext = FhirContext.forR4();
-    private List<HITypeResourceProcessor> resourceProcessors = new ArrayList<>();
+    private final HealthDataRepository healthDataRepository;
+    private final DataFlowRepository dataFlowRepository;
+    private final Decryptor decryptor;
+    private final HealthInformationClient healthInformationClient;
+    private final CentralRegistry centralRegistry;
+    private final HiuProperties hiuProperties;
+    private final ConsentRepository consentRepository;
+    private final FhirContext fhirContext = FhirContext.forR4();
+    private final List<HITypeResourceProcessor> resourceProcessors = new ArrayList<>();
 
     public HealthDataProcessor(HealthDataRepository healthDataRepository,
                                DataFlowRepository dataFlowRepository,

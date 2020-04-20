@@ -23,8 +23,8 @@ import java.nio.file.Paths;
 @RestController
 @AllArgsConstructor
 public class HealthInfoController {
-    private HealthInfoManager healthInfoManager;
-    private DataFlowServiceProperties serviceProperties;
+    private final HealthInfoManager healthInfoManager;
+    private final DataFlowServiceProperties serviceProperties;
 
     @GetMapping("/health-information/fetch/{consent-request-id}")
     public Mono<HealthInformation> fetchHealthInformation(
@@ -33,7 +33,7 @@ public class HealthInfoController {
             @RequestParam(defaultValue = "0") int offset) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUserName)
+                .map(Caller::getUsername)
                 .flatMapMany(username -> healthInfoManager.fetchHealthInformation(consentRequestId, username))
                 .collectList()
                 .map(dataEntries -> HealthInformation.builder()

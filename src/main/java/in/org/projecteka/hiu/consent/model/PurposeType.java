@@ -11,7 +11,7 @@ public enum PurposeType {
     ENCOUNTER("Encounter"),
     REMOTE_CONSULTING("RemoteConsulting");
 
-    private String value;
+    private final String value;
     PurposeType(String val) {
         value = val;
     }

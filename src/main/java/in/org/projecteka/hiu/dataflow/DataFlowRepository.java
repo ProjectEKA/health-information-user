@@ -37,7 +37,7 @@ public class DataFlowRepository {
     private static final String SELECT_CONSENT_ID = "SELECT consent_artefact_id FROM data_flow_request WHERE " +
             "transaction_id = $1";
 
-    private PgPool dbClient;
+    private final PgPool dbClient;
 
     public DataFlowRepository(PgPool pgPool) {
         this.dbClient = pgPool;

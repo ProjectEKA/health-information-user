@@ -36,13 +36,13 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
             "-service-sections";
     public static final String RADILOGY_CATEGORY_CODE = "RAD";
     private final String DEFAULT_FILE_EXTN = ".txt";
-    private Map<String, String> mediaTypeToFileExtnMap = new HashMap<>() {{
+    private final Map<String, String> mediaTypeToFileExtnMap = new HashMap<>() {{
         put("APPLICATION/PDF", ".pdf");
         put("APPLICATION/DICOM", ".dcm");
         put("APPLICATION/MSWORD", ".doc");
         put("TEXT/RTF", ".rtf");
     }};
-    private OrthancDicomWebServer localDicomWebServer;
+    private final OrthancDicomWebServer localDicomWebServer;
 
     public DiagnosticReportResourceProcessor(OrthancDicomWebServer localDicomWebServer) {
         this.localDicomWebServer = localDicomWebServer;
