@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
 @AutoConfigureWebTestClient
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
-    private static MockWebServer consentManagerServer = new MockWebServer();
+    private static final MockWebServer consentManagerServer = new MockWebServer();
 
     @Autowired
     private WebTestClient webTestClient;

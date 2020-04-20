@@ -14,8 +14,8 @@ import static in.org.projecteka.hiu.HiuConfiguration.HEALTH_INFO_QUEUE;
 @AllArgsConstructor
 public class HealthInformationPublisher {
     private static final Logger logger = Logger.getLogger(HealthInformationPublisher.class);
-    private AmqpTemplate amqpTemplate;
-    private DestinationsConfig destinationsConfig;
+    private final AmqpTemplate amqpTemplate;
+    private final DestinationsConfig destinationsConfig;
 
     @SneakyThrows
     public Mono<Void> publish(ConsentArtefactReference consentArtefactReference) {

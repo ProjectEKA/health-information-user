@@ -22,6 +22,7 @@ import org.bouncycastle.jce.spec.ECPrivateKeySpec;
 import javax.crypto.KeyAgreement;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -159,7 +160,7 @@ public class Decryptor {
                     (encryptedBytes, 0, encryptedBytes.length, plainBytes, 0);
             cipher.doFinal(plainBytes, retLen);
 
-            decryptedData = new String(plainBytes, Charset.forName("UTF-8"));
+            decryptedData = new String(plainBytes, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException | IllegalStateException |
                 DataLengthException | InvalidCipherTextException ex) {
             System.out.println(ex.getMessage());

@@ -20,10 +20,10 @@ public class DataFlowService {
     public static final String TRANSACTION_ID = "transactionId";
     public static final String PATH_TO_FILE = "pathToFile";
     private static final String DATA_PART_NUMBER = "partNumber";
-    private DataFlowRepository dataFlowRepository;
-    private DataAvailabilityPublisher dataAvailabilityPublisher;
-    private DataFlowServiceProperties dataFlowServiceProperties;
-    private LocalDataStore localDataStore;
+    private final DataFlowRepository dataFlowRepository;
+    private final DataAvailabilityPublisher dataAvailabilityPublisher;
+    private final DataFlowServiceProperties dataFlowServiceProperties;
+    private final LocalDataStore localDataStore;
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String senderId) {
         List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry ->

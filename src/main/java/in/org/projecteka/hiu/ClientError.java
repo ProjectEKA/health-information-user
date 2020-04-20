@@ -4,6 +4,18 @@ import lombok.Getter;
 import lombok.ToString;
 import org.springframework.http.HttpStatus;
 
+import static in.org.projecteka.hiu.ErrorCode.CONSENT_ARTEFACT_NOT_FOUND;
+import static in.org.projecteka.hiu.ErrorCode.CONSENT_REQUEST_NOT_FOUND;
+import static in.org.projecteka.hiu.ErrorCode.FAILED_TO_NOTIFY_CM;
+import static in.org.projecteka.hiu.ErrorCode.QUEUE_NOT_FOUND;
+import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
+import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
+import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+
 @Getter
 @ToString
 public class ClientError extends Throwable {
@@ -19,81 +31,52 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError consentRequestNotFound() {
-        return new ClientError(
-                HttpStatus.NOT_FOUND,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.CONSENT_REQUEST_NOT_FOUND,
-                        "Cannot find the consent request")));
+        return new ClientError(NOT_FOUND,
+                new ErrorRepresentation(new Error(CONSENT_REQUEST_NOT_FOUND, "Cannot find the consent request")));
     }
 
     public static ClientError consentArtefactNotFound() {
-        return new ClientError(
-                HttpStatus.NOT_FOUND,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,
-                        "Cannot find the consent artefact")));
+        return new ClientError(NOT_FOUND,
+                new ErrorRepresentation(new Error(CONSENT_ARTEFACT_NOT_FOUND, "Cannot find the consent artefact")));
     }
 
     public static ClientError dbOperationFailure(String message) {
-        return new ClientError(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.UNKNOWN_ERROR,
-                        message)));
+        return new ClientError(INTERNAL_SERVER_ERROR, new ErrorRepresentation(new Error(UNKNOWN_ERROR, message)));
     }
 
     public static ClientError queueNotFound() {
-        return new ClientError(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.QUEUE_NOT_FOUND,
-                        "Queue not found")));
+        return new ClientError(INTERNAL_SERVER_ERROR,
+                new ErrorRepresentation(new Error(QUEUE_NOT_FOUND, "Queue not found")));
     }
 
     public static ClientError unauthorizedRequester() {
-        return new ClientError(
-                HttpStatus.UNAUTHORIZED,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.UNAUTHORIZED_REQUESTER,
+        return new ClientError(UNAUTHORIZED,
+                new ErrorRepresentation(new Error(UNAUTHORIZED_REQUESTER,
                         "Requester is not authorized to perform this action")));
     }
 
     public static ClientError unauthorized() {
-        return new ClientError(
-                HttpStatus.UNAUTHORIZED,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.UNAUTHORIZED,
-                        "Action can't be performed, unauthorized")));
+        return new ClientError(UNAUTHORIZED,
+                new ErrorRepresentation(new Error(ErrorCode.UNAUTHORIZED, "Action can't be performed, unauthorized")));
     }
 
     public static ClientError invalidEntryError(String errorMessage) {
-        return new ClientError(
-                HttpStatus.BAD_REQUEST,
-                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FLOW_ENTRY,
-                        errorMessage)));
+        return new ClientError(BAD_REQUEST,
+                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FLOW_ENTRY, errorMessage)));
     }
 
     public static ClientError authenticationFailed() {
-        return new ClientError(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.UNKNOWN_ERROR,
-                        "Something went wrong")));
+        return new ClientError(INTERNAL_SERVER_ERROR,
+                new ErrorRepresentation(new Error(UNKNOWN_ERROR, "Something went wrong")));
     }
 
     public static ClientError validationFailed() {
-        return new ClientError(
-                HttpStatus.NOT_FOUND,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.VALIDATION_FAILED,
-                        "Validation Failed")));
+        return new ClientError(NOT_FOUND,
+                new ErrorRepresentation(new Error(VALIDATION_FAILED, "Validation Failed")));
     }
 
     public static ClientError failedToNotifyCM() {
-        return new ClientError(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                new ErrorRepresentation(new Error(
-                        ErrorCode.FAILED_TO_NOTIFY_CM,
-                        "Failed to notify consent manager")));
+        return new ClientError(INTERNAL_SERVER_ERROR,
+                new ErrorRepresentation(new Error(FAILED_TO_NOTIFY_CM, "Failed to notify consent manager")));
     }
 }

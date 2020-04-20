@@ -13,8 +13,8 @@ import static java.util.function.Predicate.not;
 
 @AllArgsConstructor
 public class DataFlowClient {
-    private WebClient.Builder webClientBuilder;
-    private ConsentManagerServiceProperties consentManagerServiceProperties;
+    private final WebClient.Builder webClientBuilder;
+    private final ConsentManagerServiceProperties consentManagerServiceProperties;
 
     public Mono<DataFlowRequestResponse> initiateDataFlowRequest(DataFlowRequest dataFlowRequest, String token) {
         return webClientBuilder.build()

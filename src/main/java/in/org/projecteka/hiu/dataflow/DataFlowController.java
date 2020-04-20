@@ -14,14 +14,14 @@ import reactor.core.publisher.Mono;
 @RestController
 @AllArgsConstructor
 public class DataFlowController {
-    private DataFlowService dataFlowService;
+    private final DataFlowService dataFlowService;
 
     @ResponseStatus(HttpStatus.ACCEPTED)
     @PostMapping("/data/notification")
     public Mono<Void> dataNotification(@RequestBody DataNotificationRequest dataNotificationRequest) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUserName)
+                .map(Caller::getUsername)
                 .flatMap(requesterId -> dataFlowService.handleNotification(dataNotificationRequest, requesterId));
     }
 }

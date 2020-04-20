@@ -12,9 +12,9 @@ import java.util.Map;
 
 @AllArgsConstructor
 public class HealthInfoManager {
-    private ConsentRepository consentRepository;
-    private DataFlowRepository dataFlowRepository;
-    private HealthInformationRepository healthInformationRepository;
+    private final ConsentRepository consentRepository;
+    private final DataFlowRepository dataFlowRepository;
+    private final HealthInformationRepository healthInformationRepository;
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return consentRepository.getConsentDetails(consentRequestId)

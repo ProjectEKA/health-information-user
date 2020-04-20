@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Mono;
 
-import java.util.stream.StreamSupport;
-
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
@@ -18,7 +16,7 @@ public class UserRepository {
     private static final String INSERT_USER = "Insert into \"user\" values ($1, $2, $3, $4)";
     private static final String UPDATE_PASSWORD = "UPDATE \"user\" SET password=$2, verified=true WHERE username=$1";
 
-    private PgPool dbClient;
+    private final PgPool dbClient;
     private final Logger logger = Logger.getLogger(UserRepository.class);
 
     public Mono<User> with(String username) {
@@ -31,10 +29,12 @@ public class UserRepository {
                                         monoSink.error(dbOperationFailure("Failed to fetch user."));
                                         return;
                                     }
-                                    StreamSupport.stream(handler.result().spliterator(), false)
-                                            .map(this::tryFrom)
-                                            .forEach(monoSink::success);
-                                    monoSink.success();
+                                    var iterator = handler.result().iterator();
+                                    if (!iterator.hasNext()) {
+                                        monoSink.success();
+                                        return;
+                                    }
+                                    monoSink.success(tryFrom(iterator.next()));
                                 }));
     }
 
@@ -82,4 +82,3 @@ public class UserRepository {
         }
     }
 }
-

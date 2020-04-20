@@ -45,6 +45,7 @@ public class SecurityConfiguration {
             ReactiveAuthenticationManager authenticationManager,
             ServerSecurityContextRepository securityContextRepository) {
         final String[] WHITELISTED_URLS = {"/**.json",
+                                           "/ValueSet/**.json",
                                            "/**.html",
                                            "/**.js",
                                            "/**.yaml",
@@ -78,9 +79,9 @@ public class SecurityConfiguration {
 
     @AllArgsConstructor
     private static class SecurityContextRepository implements ServerSecurityContextRepository {
-        private ReactiveAuthenticationManager manager;
-        private CentralRegistryTokenVerifier centralRegistryTokenVerifier;
-        private Authenticator authenticator;
+        private final ReactiveAuthenticationManager manager;
+        private final CentralRegistryTokenVerifier centralRegistryTokenVerifier;
+        private final Authenticator authenticator;
 
         @Override
         public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {

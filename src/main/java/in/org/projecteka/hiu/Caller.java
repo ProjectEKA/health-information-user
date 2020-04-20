@@ -12,7 +12,7 @@ public class Caller {
     private Boolean isServiceAccount;
     private String role;
     private boolean verified;
-
+  
     public Optional<String> getRole() {
         return Optional.ofNullable(role);
     }
