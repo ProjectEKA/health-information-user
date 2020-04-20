@@ -13,10 +13,10 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
 public class UserRepository {
-    private static final String SELECT_USER_BY_USERNAME = "SELECT username, password, role, activated FROM " +
+    private static final String SELECT_USER_BY_USERNAME = "SELECT username, password, role, verified FROM " +
             "\"user\" WHERE username = $1";
     private static final String INSERT_USER = "Insert into \"user\" values ($1, $2, $3, $4)";
-    private static final String UPDATE_PASSWORD = "UPDATE \"user\" SET password=$2, activated=true WHERE username=$1";
+    private static final String UPDATE_PASSWORD = "UPDATE \"user\" SET password=$2, verified=true WHERE username=$1";
 
     private PgPool dbClient;
     private final Logger logger = Logger.getLogger(UserRepository.class);
@@ -42,7 +42,7 @@ public class UserRepository {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(INSERT_USER)
                 .execute(
-                        Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString(), user.isActivated()),
+                        Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString(), user.isVerified()),
                         handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause());
@@ -75,7 +75,7 @@ public class UserRepository {
                     row.getString("role") == null
                     ? Role.DOCTOR
                     : Role.valueOf(row.getString("role").toUpperCase()),
-                    row.getBoolean("activated"));
+                    row.getBoolean("verified"));
         } catch (Exception e) {
             logger.error(e);
             return null;

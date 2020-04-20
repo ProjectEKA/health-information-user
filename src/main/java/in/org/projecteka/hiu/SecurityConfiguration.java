@@ -55,7 +55,8 @@ public class SecurityConfiguration {
         httpSecurity.authorizeExchange().pathMatchers(WHITELISTED_URLS).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
-        httpSecurity.authorizeExchange().pathMatchers("/**").authenticated();
+        httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
+        httpSecurity.authorizeExchange().pathMatchers("/**").hasAnyRole("VERIFIED");
         return httpSecurity
                 .authenticationManager(authenticationManager)
                 .securityContextRepository(securityContextRepository)
@@ -106,8 +107,10 @@ public class SecurityConfiguration {
                     .map(caller ->
                     {
                         var grantedAuthority = new ArrayList<SimpleGrantedAuthority>();
-                        caller.getRole().map(role ->
-                                grantedAuthority.add(new SimpleGrantedAuthority("ROLE_".concat(role))));
+                        if (caller.isVerified()) {
+                            grantedAuthority.add(new SimpleGrantedAuthority("ROLE_VERIFIED"));
+                        }
+                        caller.getRole().map(role -> grantedAuthority.add(new SimpleGrantedAuthority("ROLE_".concat(role))));
                         return new UsernamePasswordAuthenticationToken(caller, token, grantedAuthority);
                     })
                     .map(SecurityContextImpl::new);

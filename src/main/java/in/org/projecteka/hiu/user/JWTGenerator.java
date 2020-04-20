@@ -21,6 +21,7 @@ public class JWTGenerator {
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .claim("username", user.getUsername())
                 .claim("role", user.getRole())
+                .claim("isVerified", user.isVerified())
                 .build();
         JWSObject jwsObject = new JWSObject(new JWSHeader(JWSAlgorithm.HS256), new Payload(claims.toJSONObject()));
         jwsObject.sign(signer);

@@ -11,6 +11,7 @@ public class Caller {
     private String userName;
     private Boolean isServiceAccount;
     private String role;
+    private boolean verified;
 
     public Optional<String> getRole() {
         return Optional.ofNullable(role);

@@ -22,7 +22,7 @@ public class SessionService {
         return Mono.justOrEmpty(sessionRequest)
                 .flatMap(request -> userRepository.with(request.getUsername()))
                 .filter(user -> passwordEncoder.matches(sessionRequest.getPassword(), user.getPassword()))
-                .map(user -> new Session(jwtGenerator.tokenFrom(user), user.isActivated()))
+                .map(user -> new Session(jwtGenerator.tokenFrom(user), user.isVerified()))
                 .doOnError(logger::error)
                 .switchIfEmpty(Mono.error(new ClientError(HttpStatus.UNAUTHORIZED,
                         new ErrorRepresentation(new Error(ErrorCode.INVALID_USERNAME_OR_PASSWORD,

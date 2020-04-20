@@ -33,7 +33,7 @@ public class UserController {
                 .map(user -> user.toBuilder()
                         .password(passwordEncoder.encode(user.getPassword()))
                         .role(user.getRole() == null ? Role.DOCTOR : user.getRole())
-                        .activated(false)
+                        .verified(false)
                         .build())
                 .flatMap(userRepository::save);
     }
