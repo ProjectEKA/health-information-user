@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +33,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
+import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -95,7 +97,7 @@ public class ConsentServiceTest {
     }
 
     @Test
-    void returnsRequestsFrom() {
+    void returnsRequestsFrom() throws ParseException {
         var requesterId = randomString();
         var token = randomString();
         var consentService = new ConsentService(
@@ -108,9 +110,9 @@ public class ConsentServiceTest {
                 healthInformationPublisher,
                 conceptValidator);
         var patientRep = patientRepresentation().build();
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325Z")).build();
         var consentRequest = consentRequest()
-                .createdDate("2020-06-02T10:15:02Z")
+                .createdDate(toDate("2020-06-02T10:15:02Z"))
                 .status(ConsentStatus.REQUESTED)
                 .patient(new in.org.projecteka.hiu.consent.model.Patient(patientRep.getIdentifier()))
                 .permission(permission)
@@ -130,7 +132,7 @@ public class ConsentServiceTest {
     }
 
     @Test
-    void returnsRequestsWithConsentArtefactStatus() {
+    void returnsRequestsWithConsentArtefactStatus() throws ParseException {
         var requesterId = randomString();
         var token = randomString();
         var consentService = new ConsentService(
@@ -142,10 +144,10 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator);
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325Z")).build();
         var patientRep = patientRepresentation().build();
         var consentRequest = consentRequest()
-                .createdDate("2020-06-02T10:15:02Z")
+                .createdDate(toDate("2020-06-02T10:15:02Z"))
                 .status(ConsentStatus.REQUESTED)
                 .patient(new in.org.projecteka.hiu.consent.model.Patient(patientRep.getIdentifier()))
                 .permission(permission)

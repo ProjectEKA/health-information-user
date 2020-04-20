@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -19,6 +20,6 @@ public class ConsentRequest {
     private List<HIType> hiTypes;
     private Permission permission;
     private ConsentStatus status;
-    private String createdDate;
+    private Date createdDate;
     private String consentNotificationUrl;
 }
