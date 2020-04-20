@@ -124,6 +124,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PatientSearchRepresentation'
+  /users/password:
+    put:
+      tags:
+        - frontend
+      summary: Change password
+      description: Change the password for logged in user
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordBody'
+      responses:
+        '200':
+          description: Successful updation of password.
+        '400':
+          description: When new password is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /consent/notification/:
     post:
       tags:
@@ -259,6 +282,15 @@ components:
       properties:
         patient:
           $ref: '#/components/schemas/PatientRepresentation'
+    ChangePasswordBody:
+      type: object
+      properties:
+        oldPassword:
+          type: string
+          example: someOldpassword@1
+        newPassword:
+          type: string
+          example: someNewpassword@1
     ConsentManagerPatientID:
       type: object
       properties:
@@ -390,7 +422,7 @@ components:
       properties:
         code:
           type: integer
-          enum: [1000, 10001]
+          enum: [1000, 1001, 1007]
           description: >
             1. Error code 1000 : No patient found
             2. Error code 1001: Multiple patients found
