@@ -39,13 +39,15 @@ public class ConsentService {
     private final PatientService patientService;
     private final CentralRegistry centralRegistry;
     private final HealthInformationPublisher healthInformationPublisher;
+    private final ConceptValidator conceptValidator;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
                 requesterId,
                 hiuProperties.getId(),
                 hiuProperties.getName(),
-                hiuProperties.getConsentNotificationUrl());
+                hiuProperties.getConsentNotificationUrl(),
+                conceptValidator);
         return centralRegistry.token()
                 .flatMap(token -> consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest), token))
                 .flatMap(consentCreationResponse ->

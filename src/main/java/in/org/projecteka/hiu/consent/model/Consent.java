@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import in.org.projecteka.hiu.consent.ConceptLookup;
 import in.org.projecteka.hiu.consent.model.consentmanager.AccessMode;
 import in.org.projecteka.hiu.consent.model.consentmanager.HIU;
 import in.org.projecteka.hiu.consent.model.consentmanager.Requester;
@@ -38,11 +39,11 @@ public class Consent {
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
                                                                          String hiuName,
-                                                                         String consentNotificationUrl) {
+                                                                         String consentNotificationUrl, ConceptLookup conceptLookup) {
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
-                        getPurpose().getCode().name(),
-                        getPurpose().getCode().getValue()),
+                        getPurpose().getCode(),
+                        conceptLookup.getPurposeDescription(getPurpose().getCode())),
                 getPatient(),
                 new HIU(hiuId, hiuName),
                 new Requester(requesterId),
