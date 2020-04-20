@@ -184,7 +184,7 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
         when(consentRepository.get(eq(consentRequestId))).thenReturn(Mono.just(consentRequest));
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(
@@ -219,7 +219,7 @@ public class ConsentUserJourneyTest {
                 .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(null)));
 
@@ -245,7 +245,7 @@ public class ConsentUserJourneyTest {
                 .build();
         var token = randomString();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.error(new Exception("Failed to fetch consent request")));
 
@@ -283,7 +283,7 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
@@ -320,7 +320,7 @@ public class ConsentUserJourneyTest {
 
         var token = randomString();
         when(centralRegistryTokenVerifier.verify(token))
-                .thenReturn(Mono.just(new Caller("", true, "")));
+                .thenReturn(Mono.just(new Caller("", true, "", true)));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
                 .thenReturn(Mono.empty());
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
@@ -355,7 +355,7 @@ public class ConsentUserJourneyTest {
 
         var token = randomString();
         when(centralRegistryTokenVerifier.verify(token))
-                .thenReturn(Mono.just(new Caller("", true, "")));
+                .thenReturn(Mono.just(new Caller("", true, "", true)));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
                 .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))

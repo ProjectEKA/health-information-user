@@ -14,7 +14,7 @@ public class Base64Authenticator implements Authenticator {
     @Override
     public Mono<Caller> verify(String token) {
         try {
-            return Mono.justOrEmpty(new Caller(TokenUtils.decode(token), false, null));
+            return Mono.justOrEmpty(new Caller(TokenUtils.decode(token), false, null, true));
         } catch (Exception e) {
             logger.error(format("Unable to decode the token: %s", token));
             return Mono.empty();
