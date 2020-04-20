@@ -12,6 +12,7 @@ import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
 import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -56,8 +57,9 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError unauthorized() {
-        return new ClientError(UNAUTHORIZED,
-                new ErrorRepresentation(new Error(ErrorCode.UNAUTHORIZED, "Action can't be performed, unauthorized")));
+        return new ClientError(FORBIDDEN,
+                new ErrorRepresentation(new Error(ErrorCode.UNAUTHORIZED,
+                        "Action can't be performed, consent request is not granted yet")));
     }
 
     public static ClientError invalidEntryError(String errorMessage) {

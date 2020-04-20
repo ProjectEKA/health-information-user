@@ -6,8 +6,7 @@ import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
 import lombok.AllArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
@@ -17,7 +16,7 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
 public class HealthInformationRepository {
-    private static final Logger logger = LoggerFactory.getLogger(HealthInformationRepository.class);
+    private static final Logger logger = Logger.getLogger(HealthInformationRepository.class);
     private static final String SELECT_HEALTH_INFORMATION = "SELECT data, status FROM health_information WHERE " +
             "transaction_id=$1";
     private final PgPool dbClient;
@@ -29,17 +28,17 @@ public class HealthInformationRepository {
                             if (handler.failed()) {
                                 fluxSink.error(
                                         dbOperationFailure("Failed to get health information from transaction Id"));
-                            } else {
-                                for (Row row : handler.result()) {
-                                    try {
-                                        fluxSink.next(toHealthInfo(row));
-                                    } catch (JsonProcessingException e) {
-                                        logger.error(e.getMessage(), e);
-                                        fluxSink.error(dbOperationFailure(e.getOriginalMessage()));
-                                    }
-                                }
-                                fluxSink.complete();
+                                return;
                             }
+                            for (Row row : handler.result()) {
+                                try {
+                                    fluxSink.next(toHealthInfo(row));
+                                } catch (JsonProcessingException e) {
+                                    logger.error(e.getMessage(), e);
+                                    fluxSink.error(dbOperationFailure(e.getOriginalMessage()));
+                                }
+                            }
+                            fluxSink.complete();
                         }));
     }
 
