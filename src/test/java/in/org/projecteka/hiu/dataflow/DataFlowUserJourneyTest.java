@@ -108,7 +108,7 @@ public class DataFlowUserJourneyTest {
         Map<String, Object> flowRequestMap = new HashMap<>();
         var token = randomString();
         flowRequestMap.put("consentRequestId", "consentRequestId");
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(flowRequestMap));
@@ -211,7 +211,7 @@ public class DataFlowUserJourneyTest {
         DataNotificationRequest dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
         var token = randomString();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "")));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         var errorResponse = new ErrorRepresentation(new Error(

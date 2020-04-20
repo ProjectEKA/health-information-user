@@ -119,11 +119,14 @@ public class SecurityConfiguration {
 
         private Mono<SecurityContext> checkCentralRegistry(String token) {
             return centralRegistryTokenVerifier.verify(token)
-                    .map(caller ->
-                            new UsernamePasswordAuthenticationToken(
-                                    caller,
-                                    token,
-                                    new ArrayList<SimpleGrantedAuthority>()))
+                    .map(caller -> {
+                        var grantedAuthority = new ArrayList<SimpleGrantedAuthority>();
+                        grantedAuthority.add(new SimpleGrantedAuthority("ROLE_VERIFIED"));
+                        return new UsernamePasswordAuthenticationToken(
+                                caller,
+                                token,
+                                grantedAuthority);
+                    })
                     .map(SecurityContextImpl::new);
         }
 
