@@ -15,6 +15,7 @@ import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.common.UserAuthenticator;
 import in.org.projecteka.hiu.common.UserBase64Authenticator;
+import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
@@ -123,7 +124,8 @@ public class HiuConfiguration {
             DataFlowRequestPublisher dataFlowRequestPublisher,
             PatientService patientService,
             CentralRegistry centralRegistry,
-            HealthInformationPublisher healthInformationPublisher) {
+            HealthInformationPublisher healthInformationPublisher,
+            ConceptValidator validator) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
@@ -131,7 +133,8 @@ public class HiuConfiguration {
                 dataFlowRequestPublisher,
                 patientService,
                 centralRegistry,
-                healthInformationPublisher);
+                healthInformationPublisher,
+                validator);
     }
 
     @Bean

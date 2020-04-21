@@ -53,6 +53,8 @@ public class ConsentServiceTest {
 
     @Mock
     private HealthInformationPublisher healthInformationPublisher;
+    @Mock
+    private ConceptValidator conceptValidator;
 
     @BeforeEach
     public void setUp() {
@@ -71,12 +73,13 @@ public class ConsentServiceTest {
                 dataFlowRequestPublisher,
                 null,
                 centralRegistry,
-                healthInformationPublisher);
+                healthInformationPublisher,
+                conceptValidator);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
         ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()
                 .to(requesterId, hiuProperties.getId(), hiuProperties.getName(),
-                        hiuProperties.getConsentNotificationUrl()));
+                        hiuProperties.getConsentNotificationUrl(), conceptValidator));
 
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(consentManagerClient.createConsentRequest(consentRequest, token))
@@ -102,7 +105,8 @@ public class ConsentServiceTest {
                 dataFlowRequestPublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
-                healthInformationPublisher);
+                healthInformationPublisher,
+                conceptValidator);
         var patientRep = patientRepresentation().build();
         Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var consentRequest = consentRequest()
@@ -136,7 +140,8 @@ public class ConsentServiceTest {
                 dataFlowRequestPublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
-                healthInformationPublisher);
+                healthInformationPublisher,
+                conceptValidator);
         Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var patientRep = patientRepresentation().build();
         var consentRequest = consentRequest()
@@ -171,7 +176,8 @@ public class ConsentServiceTest {
                 dataFlowRequestPublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
-                healthInformationPublisher);
+                healthInformationPublisher,
+                conceptValidator);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
                 .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
@@ -195,7 +201,8 @@ public class ConsentServiceTest {
                 dataFlowRequestPublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
-                healthInformationPublisher);
+                healthInformationPublisher,
+                conceptValidator);
         var consentRequest = consentRequest()
                 .status(DENIED)
                 .id(consentNotificationRequest.getConsentRequestId())

@@ -94,6 +94,10 @@ public class ConsentUserJourneyTest {
     @MockBean
     private HealthInformationPublisher healthInformationPublisher;
 
+    @MockBean
+    private ConceptValidator conceptValidator;
+
+
     @AfterAll
     public static void tearDown() throws IOException {
         consentManagerServer.shutdown();
@@ -112,6 +116,8 @@ public class ConsentUserJourneyTest {
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
 
         consentManagerServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
