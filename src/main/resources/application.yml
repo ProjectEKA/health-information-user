@@ -5,6 +5,7 @@ hiu:
   name: ${HIU_NAME}
   dataPushUrl: ${DATA_PUSH_URL}
   consentNotificationUrl: ${CONSENT_NOTIFICATION_URL}
+  valueSets: classpath:/static/ValueSet/valuesets.json
   consentmanager:
     url: ${CONSENT_MANAGEMENT_URL}
   dataflowservice:

@@ -24,10 +24,12 @@ import java.util.List;
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.validationFailed;
+import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
 @AllArgsConstructor
@@ -39,13 +41,20 @@ public class ConsentService {
     private final PatientService patientService;
     private final CentralRegistry centralRegistry;
     private final HealthInformationPublisher healthInformationPublisher;
+    private final ConceptValidator conceptValidator;
 
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
+        return validateConsentRequest(consentRequestData)
+                .then(createAndSaveConsent(requesterId, consentRequestData));
+    }
+
+    private Mono<ConsentCreationResponse> createAndSaveConsent(String requesterId, ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
                 requesterId,
                 hiuProperties.getId(),
                 hiuProperties.getName(),
-                hiuProperties.getConsentNotificationUrl());
+                hiuProperties.getConsentNotificationUrl(),
+                conceptValidator);
         return centralRegistry.token()
                 .flatMap(token -> consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest), token))
                 .flatMap(consentCreationResponse ->
@@ -56,6 +65,15 @@ public class ConsentService {
                                         hiuProperties.getConsentNotificationUrl()))
                                 .then(Mono.fromCallable(consentCreationResponse::getId)))
                 .map(ConsentCreationResponse::new);
+    }
+
+    private Mono<Void> validateConsentRequest(ConsentRequestData consentRequestData) {
+        return conceptValidator.validatePurpose(consentRequestData.getConsent().getPurpose().getCode())
+                .flatMap(result -> result.booleanValue()
+                        ? Mono.empty()
+                        : Mono.error(new ClientError(BAD_REQUEST,
+                                        new ErrorRepresentation(new Error(INVALID_PURPOSE_OF_USE,
+                                                "Invalid Purpose Of Use")))));
     }
 
     public Mono<Void> handleNotification(ConsentNotificationRequest consentNotificationRequest) {

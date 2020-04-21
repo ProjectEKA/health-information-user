@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class Purpose {
-    private PurposeType code;
+    private String code;
 }
