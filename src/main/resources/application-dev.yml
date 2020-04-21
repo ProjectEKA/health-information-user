@@ -3,6 +3,7 @@ hiu:
   name: Max Health Care
   dataPushUrl: http://localhost:8003/data/notification
   consentNotificationUrl: http://localhost:8003/consent/notification
+  valueSets: classpath:/static/ValueSet/valuesets.json
   consentmanager:
     url: http://localhost:9000
   dataflowservice:
