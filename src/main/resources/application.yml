@@ -6,6 +6,7 @@ hiu:
   dataPushUrl: ${DATA_PUSH_URL}
   consentNotificationUrl: ${CONSENT_NOTIFICATION_URL}
   consentmanager:
+    suffixes: ${CONSENT_MANAGEMENT_SUFFIXES}
     url: ${CONSENT_MANAGEMENT_URL}
   dataflowservice:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}
