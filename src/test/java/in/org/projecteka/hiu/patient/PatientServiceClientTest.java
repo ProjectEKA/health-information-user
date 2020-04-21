@@ -43,7 +43,7 @@ class PatientServiceClientTest {
                 .exchangeFunction(exchangeFunction);
         patientServiceClient = new PatientServiceClient(
                 webClientBuilder,
-                new ConsentManagerServiceProperties(BASE_URL));
+                new ConsentManagerServiceProperties(BASE_URL, "@ncg"));
     }
 
     @Test
