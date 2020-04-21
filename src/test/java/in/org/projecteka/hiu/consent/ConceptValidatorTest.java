@@ -1,7 +1,10 @@
 package in.org.projecteka.hiu.consent;
 
 import com.nimbusds.jose.jwk.JWKSet;
+import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.consent.model.HIType;
+import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +32,14 @@ public class ConceptValidatorTest {
     @MockBean
     private JWKSet centralRegistryJWKSet;
 
+    @MockBean
+    DestinationsConfig destinationsConfig;
+
+    @MockBean
+    DataFlowRequestListener dataFlowRequestListener;
+
+    @MockBean
+    DataAvailabilityListener dataAvailabilityListener;
 
     @BeforeEach
     public void setUp() {
