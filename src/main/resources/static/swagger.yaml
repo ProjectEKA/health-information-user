@@ -147,6 +147,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /config:
+    get:
+      tags:
+        - frontend
+      summary: Frontend Configuration
+      description: Fetch configuration for frontend
+      responses:
+        '200':
+          description: Successful fetch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
   /consent/notification/:
     post:
       tags:
@@ -282,6 +295,17 @@ components:
       properties:
         patient:
           $ref: '#/components/schemas/PatientRepresentation'
+    Configuration:
+      type: object
+      properties:
+        consentManagers:
+          type: array
+          items:
+            properties:
+              userIdSuffix:
+                type: string
+                example: '@ncg'
+          description: list of consent managers with properties
     ChangePasswordBody:
       type: object
       properties:
