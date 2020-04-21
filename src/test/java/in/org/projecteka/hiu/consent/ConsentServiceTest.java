@@ -33,6 +33,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -88,6 +89,7 @@ public class ConsentServiceTest {
                 consentCreationResponse.getId(),
                 requesterId, hiuProperties.getConsentNotificationUrl())))
                 .thenReturn(Mono.create(MonoSink::success));
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
 
         StepVerifier.create(consentService.create(requesterId, consentRequestData))
                 .expectNext(consentCreationResponse)
