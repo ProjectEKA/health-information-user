@@ -3,10 +3,7 @@ package in.org.projecteka.hiu.user;
 import com.google.common.base.Strings;
 import io.vavr.control.Validation;
 import org.passay.*;
-
 import java.util.Arrays;
-
-import static java.lang.String.format;
 
 public class PasswordValidator {
     public static Validation<String, String> validate(ChangePasswordRequest changePasswordRequest) {
@@ -24,7 +21,6 @@ public class PasswordValidator {
         if(oldPassword.equals(newPassword)){
             return Validation.invalid("New password cannot be same as old password");
         }
-
         org.passay.PasswordValidator validator = new org.passay.PasswordValidator(Arrays.asList(
                 new LengthRule(8, 30),
                 new CharacterRule(EnglishCharacterData.UpperCase, 1),
@@ -34,13 +30,13 @@ public class PasswordValidator {
                 new IllegalSequenceRule(new SequenceData() {
                     @Override
                     public String getErrorCode() {
-                        return "cannot have three or more consecutive numbers";
+                        return "ILLEGAL_NUMERICAL_SEQUENCE";
                     }
 
                     @Override
                     public CharacterSequence[] getSequences() {
                         return new CharacterSequence[]{
-                                new CharacterSequence("`1234567890-=")
+                                new CharacterSequence("`1234567890")
                         };
                     }
                 }, 3, false)));
@@ -48,12 +44,8 @@ public class PasswordValidator {
         if (result.isValid()) {
             return Validation.valid(newPassword);
         }
-        var error = result.getDetails()
-                .stream()
-                .map(RuleResultDetail::toString)
-                .reduce((left, right) -> format("%s, %s", left, right))
-                .map(message -> format("password has following issues: %s", message))
-                .orElse("password did not meet criteria");
-        return Validation.invalid(error);
+
+        var error = validator.getMessages(result).stream().reduce((acc, msg) -> acc + "\n" + msg);
+        return Validation.invalid(error.orElse(""));
     }
 }
