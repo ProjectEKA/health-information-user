@@ -31,7 +31,7 @@ public class DataFlowClientTest {
         mockWebServer = new MockWebServer();
         WebClient.Builder webClientBuilder = WebClient.builder();
         ConsentManagerServiceProperties consentManagerServiceProperties =
-                new ConsentManagerServiceProperties(mockWebServer.url("").toString());
+                new ConsentManagerServiceProperties(mockWebServer.url("").toString(), "@ncg");
         dataFlowClient = new DataFlowClient(webClientBuilder, consentManagerServiceProperties);
     }
 

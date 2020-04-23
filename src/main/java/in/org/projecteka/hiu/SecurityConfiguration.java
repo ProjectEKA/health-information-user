@@ -52,7 +52,8 @@ public class SecurityConfiguration {
                                            "/**.css",
                                            "/**.png",
                                            "/health-information/fetch/**/attachments/**",
-                                           "/sessions"};
+                                           "/sessions",
+                                           "/config"};
         httpSecurity.authorizeExchange().pathMatchers(WHITELISTED_URLS).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());

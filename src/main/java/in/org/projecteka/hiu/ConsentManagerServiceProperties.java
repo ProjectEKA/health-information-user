@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+
 @Configuration
 @ConfigurationProperties(prefix = "hiu.consentmanager")
 @Data
@@ -14,4 +15,5 @@ import org.springframework.context.annotation.Configuration;
 @AllArgsConstructor
 public class ConsentManagerServiceProperties {
     private String url;
+    private String suffix;
 }
