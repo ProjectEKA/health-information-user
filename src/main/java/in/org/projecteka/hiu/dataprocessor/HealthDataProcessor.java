@@ -146,6 +146,7 @@ public class HealthDataProcessor {
         String hipId = consentRepository.getHipId(consentId).block();
         HealthInfoNotificationRequest healthInfoNotificationRequest = HealthInfoNotificationRequest.builder()
                 .transactionId(context.getTransactionId())
+                .consentId(consentId)
                 .doneAt(new Date())
                 .notifier(Notifier.builder()
                         .type(Type.HIU)
