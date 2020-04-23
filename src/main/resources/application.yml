@@ -7,7 +7,7 @@ hiu:
   consentNotificationUrl: ${CONSENT_NOTIFICATION_URL}
   valueSets: classpath:/static/ValueSet/valuesets.json
   consentmanager:
-    suffixes: ${CONSENT_MANAGEMENT_SUFFIXES}
+    suffix: ${CONSENT_MANAGEMENT_SUFFIX}
     url: ${CONSENT_MANAGEMENT_URL}
   dataflowservice:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}

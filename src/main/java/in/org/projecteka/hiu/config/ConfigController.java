@@ -9,16 +9,13 @@ import reactor.core.publisher.Mono;
 @RestController
 @AllArgsConstructor
 public class ConfigController {
-    private final ConsentManagerServiceProperties consentManagerServiceProperties;
+    private final ConsentManagerServiceProperties consentManagerServiceProperties   ;
 
     @GetMapping("/config")
     public Mono<ConfigResponse> getConfig() {
         return Mono.create(monoSink -> {
-            var userIdSuffixes = consentManagerServiceProperties.getSuffixes();
-            var consentManagersConfig = userIdSuffixes.stream()
-                    .map(ConfigResponse.ConsentManagerConfig::new)
-                    .toArray(ConfigResponse.ConsentManagerConfig[]::new);
-            monoSink.success(new ConfigResponse(consentManagersConfig));
+            var consentManagerConfig = new ConfigResponse.ConsentManagerConfig(consentManagerServiceProperties.getSuffix());
+            monoSink.success(new ConfigResponse(new ConfigResponse.ConsentManagerConfig[]{consentManagerConfig}));
         });
     }
 }

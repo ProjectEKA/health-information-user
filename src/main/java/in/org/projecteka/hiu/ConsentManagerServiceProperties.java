@@ -18,9 +18,5 @@ import java.util.List;
 @AllArgsConstructor
 public class ConsentManagerServiceProperties {
     private String url;
-    private String suffixes;
-
-    public List<String> getSuffixes(){
-       return Arrays.asList(suffixes.split(" "));
-    }
+    private String suffix;
 }
