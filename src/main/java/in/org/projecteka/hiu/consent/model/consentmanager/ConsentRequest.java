@@ -6,11 +6,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
 @Data
 public class ConsentRequest {
+    private UUID requestId;
     private Consent consent;
 }
