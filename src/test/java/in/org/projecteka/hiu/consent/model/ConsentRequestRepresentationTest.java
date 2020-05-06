@@ -14,9 +14,9 @@ class ConsentRequestRepresentationTest {
 
     @Test
     void returnConsentRequestRepresentation() throws ParseException {
-        var expiry = "2021-06-02T10:15:02.325+0000";
+        var expiry = "2021-06-02T10:15:02.325Z";
         var today = "2020-06-02T10:15:02Z";
-        var expiryAt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+0000'").parse(expiry);
+        var expiryAt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(expiry);
         var todayAt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(today);
         var consentRequest = consentRequest()
                 .permission(Permission.builder().dataEraseAt(expiry).build())
