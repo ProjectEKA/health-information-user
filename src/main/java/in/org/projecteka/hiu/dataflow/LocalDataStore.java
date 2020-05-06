@@ -3,7 +3,8 @@ package in.org.projecteka.hiu.dataflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -13,10 +14,12 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class LocalDataStore {
-    private static final Logger logger = Logger.getLogger(LocalDataStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(LocalDataStore.class);
 
     public Mono<Void> serializeDataToFile(DataNotificationRequest dataNotificationRequest, Path outFileName) {
         return Mono.create(monoSink ->
@@ -43,11 +46,26 @@ public class LocalDataStore {
                                             }
                                         });
                                     } catch (IOException e) {
-                                        logger.error(e);
+                                        logger.error(e.getMessage());
                                         monoSink.error(e);
                                     }
                                 },
                                 () -> monoSink.error(new Exception("Not able to process the request"))));
+    }
+
+    public void deleteExpiredConsentData(Path pathToTransactionDirectory) {
+        logger.info(String.format("Deleting the health information from: %s", pathToTransactionDirectory.toString()));
+        try (Stream<Path> paths = Files.walk(pathToTransactionDirectory).sorted(Comparator.reverseOrder())) {
+            paths.forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                }
+            });
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
     }
 
     private void createParentDirectoriesIfNotExists(Path outFileName) throws IOException {
@@ -59,7 +77,7 @@ public class LocalDataStore {
         try {
             return Optional.ofNullable(objectMapper.writeValueAsBytes(dataNotificationRequest));
         } catch (JsonProcessingException e) {
-            logger.error(e);
+            logger.error(e.getMessage());
             return Optional.empty();
         }
     }

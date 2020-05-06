@@ -21,7 +21,7 @@ public class ConsentRequestRepresentation {
             Patient patient,
             in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
         var format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+0000'");
         return new ConsentRequestRepresentation(
                 consentRequest.getId(),
                 new PatientRepresentation(

@@ -49,6 +49,9 @@ public class ConsentServiceTest {
     @Mock
     private DataFlowRequestPublisher dataFlowRequestPublisher;
     @Mock
+    private DataFlowDeletePublisher dataFlowDeletePublisher;
+
+    @Mock
     private PatientServiceClient patientServiceClient;
     @Mock
     private CentralRegistry centralRegistry;
@@ -73,6 +76,7 @@ public class ConsentServiceTest {
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
+                null,
                 null,
                 centralRegistry,
                 healthInformationPublisher,
@@ -103,12 +107,13 @@ public class ConsentServiceTest {
                 hiuProperties().build(),
                 consentRepository,
                 dataFlowRequestPublisher,
+                dataFlowDeletePublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator);
         var patientRep = patientRepresentation().build();
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325+0000").build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
                 .status(ConsentStatus.REQUESTED)
@@ -138,11 +143,12 @@ public class ConsentServiceTest {
                 hiuProperties().build(),
                 consentRepository,
                 dataFlowRequestPublisher,
+                dataFlowDeletePublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator);
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325+0000").build();
         var patientRep = patientRepresentation().build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
@@ -174,6 +180,7 @@ public class ConsentServiceTest {
                 hiuProperties().build(),
                 consentRepository,
                 dataFlowRequestPublisher,
+                dataFlowDeletePublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
@@ -199,6 +206,7 @@ public class ConsentServiceTest {
                 hiuProperties().build(),
                 consentRepository,
                 dataFlowRequestPublisher,
+                dataFlowDeletePublisher,
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,

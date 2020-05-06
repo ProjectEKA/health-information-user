@@ -6,13 +6,20 @@ import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -24,6 +31,7 @@ public class DataFlowService {
     private final DataAvailabilityPublisher dataAvailabilityPublisher;
     private final DataFlowServiceProperties dataFlowServiceProperties;
     private final LocalDataStore localDataStore;
+    private static final Logger logger = LoggerFactory.getLogger(DataFlowService.class);
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String senderId) {
         List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry ->
@@ -56,7 +64,8 @@ public class DataFlowService {
     private Mono<Map<String, String>> serializeDataTransferred(DataNotificationRequest dataNotificationRequest,
                                                                String consentRequestId, int dataFlowPartNo) {
         Path pathToFile = Paths.get(dataFlowServiceProperties.getLocalStoragePath(),
-                getParentDirectories(consentRequestId),
+                getLocalDirectoryName(consentRequestId),
+                getLocalDirectoryName(dataNotificationRequest.getTransactionId()),
                 localFileNameToSave(dataNotificationRequest.getTransactionId(), dataFlowPartNo));
         return localDataStore.serializeDataToFile(dataNotificationRequest, pathToFile)
                 .thenReturn(createContentAvailabilityRef(dataNotificationRequest, pathToFile));
@@ -75,17 +84,39 @@ public class DataFlowService {
         return String.format("%s_%d.json", TokenUtils.encode(transactionId), dataFlowPartNo);
     }
 
-    private String getParentDirectories(String consentRequestId) {
+    private String getLocalDirectoryName(String consentRequestId) {
         return String.format("%s", TokenUtils.encode(consentRequestId));
     }
 
     private Mono<String> validateAndRetrieveRequestedConsent(String transactionId, String senderId) {
+        //TODO: possibly validate the senderId
         return dataFlowRepository.retrieveDataFlowRequest(transactionId).flatMap(
                 dataMap -> {
-                    //TODO: possibly validate the senderId
+                    if (hasConsentArtefactExpired((String) dataMap.get("consentExpiryDate"))) {
+                        return Mono.error(ClientError.consentArtefactGone());
+                    }
                     return Mono.just((String) dataMap.get("consentRequestId"));
                 }
         );
+    }
+
+    private boolean hasConsentArtefactExpired(String dataEraseAt) {
+        Date today = new Date();
+        Date expiryDate = toDate(dataEraseAt);
+        return expiryDate != null && expiryDate.before(today);
+    }
+
+    private Date toDate(String dateExpiryAt) {
+        Date date = null;
+        try {
+            var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+0000'");
+            withMillSeconds.setTimeZone(TimeZone.getTimeZone(ZoneId.of("GMT")));
+            date = withMillSeconds.parse(dateExpiryAt);
+            return date;
+        } catch (ParseException e) {
+            logger.error(e.getMessage());
+        }
+        return date;
     }
 
     private boolean hasContent(Entry entry) {

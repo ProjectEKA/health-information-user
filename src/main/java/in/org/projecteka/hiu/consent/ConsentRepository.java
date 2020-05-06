@@ -28,8 +28,9 @@ import static in.org.projecteka.hiu.common.Serializer.to;
 public class ConsentRepository {
     private static final String SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT = "SELECT consent_artefact_id, " +
             "consent_artefact -> 'hip' ->> 'id' as hipId, consent_artefact -> 'hip' ->> 'name' as hipName, " +
-            "consent_artefact -> 'requester' ->> 'name' as requester, status FROM " +
-            "consent_artefact WHERE consent_request_id=$1";
+            "consent_artefact -> 'requester' ->> 'name' as requester, " +
+            "consent_artefact -> 'permission' ->> 'dataEraseAt' as consentExpiryDate, status" +
+            " FROM consent_artefact WHERE consent_request_id=$1";
     private static final String INSERT_CONSENT_ARTEFACT_QUERY = "INSERT INTO " +
             "consent_artefact (consent_request_id, consent_artefact, consent_artefact_id, status, date_created)" +
             " VALUES ($1, $2, $3, $4, $5)";
@@ -48,6 +49,9 @@ public class ConsentRepository {
             "consent_request set consent_request = $1 where consent_request_id = $2";
     private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
             "FROM consent_artefact WHERE consent_artefact_id=$1";
+    private static final String SELECT_CONSENT_ID_FROM_REQUEST_ID = "SELECT consent_artefact_id from consent_artefact WHERE " +
+            "consent_request_id = $1";
+
     private final PgPool dbClient;
 
     public Mono<Void> insert(ConsentRequest consentRequest) {
@@ -154,7 +158,8 @@ public class ConsentRepository {
         map.put("hipId", row.getString(1));
         map.put("hipName", row.getString(2));
         map.put("requester", row.getString(3));
-        map.put("status", row.getString(4));
+        map.put("consentExpiryDate", row.getString(4));
+        map.put("status", row.getString(5));
         return map;
     }
 
@@ -186,6 +191,18 @@ public class ConsentRepository {
                                     }
                                     monoSink.success();
                                 }));
+    }
+
+    public Mono<String> getConsentArtefactId(String consentRequestId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_ID_FROM_REQUEST_ID)
+                .execute(Tuple.of(consentRequestId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(new Exception("Failed to get consent artefact id from consent request id"));
+                                return;
+                            }
+                            monoSink.success(handler.result().iterator().next().getString(0));
+                        }));
     }
 
     public Mono<String> getHipId(String consentId) {

@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.consent;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.consent.model.HIType;
+import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,9 @@ public class ConceptValidatorTest {
 
     @MockBean
     DataAvailabilityListener dataAvailabilityListener;
+
+    @MockBean
+    DataFlowDeleteListener dataFlowDeleteListener;
 
     @BeforeEach
     public void setUp() {
