@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 @Builder
@@ -15,6 +17,6 @@ import lombok.NoArgsConstructor;
 public class Permission {
     private AccessMode accessMode;
     private DateRange dateRange;
-    private String dataEraseAt;
+    private LocalDateTime dataEraseAt;
     private Frequency frequency;
 }

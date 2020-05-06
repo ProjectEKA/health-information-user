@@ -10,11 +10,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.TimeZone;
 
 import static in.org.projecteka.hiu.consent.model.consentmanager.Frequency.ONE_HOUR;
 
@@ -29,11 +27,9 @@ public class Consent {
     private List<HIType> hiTypes;
     private Permission permission;
 
-    private static String getCurrentDate() {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        return df.format(new Date());
+    public static LocalDateTime getCurrentDate() {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm[:ss][.SSS]]");
+        return LocalDateTime.parse(LocalDateTime.now().format(dateTimeFormatter));
     }
 
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
