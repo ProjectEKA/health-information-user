@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +30,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
 import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -190,6 +190,35 @@ public class ConsentServiceTest {
                 .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
         when(consentRepository.updateConsent(consentNotificationRequest.getConsentRequestId(),
                 consentRequest.status(DENIED).build()))
+                .thenReturn(Mono.empty());
+
+        var publisher = consentService.handleNotification(consentNotificationRequest);
+
+        StepVerifier.create(publisher)
+                .verifyComplete();
+    }
+
+    @Test
+    void handleExpiredConsentRequest() {
+        var consentNotificationRequest = consentNotificationRequest()
+                .status(EXPIRED)
+                .consentArtefacts(Collections.emptyList())
+                .build();
+        var consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties().build(),
+                consentRepository,
+                dataFlowRequestPublisher,
+                dataFlowDeletePublisher,
+                new PatientService(patientServiceClient, cache, centralRegistry),
+                centralRegistry,
+                healthInformationPublisher,
+                conceptValidator);
+        var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
+        when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
+                .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
+        when(consentRepository.updateConsent(consentNotificationRequest.getConsentRequestId(),
+                consentRequest.status(EXPIRED).build()))
                 .thenReturn(Mono.empty());
 
         var publisher = consentService.handleNotification(consentNotificationRequest);
