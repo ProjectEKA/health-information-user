@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public class HealthDataProcessor {
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
@@ -145,6 +146,7 @@ public class HealthDataProcessor {
         String consentId = dataFlowRepository.getConsentId(context.getTransactionId()).block();
         String hipId = consentRepository.getHipId(consentId).block();
         HealthInfoNotificationRequest healthInfoNotificationRequest = HealthInfoNotificationRequest.builder()
+                .requestId(UUID.randomUUID())
                 .transactionId(context.getTransactionId())
                 .consentId(consentId)
                 .doneAt(new Date())

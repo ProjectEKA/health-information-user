@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
@@ -56,7 +57,11 @@ public class ConsentService {
                 hiuProperties.getConsentNotificationUrl(),
                 conceptValidator);
         return centralRegistry.token()
-                .flatMap(token -> consentManagerClient.createConsentRequest(new ConsentRequest(consentRequest), token))
+                .flatMap(token -> consentManagerClient.createConsentRequest(
+                        ConsentRequest.builder()
+                                .requestId(UUID.randomUUID())
+                                .consent(consentRequest)
+                        .build(), token))
                 .flatMap(consentCreationResponse ->
                         consentRepository
                                 .insert(consentRequestData.getConsent().toConsentRequest(

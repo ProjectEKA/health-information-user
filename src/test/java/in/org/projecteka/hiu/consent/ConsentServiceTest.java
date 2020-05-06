@@ -9,7 +9,6 @@ import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.Permission;
-import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,9 @@ import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -78,12 +79,9 @@ public class ConsentServiceTest {
                 conceptValidator);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
-        ConsentRequest consentRequest = new ConsentRequest(consentRequestData.getConsent()
-                .to(requesterId, hiuProperties.getId(), hiuProperties.getName(),
-                        hiuProperties.getConsentNotificationUrl(), conceptValidator));
 
         when(centralRegistry.token()).thenReturn(Mono.just(token));
-        when(consentManagerClient.createConsentRequest(consentRequest, token))
+        when(consentManagerClient.createConsentRequest(any(), eq(token)))
                 .thenReturn(Mono.just(consentCreationResponse));
         when(consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
                 consentCreationResponse.getId(),
