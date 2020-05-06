@@ -29,6 +29,7 @@ import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -91,6 +92,15 @@ public class ConsentService {
                         .flatMap(consentRequest -> upsertConsentArtefacts(consentNotificationRequest).then());
             case REVOKED:
             case EXPIRED:
+                if (consentNotificationRequest.getConsentArtefacts().size() == 0){
+                    return validateRequest(consentNotificationRequest.getConsentRequestId())
+                            .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
+                            .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
+                                    new ErrorRepresentation(new Error(VALIDATION_FAILED,
+                                            "Consent request is already updated.")))))
+                            .flatMap(consentRequest -> consentRepository.updateConsent(consentRequest.getId(),
+                                    consentRequest.toBuilder().status(EXPIRED).build()));
+                }
                 return validateConsents(consentNotificationRequest.getConsentArtefacts())
                         .flatMap(consentArtefacts -> upsertConsentArtefacts(consentNotificationRequest).then());
             case DENIED:
