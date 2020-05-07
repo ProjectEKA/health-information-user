@@ -93,28 +93,25 @@ public class ConsentService {
             case REVOKED:
             case EXPIRED:
                 if (consentNotificationRequest.getConsentArtefacts().size() == 0){
-                    return validateRequest(consentNotificationRequest.getConsentRequestId())
-                            .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
-                            .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
-                                    new ErrorRepresentation(new Error(VALIDATION_FAILED,
-                                            "Consent request is already updated.")))))
-                            .flatMap(consentRequest -> consentRepository.updateConsent(consentRequest.getId(),
-                                    consentRequest.toBuilder().status(EXPIRED).build()));
+                    return processNotificationRequest(consentNotificationRequest, EXPIRED);
                 }
                 return validateConsents(consentNotificationRequest.getConsentArtefacts())
                         .flatMap(consentArtefacts -> upsertConsentArtefacts(consentNotificationRequest).then());
             case DENIED:
-                return validateRequest(consentNotificationRequest.getConsentRequestId())
-                        .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
-                        .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
-                                new ErrorRepresentation(new Error(VALIDATION_FAILED,
-                                        "Consent request is already updated.")))))
-                        .flatMap(consentRequest ->
-                                consentRepository.updateConsent(consentRequest.getId(),
-                                        consentRequest.toBuilder().status(DENIED).build()));
+                return processNotificationRequest(consentNotificationRequest, DENIED);
             default:
                 return Mono.error(validationFailed());
         }
+    }
+
+    private Mono<Void> processNotificationRequest(ConsentNotificationRequest consentNotificationRequest, ConsentStatus status) {
+        return validateRequest(consentNotificationRequest.getConsentRequestId())
+                .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
+                .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
+                        new ErrorRepresentation(new Error(VALIDATION_FAILED,
+                                "Consent request is already updated.")))))
+                .flatMap(consentRequest -> consentRepository.updateConsent(consentRequest.getId(),
+                        consentRequest.toBuilder().status(status).build()));
     }
 
     public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
