@@ -132,7 +132,7 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
         var consentRequestDetails = consentRequestDetails().build();
-        consentRequestDetails.getConsent().getPermission().setDataEraseAt("9999-01-15T08:47:48.373+0000");
+        consentRequestDetails.getConsent().getPermission().setDataEraseAt("9999-01-15T08:47:48.373Z");
         when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(
                 consentRequestId,
                 requesterId,
@@ -181,7 +181,7 @@ public class ConsentUserJourneyTest {
     @Test
     @Disabled
     public void shouldCreateConsentArtefacts() throws JsonProcessingException {
-        var dataEraseAt = "9999-01-15T08:47:48.373+0000";
+        var dataEraseAt = "9999-01-15T08:47:48.373Z";
         var consentArtefactResponse = consentArtefactResponse()
                 .status(ConsentStatus.GRANTED)
                 .consentDetail(ConsentArtefact.builder()

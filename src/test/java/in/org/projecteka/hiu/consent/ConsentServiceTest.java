@@ -113,7 +113,7 @@ public class ConsentServiceTest {
                 healthInformationPublisher,
                 conceptValidator);
         var patientRep = patientRepresentation().build();
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325+0000").build();
+        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
                 .status(ConsentStatus.REQUESTED)
@@ -148,7 +148,7 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator);
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325+0000").build();
+        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var patientRep = patientRepresentation().build();
         var consentRequest = consentRequest()
                 .createdDate("2020-06-02T10:15:02Z")
