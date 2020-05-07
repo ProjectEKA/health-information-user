@@ -51,7 +51,8 @@ public class ConsentService {
                 .then(createAndSaveConsent(requesterId, consentRequestData));
     }
 
-    private Mono<ConsentCreationResponse> createAndSaveConsent(String requesterId, ConsentRequestData consentRequestData) {
+    private Mono<ConsentCreationResponse> createAndSaveConsent(String requesterId,
+                                                               ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
                 requesterId,
                 hiuProperties.getId(),
@@ -63,7 +64,7 @@ public class ConsentService {
                         ConsentRequest.builder()
                                 .requestId(UUID.randomUUID())
                                 .consent(consentRequest)
-                        .build(), token))
+                                .build(), token))
                 .flatMap(consentCreationResponse ->
                         consentRepository
                                 .insert(consentRequestData.getConsent().toConsentRequest(
@@ -92,7 +93,7 @@ public class ConsentService {
                         .flatMap(consentRequest -> upsertConsentArtefacts(consentNotificationRequest).then());
             case REVOKED:
             case EXPIRED:
-                if (consentNotificationRequest.getConsentArtefacts().size() == 0){
+                if (consentNotificationRequest.getConsentArtefacts().isEmpty()) {
                     return processNotificationRequest(consentNotificationRequest, EXPIRED);
                 }
                 return validateConsents(consentNotificationRequest.getConsentArtefacts())
@@ -104,7 +105,8 @@ public class ConsentService {
         }
     }
 
-    private Mono<Void> processNotificationRequest(ConsentNotificationRequest consentNotificationRequest, ConsentStatus status) {
+    private Mono<Void> processNotificationRequest(ConsentNotificationRequest consentNotificationRequest,
+                                                  ConsentStatus status) {
         return validateRequest(consentNotificationRequest.getConsentRequestId())
                 .filter(consentRequest -> consentRequest.getStatus() == REQUESTED)
                 .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
