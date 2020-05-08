@@ -54,19 +54,19 @@
           "concept": [
             {
               "code": "Condition",
-              "display": "Condition"
+              "display": "Complaints/Encounter Diagnosis"
             },
             {
               "code": "Observation",
-              "display": "Observation"
+              "display": "Clinical Notes/Examination"
             },
             {
               "code": "DiagnosticReport",
-              "display": "DiagnosticReport"
+              "display": "Diagnostic Reports"
             },
             {
               "code": "MedicationRequest",
-              "display": "Medication Request"
+              "display": "Prescribed Medications"
             }
           ]
         }
