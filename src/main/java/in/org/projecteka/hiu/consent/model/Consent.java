@@ -42,8 +42,8 @@ public class Consent {
                                                                          String consentNotificationUrl, ConceptLookup conceptLookup) {
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
-                        getPurpose().getCode(),
-                        conceptLookup.getPurposeDescription(getPurpose().getCode())),
+                        conceptLookup.getPurposeDescription(getPurpose().getCode()),
+                        getPurpose().getCode()),
                 getPatient(),
                 new HIU(hiuId, hiuName),
                 new Requester(requesterId),
