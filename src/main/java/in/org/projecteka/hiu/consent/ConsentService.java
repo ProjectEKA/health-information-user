@@ -5,6 +5,7 @@ import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.consent.model.Consent;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
@@ -45,12 +46,27 @@ public class ConsentService {
     private final CentralRegistry centralRegistry;
     private final HealthInformationPublisher healthInformationPublisher;
     private final ConceptValidator conceptValidator;
+    private final GatewayServiceClient gatewayServiceClient;
 
+    /**
+     * To be replaced by {@link #createRequest(String, ConsentRequestData) }
+     * @param requesterId
+     * @param consentRequestData
+     * @return
+     */
+    @Deprecated
     public Mono<ConsentCreationResponse> create(String requesterId, ConsentRequestData consentRequestData) {
         return validateConsentRequest(consentRequestData)
                 .then(createAndSaveConsent(requesterId, consentRequestData));
     }
 
+    /**
+     * To be replaced by {@link #sendConsentRequestToGateway}
+     * @param requesterId
+     * @param consentRequestData
+     * @return
+     */
+    @Deprecated
     private Mono<ConsentCreationResponse> createAndSaveConsent(String requesterId,
                                                                ConsentRequestData consentRequestData) {
         var consentRequest = consentRequestData.getConsent().to(
@@ -204,5 +220,43 @@ public class ConsentService {
                 .flatMap(consentArtefact -> consentRepository.getConsent(consentArtefact.getId(), ConsentStatus.GRANTED)
                         .switchIfEmpty(Mono.error(consentArtefactNotFound())))
                 .collectList();
+    }
+
+    public Mono<Void> createRequest(String requesterId, ConsentRequestData consentRequestData) {
+        return validateConsentRequest(consentRequestData)
+                .then(sendConsentRequestToGateway(requesterId, consentRequestData));
+    }
+
+    private Mono<Void> sendConsentRequestToGateway(
+            String requesterId,
+            ConsentRequestData consentRequestData) {
+        String cmSuffix = getCmSuffix(consentRequestData.getConsent());
+        var consentRequest = consentRequestData.getConsent().to(
+                requesterId,
+                hiuProperties.getId(),
+                hiuProperties.getName(),
+                hiuProperties.getConsentNotificationUrl(),
+                conceptValidator);
+        return centralRegistry.token()
+                .flatMap(token -> gatewayServiceClient.sendConsentRequest(
+                        token, cmSuffix,
+                        ConsentRequest.builder()
+                                .requestId(UUID.randomUUID())
+                                .consent(consentRequest)
+                                .build()
+                )).then();
+//                .flatMap(consentCreationResponse ->
+//                        consentRepository
+//                                .insert(consentRequestData.getConsent().toConsentRequest(
+//                                        consentCreationResponse.getId(),
+//                                        requesterId,
+//                                        hiuProperties.getConsentNotificationUrl()))
+//                                .then(Mono.fromCallable(consentCreationResponse::getId)))
+//                .map(ConsentCreationResponse::new);
+    }
+
+    private String getCmSuffix(Consent consent) {
+        String[] parts = consent.getPatient().getId().split("@");
+        return parts[1];
     }
 }

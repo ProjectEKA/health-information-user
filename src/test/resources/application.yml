@@ -17,3 +17,6 @@ hiu:
     user: dummy
     password: dummy_pwd
     poolSize: 5
+  gatewayservice:
+    baseUrl: http://tmc.gov.in/ncg-gateway/v1
+    requestTimeout: 1000

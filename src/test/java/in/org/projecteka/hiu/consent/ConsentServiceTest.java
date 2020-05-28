@@ -62,6 +62,8 @@ public class ConsentServiceTest {
     private HealthInformationPublisher healthInformationPublisher;
     @Mock
     private ConceptValidator conceptValidator;
+    @Mock
+    private GatewayServiceClient gatewayServiceClient;
 
     @BeforeEach
     public void setUp() {
@@ -82,7 +84,8 @@ public class ConsentServiceTest {
                 null,
                 centralRegistry,
                 healthInformationPublisher,
-                conceptValidator);
+                conceptValidator,
+                gatewayServiceClient);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
 
@@ -113,7 +116,8 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
-                conceptValidator);
+                conceptValidator,
+                gatewayServiceClient);
         var patientRep = patientRepresentation().build();
         Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var consentRequest = consentRequest()
@@ -149,7 +153,8 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
-                conceptValidator);
+                conceptValidator,
+                gatewayServiceClient);
         Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
         var patientRep = patientRepresentation().build();
         var consentRequest = consentRequest()
@@ -186,7 +191,8 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
-                conceptValidator);
+                conceptValidator,
+                gatewayServiceClient);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
                 .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
@@ -215,7 +221,8 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
-                conceptValidator);
+                conceptValidator,
+                gatewayServiceClient);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
                 .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
@@ -241,7 +248,8 @@ public class ConsentServiceTest {
                 new PatientService(patientServiceClient, cache, centralRegistry),
                 centralRegistry,
                 healthInformationPublisher,
-                conceptValidator);
+                conceptValidator,
+                gatewayServiceClient);
         var consentRequest = consentRequest()
                 .status(DENIED)
                 .id(consentNotificationRequest.getConsentRequestId())

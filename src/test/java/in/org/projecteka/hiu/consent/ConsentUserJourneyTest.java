@@ -61,6 +61,7 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
     private static final MockWebServer consentManagerServer = new MockWebServer();
+    private static final MockWebServer gatewayServer = new MockWebServer();
 
     @Autowired
     private WebTestClient webTestClient;
@@ -110,6 +111,7 @@ public class ConsentUserJourneyTest {
     @AfterAll
     public static void tearDown() throws IOException {
         consentManagerServer.shutdown();
+        gatewayServer.shutdown();
     }
 
     @BeforeEach
@@ -472,8 +474,45 @@ public class ConsentUserJourneyTest {
         public void initialize(ConfigurableApplicationContext applicationContext) {
             TestPropertyValues values =
                     TestPropertyValues.of(
-                            Stream.of("hiu.consentmanager.url=" + consentManagerServer.url("")));
+                            Stream.of("hiu.consentmanager.url=" + consentManagerServer.url(""),
+                                    "hiu.gatewayservice.baseUrl=" + gatewayServer.url("")));
             values.applyTo(applicationContext);
         }
     }
+
+
+    @Test
+    public void shouldMakeConsentRequestToGateway() throws JsonProcessingException {
+        var consentRequestId = "consent-request-id";
+        var requesterId = "1";
+        var consentNotificationUrl = "localhost:8080";
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
+        //var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
+
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+
+        var consentRequestDetails = consentRequestDetails().build();
+        consentRequestDetails.getConsent().getPatient().setId("hinapatel79@ncg");
+        consentRequestDetails.getConsent().getPermission().setDataEraseAt("9999-01-15T08:47:48.373Z");
+        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(
+                consentRequestId,
+                requesterId,
+                consentNotificationUrl))).thenReturn(Mono.create(MonoSink::success));
+
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests")
+                .header("Authorization", "MQ==")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentRequestDetails)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
 }

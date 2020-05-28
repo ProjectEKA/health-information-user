@@ -21,6 +21,7 @@ import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.consent.GatewayServiceClient;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
@@ -135,7 +136,8 @@ public class HiuConfiguration {
             PatientService patientService,
             CentralRegistry centralRegistry,
             HealthInformationPublisher healthInformationPublisher,
-            ConceptValidator validator) {
+            ConceptValidator validator,
+            GatewayServiceClient gatewayServiceClient) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
@@ -145,7 +147,8 @@ public class HiuConfiguration {
                 patientService,
                 centralRegistry,
                 healthInformationPublisher,
-                validator);
+                validator,
+                gatewayServiceClient);
     }
 
     @Bean
@@ -428,5 +431,10 @@ public class HiuConfiguration {
     @Bean
     public JWTGenerator jwt(byte[] sharedSecret) {
         return new JWTGenerator(sharedSecret);
+    }
+
+    @Bean
+    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder, GatewayServiceProperties serviceProperties) {
+        return new GatewayServiceClient(builder, serviceProperties);
     }
 }
