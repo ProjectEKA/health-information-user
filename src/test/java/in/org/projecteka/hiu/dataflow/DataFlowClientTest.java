@@ -52,7 +52,7 @@ public class DataFlowClientTest {
     }
 
     @Test
-    public void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException {
+    void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException {
         String transactionId = "transactionId";
         var dataFlowRequestResponse =
                 DataFlowRequestResponse.builder().transactionId(transactionId).build();

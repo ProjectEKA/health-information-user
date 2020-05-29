@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.common;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -22,15 +23,20 @@ public final class Serializer {
 
     @SneakyThrows
     public static <T> String from(T data) {
-        return mapper.writeValueAsString(data);
+        try {
+            return mapper.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            logger.error("Can not serialize data", e);
+            return null;
+        }
     }
 
     @SneakyThrows
     public static <T> T to(String value, Class<T> type) {
         try {
             return mapper.readValue(value.getBytes(), type);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        } catch (JsonProcessingException e) {
+            logger.error("Can not deserialize data", e);
             return null;
         }
     }

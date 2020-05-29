@@ -11,7 +11,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static in.org.projecteka.hiu.consent.model.consentmanager.Frequency.ONE_HOUR;
@@ -26,11 +25,6 @@ public class Consent {
     private Purpose purpose;
     private List<HIType> hiTypes;
     private Permission permission;
-
-    public static LocalDateTime getCurrentDate() {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm[:ss][.SSS]]");
-        return LocalDateTime.parse(LocalDateTime.now().format(dateTimeFormatter));
-    }
 
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
@@ -61,7 +55,7 @@ public class Consent {
                 getHiTypes(),
                 getPermission(),
                 ConsentStatus.REQUESTED,
-                getCurrentDate(),
+                LocalDateTime.now(),
                 consentNotificationUrl);
     }
 }

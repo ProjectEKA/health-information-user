@@ -43,7 +43,6 @@ public class ConsentManagerClientTest {
                             .jackson2JsonEncoder(new Jackson2JsonEncoder(mapper, MediaType.APPLICATION_JSON));
                     clientDefaultCodecsConfigurer.defaultCodecs()
                             .jackson2JsonDecoder(new Jackson2JsonDecoder(mapper, MediaType.APPLICATION_JSON));
-
                 }).build();
         WebClient.Builder webClientBuilder = WebClient.builder().exchangeStrategies(strategies);
         ConsentManagerServiceProperties consentManagerServiceProperties =
@@ -52,7 +51,7 @@ public class ConsentManagerClientTest {
     }
 
     @Test
-    public void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException {
+    void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException {
         String consentRequestId = "consent-request-id";
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         ObjectMapper objectMapper = new ObjectMapper()
