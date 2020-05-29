@@ -10,10 +10,10 @@ import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
-import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
+import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
@@ -42,7 +42,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
@@ -57,9 +57,9 @@ import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -345,7 +345,7 @@ public class ConsentUserJourneyTest {
     public void shouldUpdateConsentStatus() {
         String consentRequestId = "consent-request-id-1";
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.REVOKED)
@@ -379,7 +379,7 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldReturn500OnNotificationWhenConsentUpdateFails() {
         String consentRequestId = "consent-request-id-1";
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
@@ -415,7 +415,7 @@ public class ConsentUserJourneyTest {
     public void shouldUpdateConsentStatusAndBroadcastConsentDeleteOnExpiry() {
         String consentRequestId = "consent-request-id-1";
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.EXPIRED)
@@ -450,7 +450,7 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldReturn500OnNotificationWhenConsentExpiryUpdateFails() {
         String consentRequestId = "consent-request-id-1";
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()

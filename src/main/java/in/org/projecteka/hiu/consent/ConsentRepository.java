@@ -123,10 +123,10 @@ public class ConsentRepository {
 
     public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference,
                                    ConsentStatus status,
-                                   Date timestamp) {
+                                   LocalDateTime timestamp) {
         return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_CONSENT_ARTEFACT_STATUS_QUERY)
                 .execute(Tuple.of(status.toString(),
-                        convertToLocalDateTime(timestamp),
+                        timestamp,
                         consentArtefactReference.getId()),
                         handler -> {
                             if (handler.failed()) {
@@ -223,10 +223,4 @@ public class ConsentRepository {
                         }));
     }
 
-    private LocalDateTime convertToLocalDateTime(Date date) {
-        if (date != null) {
-            return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
-        }
-        return null;
-    }
 }
