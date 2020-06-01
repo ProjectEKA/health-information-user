@@ -273,9 +273,9 @@ public class ConsentService {
             return consentRepository.consentRequestStatus(response.getResp().getRequestId())
                     .switchIfEmpty(Mono.error(consentRequestNotFound()))
                     .flatMap(status -> updateConsentRequestStatus(response, status));
-        } else {
-            return Mono.error(ClientError.invalidDataFromGateway());
         }
+
+        return Mono.error(ClientError.invalidDataFromGateway());
     }
 
     private Mono<Void> updateConsentRequestStatus(ConsentRequestInitResponse consentRequestInitResponse, ConsentStatus oldStatus) {
