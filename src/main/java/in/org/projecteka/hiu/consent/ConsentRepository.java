@@ -36,10 +36,15 @@ public class ConsentRepository {
             " VALUES ($1, $2, $3, $4, $5)";
     private static final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
             "consent_artefact set status=$1, date_modified=$2 where consent_artefact_id=$3";
-    //TODO
+    /**
+     * TODO: This query should be refactored. The status should be updated separately
+     */
     private static final String INSERT_CONSENT_REQUEST_QUERY = "INSERT INTO " +
             "consent_request (consent_request, consent_request_id) VALUES ($1, $2)";
-    //TODO
+    /**
+     * TODO: Should be refactored. 
+     * See notes in {@link #get(String)}
+     */
     private static final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
             "FROM consent_request WHERE consent_request ->> 'id' = $1";
     private static final String SELECT_CONSENT_ARTEFACT_QUERY = "SELECT consent_artefact FROM consent_artefact WHERE " +
@@ -47,7 +52,9 @@ public class ConsentRepository {
     private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
             "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY " +
                     "date_created DESC";
-    //TODO
+    /**
+     * TODO: this query should be refactored. Update consent_request.status instead of the entire object.
+     */
     private static final String UPDATE_CONSENT_REQUEST_QUERY = "UPDATE " +
             "consent_request set consent_request = $1 where consent_request_id = $2";
     private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
@@ -65,6 +72,7 @@ public class ConsentRepository {
 
     private final PgPool dbClient;
 
+    @Deprecated
     public Mono<Void> insert(ConsentRequest consentRequest) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_CONSENT_REQUEST_QUERY)
                 .execute(Tuple.of(JsonObject.mapFrom(consentRequest), consentRequest.getId()),
@@ -77,6 +85,13 @@ public class ConsentRepository {
                         }));
     }
 
+    /**
+     * TODO refactor this method. The only purpose of the method is to check whether a ConsentRequest by
+     * the CM assigned consentRequestId exists or not. We can return a count and avoid unnecessary record fetch
+     * and deserialization
+     * @param consentRequestId
+     * @return
+     */
     public Mono<ConsentRequest> get(String consentRequestId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_REQUEST_QUERY)
                 .execute(Tuple.of(consentRequestId),

@@ -264,4 +264,35 @@ public class ConsentServiceTest {
                         ((ClientError) e).getHttpStatus() == CONFLICT)
                 .verify();
     }
+
+    @Test
+    public void shouldSaveAndPostConsentRequest() {
+        String requesterId = randomString();
+        var hiuProperties = hiuProperties().build();
+        var token = randomString();
+        ConsentService consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties,
+                consentRepository,
+                dataFlowRequestPublisher,
+                null,
+                null,
+                centralRegistry,
+                healthInformationPublisher,
+                conceptValidator,
+                gatewayServiceClient);
+        ConsentRequestData consentRequestData = consentRequestDetails().build();
+        consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
+        ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
+
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(gatewayServiceClient.sendConsentRequest(eq(token), anyString(), any()))
+                .thenReturn(Mono.empty());
+        //ConsentRequest consentRequest = consentRequestData.getConsent().toConsentRequest(consentCreationResponse.getId(), requesterId);
+        when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
+
+        StepVerifier.create(consentService.createRequest(requesterId, consentRequestData))
+                .expectComplete().verify();
+    }
 }

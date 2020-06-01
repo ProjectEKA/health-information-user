@@ -241,16 +241,15 @@ public class ConsentService {
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
         var gatewayRequestId = UUID.randomUUID();
         return centralRegistry.token()
-                .flatMap(token -> {
-                    return gatewayServiceClient.sendConsentRequest(
+                .flatMap(token -> gatewayServiceClient.sendConsentRequest(
                             token, getCmSuffix(hiRequest.getConsent()),
                             ConsentRequest.builder()
                                     .requestId(gatewayRequestId)
                                     .timestamp(java.time.Instant.now().toString())
                                     .consent(reqInfo)
-                                    .build());
-                }).then(consentRepository.insertConsentRequestToGateway(
-                        hiRequest.getConsent().toConsentRequest(gatewayRequestId.toString(), requesterId)));
+                                    .build()))
+                .then(consentRepository.insertConsentRequestToGateway(
+                                hiRequest.getConsent().toConsentRequest(gatewayRequestId.toString(), requesterId)));
     }
 
     private String getCmSuffix(Consent consent) {

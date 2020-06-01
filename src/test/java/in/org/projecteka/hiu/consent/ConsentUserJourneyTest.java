@@ -563,4 +563,36 @@ public class ConsentUserJourneyTest {
                 .isAccepted();
     }
 
+    @Test
+    public void shouldThrowConsentRequestNotFound() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"consentRequest\": {\n" +
+                "    \"id\": \"f29f0e59-8388-4698-9fe6-05db67aeac46\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.create(MonoSink::success));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        var errorJson = "{\"error\":{\"code\":1003,\"message\":\"Cannot find the consent request\"}}";
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .json(errorJson);
+    }
+
 }
