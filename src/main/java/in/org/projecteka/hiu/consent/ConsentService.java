@@ -231,20 +231,22 @@ public class ConsentService {
             String requesterId,
             ConsentRequestData consentRequestData) {
         String cmSuffix = getCmSuffix(consentRequestData.getConsent());
-        var consentRequest = consentRequestData.getConsent().to(
+        var requestDetail = consentRequestData.getConsent().to(
                 requesterId,
                 hiuProperties.getId(),
-                hiuProperties.getName(),
-                hiuProperties.getConsentNotificationUrl(),
                 conceptValidator);
+        var gatewayRequestId = UUID.randomUUID();
         return centralRegistry.token()
-                .flatMap(token -> gatewayServiceClient.sendConsentRequest(
-                        token, cmSuffix,
-                        ConsentRequest.builder()
-                                .requestId(UUID.randomUUID())
-                                .consent(consentRequest)
-                                .build()
-                )).then();
+                .flatMap(token -> {
+                    return gatewayServiceClient.sendConsentRequest(
+                            token, cmSuffix,
+                            ConsentRequest.builder()
+                                    .requestId(gatewayRequestId)
+                                    .timestamp(java.time.Instant.now().toString())
+                                    .consent(requestDetail)
+                                    .build());
+                }).then(consentRepository.insertConsentRequestToGateway(
+                        consentRequestData.getConsent().toConsentRequest(gatewayRequestId.toString(), requesterId)));
 //                .flatMap(consentCreationResponse ->
 //                        consentRepository
 //                                .insert(consentRequestData.getConsent().toConsentRequest(

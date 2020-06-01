@@ -51,6 +51,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static java.util.Collections.singletonList;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -484,8 +485,6 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldMakeConsentRequestToGateway() throws JsonProcessingException {
         var consentRequestId = "consent-request-id";
-        var requesterId = "1";
-        var consentNotificationUrl = "localhost:8080";
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         //var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
@@ -498,10 +497,7 @@ public class ConsentUserJourneyTest {
         var consentRequestDetails = consentRequestDetails().build();
         consentRequestDetails.getConsent().getPatient().setId("hinapatel79@ncg");
         consentRequestDetails.getConsent().getPermission().setDataEraseAt("9999-01-15T08:47:48.373Z");
-        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(
-                consentRequestId,
-                requesterId,
-                consentNotificationUrl))).thenReturn(Mono.create(MonoSink::success));
+        when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
                 .post()

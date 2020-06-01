@@ -36,8 +36,10 @@ public class ConsentRepository {
             " VALUES ($1, $2, $3, $4, $5)";
     private static final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
             "consent_artefact set status=$1, date_modified=$2 where consent_artefact_id=$3";
+    //TODO
     private static final String INSERT_CONSENT_REQUEST_QUERY = "INSERT INTO " +
             "consent_request (consent_request, consent_request_id) VALUES ($1, $2)";
+    //TODO
     private static final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
             "FROM consent_request WHERE consent_request ->> 'id' = $1";
     private static final String SELECT_CONSENT_ARTEFACT_QUERY = "SELECT consent_artefact FROM consent_artefact WHERE " +
@@ -45,12 +47,16 @@ public class ConsentRepository {
     private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
             "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY " +
                     "date_created DESC";
+    //TODO
     private static final String UPDATE_CONSENT_REQUEST_QUERY = "UPDATE " +
             "consent_request set consent_request = $1 where consent_request_id = $2";
     private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
             "FROM consent_artefact WHERE consent_artefact_id=$1";
     private static final String SELECT_CONSENT_ID_FROM_REQUEST_ID = "SELECT consent_artefact_id from consent_artefact WHERE " +
             "consent_request_id = $1";
+    private static final String INSERT_GATEWAY_CONSENT_REQUEST = "INSERT INTO " +
+            "consent_request (consent_request, gateway_request_id, status) VALUES ($1, $2, $3)";
+
 
     private final PgPool dbClient;
 
@@ -180,6 +186,15 @@ public class ConsentRepository {
                         }));
     }
 
+    /**
+     * TODO: This method actually updates the entire consentrequest object again.
+     * It can just update the status column
+     * the status field should be outside the consentRequest object.
+     * the request never changes. the status does.
+     * @param requestId
+     * @param consentRequest
+     * @return
+     */
     public Mono<Void> updateConsent(String requestId, ConsentRequest consentRequest) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(UPDATE_CONSENT_REQUEST_QUERY)
@@ -227,5 +242,20 @@ public class ConsentRepository {
             return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
         }
         return null;
+    }
+
+    public Mono<Void> insertConsentRequestToGateway(ConsentRequest consentRequest) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_GATEWAY_CONSENT_REQUEST)
+                .execute(Tuple.of(
+                            JsonObject.mapFrom(consentRequest),
+                            consentRequest.getId(),
+                            ConsentStatus.POSTED.toString()),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to insert to consent request"));
+                                return;
+                            }
+                            monoSink.success();
+                        }));
     }
 }

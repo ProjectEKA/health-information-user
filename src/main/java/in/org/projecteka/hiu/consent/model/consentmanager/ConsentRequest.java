@@ -15,5 +15,6 @@ import java.util.UUID;
 @Data
 public class ConsentRequest {
     private UUID requestId;
+    private String timestamp;
     private Consent consent;
 }

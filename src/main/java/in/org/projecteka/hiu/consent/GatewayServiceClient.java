@@ -1,7 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.GatewayServiceProperties;
-import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -11,6 +10,7 @@ import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
 import static java.util.function.Predicate.not;
 
 public class GatewayServiceClient {
+    private static final String GATEWAY_PATH_CONSENT_REQUESTS_INIT = "/v1/consent-requests/init";
     private final WebClient webClient;
     private GatewayServiceProperties gatewayServiceProperties;
 
@@ -23,7 +23,7 @@ public class GatewayServiceClient {
     public Mono<Void> sendConsentRequest(String token, String cmSuffix, ConsentRequest request) {
         return webClient
                 .post()
-                .uri("/v1/consent-requests")
+                .uri(GATEWAY_PATH_CONSENT_REQUESTS_INIT)
                 .header("Authorization", token)
                 .header("X-CM-ID", cmSuffix)
                 .body(Mono.just(request),

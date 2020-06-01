@@ -36,6 +36,7 @@ public class Consent {
         return df.format(new Date());
     }
 
+    @Deprecated
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
                                                                          String hiuName,
@@ -56,6 +57,7 @@ public class Consent {
                 consentNotificationUrl);
     }
 
+    @Deprecated
     public ConsentRequest toConsentRequest(String id, String requesterId, String consentNotificationUrl) {
         return new ConsentRequest(
                 id,
@@ -67,5 +69,39 @@ public class Consent {
                 ConsentStatus.REQUESTED,
                 getCurrentDate(),
                 consentNotificationUrl);
+    }
+
+
+    public ConsentRequest toConsentRequest(String id, String requesterId) {
+        return ConsentRequest.builder()
+                .id(id)
+                .requesterId(requesterId)
+                .patient(getPatient())
+                .purpose(getPurpose())
+                .hiTypes(getHiTypes())
+                .permission(getPermission())
+                .status(ConsentStatus.REQUESTED)
+                .build();
+    }
+
+    public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
+                                                                         String hiuId,
+                                                                         ConceptLookup conceptLookup) {
+
+        return in.org.projecteka.hiu.consent.model.consentmanager.Consent.builder()
+                .purpose(new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
+                        conceptLookup.getPurposeDescription(getPurpose().getCode()),
+                        getPurpose().getCode()))
+                .patient(getPatient())
+                .hiu(HIU.builder().id(hiuId).build())
+                .requester(new Requester(requesterId))
+                .hiTypes(getHiTypes())
+                .permission( new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
+                        AccessMode.VIEW,
+                        getPermission().getDateRange(),
+                        getPermission().getDataEraseAt(),
+                        ONE_HOUR))
+                .build();
+
     }
 }
