@@ -57,8 +57,11 @@ public class ConsentRepository {
             "consent_request_id = $1";
     private static final String INSERT_GATEWAY_CONSENT_REQUEST = "INSERT INTO " +
             "consent_request (consent_request, gateway_request_id, status) VALUES ($1, $2, $3)";
-    private static final String IDENTIFY_CONSENT_REQUEST_WITH_GATEWAY = "SELECT consent_request, status " +
+    private static final String GATEWAY_CONSENT_REQUEST_STATUS = "SELECT status " +
             "FROM consent_request WHERE gateway_request_id=$1";
+
+    private static final String UPDATE_GATEWAY_CONSENT_REQUEST_STATUS = "UPDATE consent_request " +
+            "set consent_request_id=$1, status=$2 WHERE gateway_request_id=$3";
 
 
     private final PgPool dbClient;
@@ -262,8 +265,8 @@ public class ConsentRepository {
                         }));
     }
 
-    public Mono<AbstractMap.SimpleEntry<ConsentRequest, String>> consentRequest(String gatewayRequestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(IDENTIFY_CONSENT_REQUEST_WITH_GATEWAY)
+    public Mono<ConsentStatus> consentRequestStatus(String gatewayRequestId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
                 .execute(Tuple.of(gatewayRequestId),
                         handler -> {
                             if (handler.failed()) {
@@ -275,13 +278,20 @@ public class ConsentRepository {
                                 monoSink.success();
                                 return;
                             }
-
-                            Row row = iterator.next();
-                            var object = (JsonObject) row.getValue("consent_request");
-                            var status = row.getString("status");
-                            ConsentRequest consentRequest = object.mapTo(ConsentRequest.class);
-                            AbstractMap.SimpleEntry<ConsentRequest, String> result = new AbstractMap.SimpleEntry<>(consentRequest, status);
-                            monoSink.success(result);
+                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString("status")));
                         }));
+    }
+
+    public Mono<Void> updateConsentRequestStatus(String gatewayRequestId, ConsentStatus status, String consentRequestId) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(UPDATE_GATEWAY_CONSENT_REQUEST_STATUS)
+                        .execute(Tuple.of(consentRequestId,status.toString(),gatewayRequestId),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to update consent request status"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
     }
 }

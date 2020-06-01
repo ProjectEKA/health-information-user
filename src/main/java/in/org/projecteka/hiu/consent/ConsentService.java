@@ -51,6 +51,7 @@ public class ConsentService {
 
     /**
      * To be replaced by {@link #createRequest(String, ConsentRequestData) }
+     *
      * @param requesterId
      * @param consentRequestData
      * @return
@@ -63,6 +64,7 @@ public class ConsentService {
 
     /**
      * To be replaced by {@link #sendConsentRequestToGateway}
+     *
      * @param requesterId
      * @param consentRequestData
      * @return
@@ -255,19 +257,20 @@ public class ConsentService {
         return parts[1];
     }
 
-    private Mono<Void> validateConsentRequest(String gatewayRequestId) {
-        return consentRepository.consentRequest(gatewayRequestId).switchIfEmpty(Mono.error(consentRequestNotFound())).then();
+    public Mono<Void> updatePostedRequest(ConsentRequestInitResponse consentRequestInitResponse) {
+        return consentRepository.consentRequestStatus(consentRequestInitResponse.getResp().getRequestId())
+                .switchIfEmpty(Mono.error(consentRequestNotFound()))
+                .flatMap(status -> updateConsentRequestStatus(consentRequestInitResponse,status));
     }
 
-//    public Mono<Void> updatePostedRequest(ConsentRequestInitResponse consentRequestInitResponse) {
-//
-//        validateConsentRequest(consentRequestInitResponse.getResp().getRequestId())
-//        consentRepository
-//                .insert(consentRequestData.getConsent().toConsentRequest(
-//                        consentCreationResponse.getId(),
-//                        requesterId,
-//                        hiuProperties.getConsentNotificationUrl()))
-//                .then(Mono.fromCallable(consentCreationResponse::getId))
-//        return null;
-//    }
+    private Mono<Void> updateConsentRequestStatus(ConsentRequestInitResponse consentRequestInitResponse, ConsentStatus oldStatus) {
+        if (oldStatus.equals(ConsentStatus.POSTED)) {
+            return consentRepository.updateConsentRequestStatus(
+                    consentRequestInitResponse.getResp().getRequestId(),
+                    REQUESTED,
+                    consentRequestInitResponse.getConsentRequest().getId());
+        }
+        return Mono.empty();
+    }
+
 }
