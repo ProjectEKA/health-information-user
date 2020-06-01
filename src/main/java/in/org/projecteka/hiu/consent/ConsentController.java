@@ -43,7 +43,7 @@ public class ConsentController {
                 .flatMapMany(username -> consentService.requestsFrom(username));
     }
 
-    @PostMapping("/v1/consent-requests")
+    @PostMapping("/v1/hiu/consent-requests")
     public Mono<ResponseEntity> postConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())

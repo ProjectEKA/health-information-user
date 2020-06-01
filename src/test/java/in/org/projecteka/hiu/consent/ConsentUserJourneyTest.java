@@ -484,21 +484,18 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldMakeConsentRequestToGateway() throws JsonProcessingException {
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
         when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
-
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         gatewayServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
-
         var consentRequestDetails = consentRequestDetails().build();
         consentRequestDetails.getConsent().getPatient().setId("hinapatel79@ncg");
         consentRequestDetails.getConsent().getPermission().setDataEraseAt("9999-01-15T08:47:48.373Z");
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
-
         webTestClient
                 .post()
-                .uri("/v1/consent-requests")
+                .uri("/v1/hiu/consent-requests")
                 .header("Authorization", "MQ==")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentRequestDetails)
@@ -523,10 +520,12 @@ public class ConsentUserJourneyTest {
         when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.just(ConsentStatus.POSTED));
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         webTestClient
                 .post()
                 .uri("/v1/consent-requests/on-init")
-                .header("Authorization", "change-this-when-we-secure-the-gateway-calls")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
                 .accept(MediaType.APPLICATION_JSON)
@@ -550,10 +549,12 @@ public class ConsentUserJourneyTest {
                 "}";
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.ERRORED, ""))
                 .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         webTestClient
                 .post()
                 .uri("/v1/consent-requests/on-init")
-                .header("Authorization", "change-this-when-we-secure-the-gateway-calls")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
                 .accept(MediaType.APPLICATION_JSON)

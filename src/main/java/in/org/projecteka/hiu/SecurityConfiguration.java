@@ -36,6 +36,7 @@ public class SecurityConfiguration {
         {
             add(Map.entry("/consent/notification", HttpMethod.POST));
             add(Map.entry("/data/notification", HttpMethod.POST));
+            add(Map.entry("/v1/consent-requests/on-init", HttpMethod.POST));
         }
     };
 
@@ -52,7 +53,6 @@ public class SecurityConfiguration {
                                            "/**.css",
                                            "/**.png",
                                            "/health-information/fetch/**/attachments/**",
-                                           "/v1/consent-requests/on-init",
                                            "/sessions",
                                            "/config"};
         httpSecurity.authorizeExchange().pathMatchers(WHITELISTED_URLS).permitAll();
