@@ -484,10 +484,7 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldMakeConsentRequestToGateway() throws JsonProcessingException {
-        var consentRequestId = "consent-request-id";
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
-        var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
-        //var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
         when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
         when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
 
@@ -505,6 +502,60 @@ public class ConsentUserJourneyTest {
                 .header("Authorization", "MQ==")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentRequestDetails)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldUpdateConsentRequestWithRequestId() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"consentRequest\": {\n" +
+                "    \"id\": \"f29f0e59-8388-4698-9fe6-05db67aeac46\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.just(ConsentStatus.POSTED));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(Mono.empty());
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", "change-this-when-we-secure-the-gateway-calls")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldUpdateConsentRequestStatusAsErrored() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"error\": {\n" +
+                "    \"code\": 1000,\n" +
+                "    \"message\": \"string\"\n" +
+                "  }," +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.ERRORED, ""))
+                .thenReturn(Mono.empty());
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", "change-this-when-we-secure-the-gateway-calls")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()

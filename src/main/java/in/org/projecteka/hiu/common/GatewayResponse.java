@@ -1,14 +1,10 @@
 package in.org.projecteka.hiu.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Builder
-@Getter
-@AllArgsConstructor
 @Data
+@NoArgsConstructor
 public class GatewayResponse {
     private String requestId;
 }

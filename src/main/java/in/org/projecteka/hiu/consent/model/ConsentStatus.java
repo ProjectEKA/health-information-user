@@ -1,10 +1,11 @@
 package in.org.projecteka.hiu.consent.model;
 
 public enum ConsentStatus {
-    POSTED,
+    POSTED, //internal code
     REQUESTED,
     GRANTED,
     REVOKED,
     DENIED,
-    EXPIRED
+    EXPIRED,
+    ERRORED //internal code
 }

@@ -17,6 +17,8 @@ import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -48,6 +50,9 @@ public class ConsentService {
     private final HealthInformationPublisher healthInformationPublisher;
     private final ConceptValidator conceptValidator;
     private final GatewayServiceClient gatewayServiceClient;
+
+
+    private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
 
     /**
      * To be replaced by {@link #createRequest(String, ConsentRequestData) }
@@ -257,17 +262,32 @@ public class ConsentService {
         return parts[1];
     }
 
-    public Mono<Void> updatePostedRequest(ConsentRequestInitResponse consentRequestInitResponse) {
-        return consentRepository.consentRequestStatus(consentRequestInitResponse.getResp().getRequestId())
-                .switchIfEmpty(Mono.error(consentRequestNotFound()))
-                .flatMap(status -> updateConsentRequestStatus(consentRequestInitResponse,status));
+    public Mono<Void> updatePostedRequest(ConsentRequestInitResponse response) {
+        if (response.getError() != null) {
+            logger.error(String.format("[ConsentService] Received error response from consent-request. HIU RequestId=%s, Error code = %d, message=%s",
+                    response.getResp().getRequestId(),
+                    response.getError().getCode(),
+                    response.getError().getMessage()));
+            return consentRepository.updateConsentRequestStatus(
+                    response.getResp().getRequestId(),
+                    ConsentStatus.ERRORED,
+                    "");
+        }
+
+        if (response.getConsentRequest() != null) {
+            return consentRepository.consentRequestStatus(response.getResp().getRequestId())
+                    .switchIfEmpty(Mono.error(consentRequestNotFound()))
+                    .flatMap(status -> updateConsentRequestStatus(response, status));
+        } else {
+            return Mono.error(ClientError.invalidDataFromGateway());
+        }
     }
 
     private Mono<Void> updateConsentRequestStatus(ConsentRequestInitResponse consentRequestInitResponse, ConsentStatus oldStatus) {
         if (oldStatus.equals(ConsentStatus.POSTED)) {
             return consentRepository.updateConsentRequestStatus(
                     consentRequestInitResponse.getResp().getRequestId(),
-                    REQUESTED,
+                    ConsentStatus.REQUESTED,
                     consentRequestInitResponse.getConsentRequest().getId());
         }
         return Mono.empty();

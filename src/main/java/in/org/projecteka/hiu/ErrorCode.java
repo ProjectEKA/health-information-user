@@ -18,7 +18,8 @@ public enum ErrorCode {
     CONSENT_ARTEFACT_NOT_FOUND(1009),
     VALIDATION_FAILED(1010),
     FAILED_TO_NOTIFY_CM(1011),
-    INVALID_PURPOSE_OF_USE(1012);
+    INVALID_PURPOSE_OF_USE(1012),
+    INVALID_DATA_FROM_GATEWAY(1013);
     private final int value;
 
     ErrorCode(int val) {

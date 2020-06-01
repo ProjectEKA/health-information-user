@@ -86,4 +86,9 @@ public class ClientError extends Throwable {
         return new ClientError(INTERNAL_SERVER_ERROR,
                 new ErrorRepresentation(new Error(FAILED_TO_NOTIFY_CM, "Failed to notify consent manager")));
     }
+
+    public static ClientError invalidDataFromGateway() {
+        return new ClientError(BAD_REQUEST,
+                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY, "Invalid Data from Gateway. Must have either a payload or error")));
+    }
 }
