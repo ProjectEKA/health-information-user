@@ -52,6 +52,7 @@ public class SecurityConfiguration {
                                            "/**.css",
                                            "/**.png",
                                            "/health-information/fetch/**/attachments/**",
+                                           "/v1/consent-requests/on-init",
                                            "/sessions",
                                            "/config"};
         httpSecurity.authorizeExchange().pathMatchers(WHITELISTED_URLS).permitAll();

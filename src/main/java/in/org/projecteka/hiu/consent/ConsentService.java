@@ -11,6 +11,7 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
@@ -247,18 +248,26 @@ public class ConsentService {
                                     .build());
                 }).then(consentRepository.insertConsentRequestToGateway(
                         consentRequestData.getConsent().toConsentRequest(gatewayRequestId.toString(), requesterId)));
-//                .flatMap(consentCreationResponse ->
-//                        consentRepository
-//                                .insert(consentRequestData.getConsent().toConsentRequest(
-//                                        consentCreationResponse.getId(),
-//                                        requesterId,
-//                                        hiuProperties.getConsentNotificationUrl()))
-//                                .then(Mono.fromCallable(consentCreationResponse::getId)))
-//                .map(ConsentCreationResponse::new);
     }
 
     private String getCmSuffix(Consent consent) {
         String[] parts = consent.getPatient().getId().split("@");
         return parts[1];
     }
+
+    private Mono<Void> validateConsentRequest(String gatewayRequestId) {
+        return consentRepository.consentRequest(gatewayRequestId).switchIfEmpty(Mono.error(consentRequestNotFound())).then();
+    }
+
+//    public Mono<Void> updatePostedRequest(ConsentRequestInitResponse consentRequestInitResponse) {
+//
+//        validateConsentRequest(consentRequestInitResponse.getResp().getRequestId())
+//        consentRepository
+//                .insert(consentRequestData.getConsent().toConsentRequest(
+//                        consentCreationResponse.getId(),
+//                        requesterId,
+//                        hiuProperties.getConsentNotificationUrl()))
+//                .then(Mono.fromCallable(consentCreationResponse::getId))
+//        return null;
+//    }
 }

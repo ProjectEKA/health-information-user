@@ -4,6 +4,7 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -50,4 +51,12 @@ public class ConsentController {
                 .flatMap(requesterId -> consentService.createRequest(requesterId, consentRequestData))
                 .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
+
+    @PostMapping("/v1/consent-requests/on-init")
+    public Mono<ResponseEntity> onInitConsentRequest(@RequestBody ConsentRequestInitResponse consentRequestInitResponse) {
+        return consentService.updatePostedRequest(consentRequestInitResponse)
+                .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
+    }
+
+
 }

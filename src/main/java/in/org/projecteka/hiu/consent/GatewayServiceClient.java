@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
 import static java.util.function.Predicate.not;
 
@@ -32,6 +34,7 @@ public class GatewayServiceClient {
                 .onStatus(not(HttpStatus::is2xxSuccessful),
                         clientResponse -> Mono.error(creationFailed()))
                 .toBodilessEntity()
+                .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
                 .then();
     }
 }

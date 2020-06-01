@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.AbstractMap;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +57,8 @@ public class ConsentRepository {
             "consent_request_id = $1";
     private static final String INSERT_GATEWAY_CONSENT_REQUEST = "INSERT INTO " +
             "consent_request (consent_request, gateway_request_id, status) VALUES ($1, $2, $3)";
+    private static final String IDENTIFY_CONSENT_REQUEST_WITH_GATEWAY = "SELECT consent_request, status " +
+            "FROM consent_request WHERE gateway_request_id=$1";
 
 
     private final PgPool dbClient;
@@ -256,6 +259,29 @@ public class ConsentRepository {
                                 return;
                             }
                             monoSink.success();
+                        }));
+    }
+
+    public Mono<AbstractMap.SimpleEntry<ConsentRequest, String>> consentRequest(String gatewayRequestId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(IDENTIFY_CONSENT_REQUEST_WITH_GATEWAY)
+                .execute(Tuple.of(gatewayRequestId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to identify consent request"));
+                                return;
+                            }
+                            var iterator = handler.result().iterator();
+                            if (!iterator.hasNext()) {
+                                monoSink.success();
+                                return;
+                            }
+
+                            Row row = iterator.next();
+                            var object = (JsonObject) row.getValue("consent_request");
+                            var status = row.getString("status");
+                            ConsentRequest consentRequest = object.mapTo(ConsentRequest.class);
+                            AbstractMap.SimpleEntry<ConsentRequest, String> result = new AbstractMap.SimpleEntry<>(consentRequest, status);
+                            monoSink.success(result);
                         }));
     }
 }
