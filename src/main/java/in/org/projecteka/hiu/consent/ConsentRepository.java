@@ -50,8 +50,8 @@ public class ConsentRepository {
     private static final String SELECT_CONSENT_ARTEFACT_QUERY = "SELECT consent_artefact FROM consent_artefact WHERE " +
             "consent_artefact_id = $1 AND status = $2";
     private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
-            "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY " +
-                    "date_created DESC";
+            "SELECT consent_request, status, consent_request_id FROM consent_request " +
+                    "where consent_request ->> 'requesterId' = $1 ORDER BY date_created DESC";
     /**
      * TODO: this query should be refactored. Update consent_request.status instead of the entire object.
      */
@@ -67,7 +67,7 @@ public class ConsentRepository {
             "FROM consent_request WHERE gateway_request_id=$1";
 
     private static final String UPDATE_GATEWAY_CONSENT_REQUEST_STATUS = "UPDATE consent_request " +
-            "set consent_request_id=$1, status=$2 WHERE gateway_request_id=$3";
+            "set consent_request_id=$1, status=$2, date_modified=$3 WHERE gateway_request_id=$4";
 
 
     private final PgPool dbClient;
@@ -161,7 +161,6 @@ public class ConsentRepository {
                             monoSink.success();
                         }));
     }
-
 
     public Flux<Map<String, String>> getConsentDetails(String consentRequestId) {
         return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT)
@@ -299,7 +298,7 @@ public class ConsentRepository {
     public Mono<Void> updateConsentRequestStatus(String gatewayRequestId, ConsentStatus status, String consentRequestId) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(UPDATE_GATEWAY_CONSENT_REQUEST_STATUS)
-                        .execute(Tuple.of(consentRequestId,status.toString(),gatewayRequestId),
+                        .execute(Tuple.of(consentRequestId,status.toString(), status.toString(), LocalDateTime.now(), gatewayRequestId),
                                 handler -> {
                                     if (handler.failed()) {
                                         monoSink.error(dbOperationFailure("Failed to update consent request status"));
@@ -307,5 +306,26 @@ public class ConsentRepository {
                                     }
                                     monoSink.success();
                                 }));
+    }
+
+    public Flux<Map<String, Object>> requestsOf(String requesterId) {
+        return Flux.create(fluxSink -> dbClient.preparedQuery(CONSENT_REQUEST_BY_REQUESTER_ID)
+                .execute(Tuple.of(requesterId),
+                        handler -> {
+                            if (handler.failed()) {
+                                fluxSink.error(dbOperationFailure("Failed to fetch consent requests"));
+                                return;
+                            }
+                            for (Row result : handler.result()) {
+                                ConsentRequest consentRequest = to(
+                                        result.getValue("consent_request").toString(), ConsentRequest.class);
+                                Map<String, Object> resultMap = new HashMap<>();
+                                resultMap.put("consentRequest", consentRequest);
+                                resultMap.put("status", ConsentStatus.valueOf(result.getString("status")));
+                                resultMap.put("consentRequestId", result.getString("consent_request_id"));
+                                fluxSink.next(resultMap);
+                            }
+                            fluxSink.complete();
+                        }));
     }
 }

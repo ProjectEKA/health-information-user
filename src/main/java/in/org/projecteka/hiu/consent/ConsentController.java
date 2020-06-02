@@ -58,5 +58,13 @@ public class ConsentController {
                 .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
+    @GetMapping("/v1/hiu/consent-requests")
+    public Flux<ConsentRequestRepresentation> consentRequests() {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
+                .map(Caller::getUsername)
+                .flatMapMany(username -> consentService.requestsOf(username));
+    }
+
 
 }

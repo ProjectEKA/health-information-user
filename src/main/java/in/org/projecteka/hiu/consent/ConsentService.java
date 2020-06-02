@@ -19,6 +19,7 @@ import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -286,6 +287,31 @@ public class ConsentService {
                     consentRequestInitResponse.getConsentRequest().getId());
         }
         return Mono.empty();
+    }
+
+    public Flux<ConsentRequestRepresentation> requestsOf(String requesterId) {
+        return consentRepository.requestsOf(requesterId)
+                .flatMap(result -> {
+                    var consentRequest = ((in.org.projecteka.hiu.consent.model.ConsentRequest) result.get("consentRequest"));
+                    var consentRequestId = (String) result.get("consentRequestId");
+                    var status = (ConsentStatus) result.get("status");
+                    return Mono.zip(patientService.patientWith(consentRequest.getPatient().getId()),
+                            mergeWithArtefactStatus(consentRequest, status, consentRequestId));
+                })
+                .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2()));
+    }
+
+    private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeWithArtefactStatus(
+            in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest, ConsentStatus reqStatus, String consentRequestId) {
+        var consent = consentRequest.toBuilder().status(reqStatus).build();
+        return reqStatus.equals(ConsentStatus.POSTED)
+                ? Mono.just(consent)
+                : consentRepository.getConsentDetails(consentRequestId)
+                    .take(1)
+                    .next()
+                    .map(map -> ConsentStatus.valueOf(map.get("status")))
+                    .switchIfEmpty(Mono.just(consentRequest.getStatus()))
+                    .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
 }
