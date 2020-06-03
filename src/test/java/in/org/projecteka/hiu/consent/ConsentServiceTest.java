@@ -301,15 +301,11 @@ public class ConsentServiceTest {
                 gatewayServiceClient);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
-        ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
-
         when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(gatewayServiceClient.sendConsentRequest(eq(token), anyString(), any()))
                 .thenReturn(Mono.empty());
-        //ConsentRequest consentRequest = consentRequestData.getConsent().toConsentRequest(consentCreationResponse.getId(), requesterId);
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
-
         StepVerifier.create(consentService.createRequest(requesterId, consentRequestData))
                 .expectComplete().verify();
     }
