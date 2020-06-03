@@ -31,6 +31,9 @@ hiu:
     url: ${ORTHANC_SERVER_URL}
     user: ${ORTHANC_USERNAME}
     password: ${ORTHANC_PASSWORD}
+  gatewayservice:
+    baseUrl: ${GATEWAY_BASE_URL}
+    requestTimeout: ${GATEWAY_REQUEST_TIMEOUT}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}

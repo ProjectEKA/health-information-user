@@ -42,7 +42,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
@@ -69,6 +71,7 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
     private static final MockWebServer consentManagerServer = new MockWebServer();
+    private static final MockWebServer gatewayServer = new MockWebServer();
 
     @Autowired
     private WebTestClient webTestClient;
@@ -120,6 +123,7 @@ public class ConsentUserJourneyTest {
     @AfterAll
     public static void tearDown() throws IOException {
         consentManagerServer.shutdown();
+        gatewayServer.shutdown();
     }
 
     @BeforeEach
@@ -489,8 +493,127 @@ public class ConsentUserJourneyTest {
         public void initialize(ConfigurableApplicationContext applicationContext) {
             TestPropertyValues values =
                     TestPropertyValues.of(
-                            Stream.of("hiu.consentmanager.url=" + consentManagerServer.url("")));
+                            Stream.of("hiu.consentmanager.url=" + consentManagerServer.url(""),
+                                    "hiu.gatewayservice.baseUrl=" + gatewayServer.url("")));
             values.applyTo(applicationContext);
         }
     }
+
+
+    @Test
+    public void shouldMakeConsentRequestToGateway() throws JsonProcessingException {
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        var consentRequestDetails = consentRequestDetails().build();
+        consentRequestDetails.getConsent().getPatient().setId("hinapatel79@ncg");
+
+
+        LocalDateTime dateEraseAt = LocalDateTime.of(LocalDate.of(2050, 01, 01), LocalTime.of(10, 30));
+        consentRequestDetails.getConsent().getPermission().setDataEraseAt(dateEraseAt);
+        when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
+        webTestClient
+                .post()
+                .uri("/v1/hiu/consent-requests")
+                .header("Authorization", "MQ==")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentRequestDetails)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldUpdateConsentRequestWithRequestId() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"consentRequest\": {\n" +
+                "    \"id\": \"f29f0e59-8388-4698-9fe6-05db67aeac46\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.just(ConsentStatus.POSTED));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldUpdateConsentRequestStatusAsErrored() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"error\": {\n" +
+                "    \"code\": 1000,\n" +
+                "    \"message\": \"string\"\n" +
+                "  }," +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.ERRORED, ""))
+                .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldThrowConsentRequestNotFound() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"consentRequest\": {\n" +
+                "    \"id\": \"f29f0e59-8388-4698-9fe6-05db67aeac46\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.create(MonoSink::success));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        var errorJson = "{\"error\":{\"code\":1003,\"message\":\"Cannot find the consent request\"}}";
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .json(errorJson);
+    }
+
 }

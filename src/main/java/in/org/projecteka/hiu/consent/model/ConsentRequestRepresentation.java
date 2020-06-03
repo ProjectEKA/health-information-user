@@ -19,7 +19,6 @@ public class ConsentRequestRepresentation {
     public static ConsentRequestRepresentation toConsentRequestRepresentation(
             Patient patient,
             in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
-
         return new ConsentRequestRepresentation(
                 consentRequest.getId(),
                 new PatientRepresentation(

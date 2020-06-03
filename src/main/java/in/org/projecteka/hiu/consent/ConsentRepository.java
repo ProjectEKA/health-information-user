@@ -34,24 +34,43 @@ public class ConsentRepository {
             " VALUES ($1, $2, $3, $4, $5)";
     private static final String UPDATE_CONSENT_ARTEFACT_STATUS_QUERY = "UPDATE " +
             "consent_artefact set status=$1, date_modified=$2 where consent_artefact_id=$3";
+    /**
+     * TODO: This query should be refactored. The status should be updated separately
+     */
     private static final String INSERT_CONSENT_REQUEST_QUERY = "INSERT INTO " +
             "consent_request (consent_request, consent_request_id) VALUES ($1, $2)";
+    /**
+     * TODO: Should be refactored. 
+     * See notes in {@link #get(String)}
+     */
     private static final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
             "FROM consent_request WHERE consent_request ->> 'id' = $1";
     private static final String SELECT_CONSENT_ARTEFACT_QUERY = "SELECT consent_artefact FROM consent_artefact WHERE " +
             "consent_artefact_id = $1 AND status = $2";
     private static final String CONSENT_REQUEST_BY_REQUESTER_ID =
-            "SELECT consent_request FROM consent_request where consent_request ->> 'requesterId' = $1 ORDER BY " +
-                    "date_created DESC";
+            "SELECT consent_request, status, consent_request_id FROM consent_request " +
+                    "where consent_request ->> 'requesterId' = $1 ORDER BY date_created DESC";
+    /**
+     * TODO: this query should be refactored. Update consent_request.status instead of the entire object.
+     */
     private static final String UPDATE_CONSENT_REQUEST_QUERY = "UPDATE " +
             "consent_request set consent_request = $1 where consent_request_id = $2";
     private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
             "FROM consent_artefact WHERE consent_artefact_id=$1";
     private static final String SELECT_CONSENT_ID_FROM_REQUEST_ID = "SELECT consent_artefact_id from consent_artefact WHERE " +
             "consent_request_id = $1";
+    private static final String INSERT_GATEWAY_CONSENT_REQUEST = "INSERT INTO " +
+            "consent_request (consent_request, gateway_request_id, status) VALUES ($1, $2, $3)";
+    private static final String GATEWAY_CONSENT_REQUEST_STATUS = "SELECT status " +
+            "FROM consent_request WHERE gateway_request_id=$1";
+
+    private static final String UPDATE_GATEWAY_CONSENT_REQUEST_STATUS = "UPDATE consent_request " +
+            "set consent_request_id=$1, status=$2, date_modified=$3 WHERE gateway_request_id=$4";
+
 
     private final PgPool dbClient;
 
+    @Deprecated
     public Mono<Void> insert(ConsentRequest consentRequest) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_CONSENT_REQUEST_QUERY)
                 .execute(Tuple.of(new JsonObject(from(consentRequest)), consentRequest.getId()),
@@ -64,6 +83,13 @@ public class ConsentRepository {
                         }));
     }
 
+    /**
+     * TODO refactor this method. The only purpose of the method is to check whether a ConsentRequest by
+     * the CM assigned consentRequestId exists or not. We can return a count and avoid unnecessary record fetch
+     * and deserialization
+     * @param consentRequestId
+     * @return
+     */
     public Mono<ConsentRequest> get(String consentRequestId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_REQUEST_QUERY)
                 .execute(Tuple.of(consentRequestId),
@@ -134,7 +160,6 @@ public class ConsentRepository {
                         }));
     }
 
-
     public Flux<Map<String, String>> getConsentDetails(String consentRequestId) {
         return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT)
                 .execute(Tuple.of(consentRequestId),
@@ -178,6 +203,15 @@ public class ConsentRepository {
                         }));
     }
 
+    /**
+     * TODO: This method actually updates the entire consentrequest object again.
+     * It can just update the status column
+     * the status field should be outside the consentRequest object.
+     * the request never changes. the status does.
+     * @param requestId
+     * @param consentRequest
+     * @return
+     */
     public Mono<Void> updateConsent(String requestId, ConsentRequest consentRequest) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(UPDATE_CONSENT_REQUEST_QUERY)
@@ -220,4 +254,70 @@ public class ConsentRepository {
                         }));
     }
 
+
+    public Mono<Void> insertConsentRequestToGateway(ConsentRequest consentRequest) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_GATEWAY_CONSENT_REQUEST)
+                .execute(Tuple.of(
+                            new JsonObject(from(consentRequest)),
+                            consentRequest.getId(),
+                            ConsentStatus.POSTED.toString()),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to insert to consent request"));
+                                return;
+                            }
+                            monoSink.success();
+                        }));
+    }
+
+    public Mono<ConsentStatus> consentRequestStatus(String gatewayRequestId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
+                .execute(Tuple.of(gatewayRequestId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to identify consent request"));
+                                return;
+                            }
+                            var iterator = handler.result().iterator();
+                            if (!iterator.hasNext()) {
+                                monoSink.success();
+                                return;
+                            }
+                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString("status")));
+                        }));
+    }
+
+    public Mono<Void> updateConsentRequestStatus(String gatewayRequestId, ConsentStatus status, String consentRequestId) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(UPDATE_GATEWAY_CONSENT_REQUEST_STATUS)
+                        .execute(Tuple.of(consentRequestId, status.toString(), LocalDateTime.now(), gatewayRequestId),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to update consent request status"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
+    }
+
+    public Flux<Map<String, Object>> requestsOf(String requesterId) {
+        return Flux.create(fluxSink -> dbClient.preparedQuery(CONSENT_REQUEST_BY_REQUESTER_ID)
+                .execute(Tuple.of(requesterId),
+                        handler -> {
+                            if (handler.failed()) {
+                                fluxSink.error(dbOperationFailure("Failed to fetch consent requests"));
+                                return;
+                            }
+                            for (Row result : handler.result()) {
+                                ConsentRequest consentRequest = to(
+                                        result.getValue("consent_request").toString(), ConsentRequest.class);
+                                Map<String, Object> resultMap = new HashMap<>();
+                                resultMap.put("consentRequest", consentRequest);
+                                resultMap.put("status", ConsentStatus.valueOf(result.getString("status")));
+                                resultMap.put("consentRequestId", result.getString("consent_request_id"));
+                                fluxSink.next(resultMap);
+                            }
+                            fluxSink.complete();
+                        }));
+    }
 }
