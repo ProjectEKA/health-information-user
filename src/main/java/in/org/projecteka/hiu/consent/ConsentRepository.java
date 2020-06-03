@@ -12,16 +12,14 @@ import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
+import static in.org.projecteka.hiu.common.Serializer.from;
 import static in.org.projecteka.hiu.common.Serializer.to;
 
 @AllArgsConstructor
@@ -75,7 +73,7 @@ public class ConsentRepository {
     @Deprecated
     public Mono<Void> insert(ConsentRequest consentRequest) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_CONSENT_REQUEST_QUERY)
-                .execute(Tuple.of(JsonObject.mapFrom(consentRequest), consentRequest.getId()),
+                .execute(Tuple.of(new JsonObject(from(consentRequest)), consentRequest.getId()),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to insert to consent request"));
@@ -133,7 +131,7 @@ public class ConsentRepository {
                                             String consentRequestId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_CONSENT_ARTEFACT_QUERY)
                 .execute(Tuple.of(consentRequestId,
-                        JsonObject.mapFrom(consentArtefact),
+                        new JsonObject(from(consentArtefact)),
                         consentArtefact.getConsentId(),
                         status.toString(),
                         LocalDateTime.now()),
@@ -148,10 +146,10 @@ public class ConsentRepository {
 
     public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference,
                                    ConsentStatus status,
-                                   Date timestamp) {
+                                   LocalDateTime timestamp) {
         return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_CONSENT_ARTEFACT_STATUS_QUERY)
                 .execute(Tuple.of(status.toString(),
-                        convertToLocalDateTime(timestamp),
+                        timestamp,
                         consentArtefactReference.getId()),
                         handler -> {
                             if (handler.failed()) {
@@ -217,7 +215,7 @@ public class ConsentRepository {
     public Mono<Void> updateConsent(String requestId, ConsentRequest consentRequest) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(UPDATE_CONSENT_REQUEST_QUERY)
-                        .execute(Tuple.of(JsonObject.mapFrom(consentRequest), requestId),
+                        .execute(Tuple.of(new JsonObject(from(consentRequest)), requestId),
                                 handler -> {
                                     if (handler.failed()) {
                                         monoSink.error(dbOperationFailure("Failed to update consent request status"));
@@ -256,17 +254,11 @@ public class ConsentRepository {
                         }));
     }
 
-    private LocalDateTime convertToLocalDateTime(Date date) {
-        if (date != null) {
-            return Instant.ofEpochMilli(date.getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
-        }
-        return null;
-    }
 
     public Mono<Void> insertConsentRequestToGateway(ConsentRequest consentRequest) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_GATEWAY_CONSENT_REQUEST)
                 .execute(Tuple.of(
-                            JsonObject.mapFrom(consentRequest),
+                            new JsonObject(from(consentRequest)),
                             consentRequest.getId(),
                             ConsentStatus.POSTED.toString()),
                         handler -> {

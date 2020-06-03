@@ -23,7 +23,7 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -185,7 +185,7 @@ public class ConsentService {
     }
 
     private Mono<Void> processExpiredConsent(ConsentArtefactReference consentArtefactReference,
-                                             String consentRequestId, ConsentStatus status, Date timestamp) {
+                                             String consentRequestId, ConsentStatus status, LocalDateTime timestamp) {
         return consentRepository.updateStatus(consentArtefactReference, status, timestamp)
                 .then(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(),
                         consentRequestId));
@@ -193,14 +193,14 @@ public class ConsentService {
 
     private Mono<Void> processRevokedConsent(ConsentArtefactReference consentArtefactReference,
                                              ConsentStatus status,
-                                             Date timestamp) {
+                                             LocalDateTime timestamp) {
         return consentRepository.updateStatus(consentArtefactReference, status, timestamp)
                 .then(healthInformationPublisher.publish(consentArtefactReference));
     }
 
     private Mono<Void> processRejectedConsent(ConsentArtefactReference consentArtefactReference,
                                               ConsentStatus status,
-                                              Date timestamp) {
+                                              LocalDateTime timestamp) {
         return consentRepository.updateStatus(consentArtefactReference, status, timestamp).then();
     }
 
