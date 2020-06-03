@@ -39,6 +39,7 @@ dependencies {
     implementation 'io.vertx:vertx-pg-client:3.9.0'
     implementation 'log4j:log4j:1.2.17'
     implementation 'com.google.guava:guava:29.0-jre'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.projectlombok:lombok'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.65.01'
     annotationProcessor 'org.projectlombok:lombok'
