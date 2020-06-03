@@ -81,6 +81,7 @@ public class Consent {
                 .hiTypes(getHiTypes())
                 .permission(getPermission())
                 .status(ConsentStatus.REQUESTED)
+                .createdDate(getCurrentDate())
                 .build();
     }
 

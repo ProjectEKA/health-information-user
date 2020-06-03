@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.consent.model;
 import in.org.projecteka.hiu.clients.Patient;
 import lombok.SneakyThrows;
 import lombok.Value;
+import org.apache.commons.lang3.time.DateUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -20,8 +21,12 @@ public class ConsentRequestRepresentation {
     public static ConsentRequestRepresentation toConsentRequestRepresentation(
             Patient patient,
             in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
-        var format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        String[] dateFormats = {"yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"};
+        var dateErase = DateUtils.parseDate(
+                consentRequest.getPermission().getDataEraseAt(),
+                dateFormats);
+        var createDate = DateUtils.parseDate(consentRequest.getCreatedDate(), dateFormats);
+
         return new ConsentRequestRepresentation(
                 consentRequest.getId(),
                 new PatientRepresentation(
@@ -29,9 +34,9 @@ public class ConsentRequestRepresentation {
                         patient.getFirstName(),
                         patient.getLastName()),
                 consentRequest.getStatus(),
-                withMillSeconds.parse(consentRequest.getPermission().getDataEraseAt()),
-                format.parse(consentRequest.getCreatedDate()),
-                format.parse(consentRequest.getCreatedDate()));
+                dateErase,
+                createDate,
+                createDate);
     }
 }
 

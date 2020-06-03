@@ -298,7 +298,7 @@ public class ConsentRepository {
     public Mono<Void> updateConsentRequestStatus(String gatewayRequestId, ConsentStatus status, String consentRequestId) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(UPDATE_GATEWAY_CONSENT_REQUEST_STATUS)
-                        .execute(Tuple.of(consentRequestId,status.toString(), status.toString(), LocalDateTime.now(), gatewayRequestId),
+                        .execute(Tuple.of(consentRequestId, status.toString(), LocalDateTime.now(), gatewayRequestId),
                                 handler -> {
                                     if (handler.failed()) {
                                         monoSink.error(dbOperationFailure("Failed to update consent request status"));

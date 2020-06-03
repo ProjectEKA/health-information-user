@@ -1,3 +1,5 @@
+server:
+  port: 8003
 hiu:
   id: 10000005
   name: Max Health Care
@@ -5,6 +7,7 @@ hiu:
   consentNotificationUrl: http://localhost:8003/consent/notification
   valueSets: classpath:/static/ValueSet/valuesets.json
   consentmanager:
+    suffix: ncg
     url: http://localhost:9000
   dataflowservice:
     defaultPageSize: 20
@@ -28,6 +31,9 @@ hiu:
     url: http://localhost:8042
     user: orthanc
     password: orthanc
+  gatewayservice:
+    baseUrl: http://localhost:9000
+    requestTimeout: 2000
 spring:
   rabbitmq:
     host: localhost
