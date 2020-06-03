@@ -32,7 +32,7 @@ hiu:
     user: orthanc
     password: orthanc
   gatewayservice:
-    baseUrl: http://localhost:9000
+    baseUrl: http://localhost:8000/v1
     requestTimeout: 2000
 spring:
   rabbitmq:
