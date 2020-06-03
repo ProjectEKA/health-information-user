@@ -59,7 +59,7 @@ public class HealthInfoManager {
 
     private Date toDate(String dateExpiryAt) {
         try {
-            var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+0000'");
+            var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+00:00'");
             return withMillSeconds.parse(dateExpiryAt);
         } catch (ParseException e) {
             logger.error(e.getMessage());
