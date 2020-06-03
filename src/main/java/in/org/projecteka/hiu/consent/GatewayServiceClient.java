@@ -12,7 +12,7 @@ import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
 import static java.util.function.Predicate.not;
 
 public class GatewayServiceClient {
-    private static final String GATEWAY_PATH_CONSENT_REQUESTS_INIT = "/v1/consent-requests/init";
+    private static final String GATEWAY_PATH_CONSENT_REQUESTS_INIT = "/consent-requests/init";
     private final WebClient webClient;
     private GatewayServiceProperties gatewayServiceProperties;
 
