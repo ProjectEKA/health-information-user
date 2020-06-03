@@ -17,9 +17,7 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
@@ -106,13 +104,8 @@ public class DataFlowRequestListener {
                 .build();
     }
 
-    private String getExpiryDate() {
-        var dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        Date currentDate = new Date();
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(currentDate);
-        calendar.add(Calendar.DATE, dataFlowProperties.getOffsetInDays());
-        return dateFormat.format(calendar.getTime());
+    private LocalDateTime getExpiryDate() {
+        return LocalDateTime.now().plusDays(dataFlowProperties.getOffsetInDays());
     }
 
     @SneakyThrows

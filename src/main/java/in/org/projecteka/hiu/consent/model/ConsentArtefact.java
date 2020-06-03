@@ -10,7 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -20,7 +20,7 @@ import java.util.Date;
 public class ConsentArtefact {
     private String schemaVersion;
     private String consentId;
-    private Date createdAt;
+    private LocalDateTime createdAt;
     private Purpose purpose;
     private PatientLinkedContext patient;
     private HIPReference hip;

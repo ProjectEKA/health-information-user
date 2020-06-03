@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
@@ -13,6 +15,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class DateRange {
-    private String from;
-    private String to;
+    private LocalDateTime from;
+    private LocalDateTime to;
 }
