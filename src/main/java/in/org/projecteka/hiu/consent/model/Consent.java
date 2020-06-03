@@ -10,11 +10,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.TimeZone;
 
 import static in.org.projecteka.hiu.consent.model.consentmanager.Frequency.ONE_HOUR;
 
@@ -29,21 +26,14 @@ public class Consent {
     private List<HIType> hiTypes;
     private Permission permission;
 
-    private static String getCurrentDate() {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        return df.format(new Date());
-    }
-
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
                                                                          String hiuName,
                                                                          String consentNotificationUrl, ConceptLookup conceptLookup) {
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
-                        getPurpose().getCode(),
-                        conceptLookup.getPurposeDescription(getPurpose().getCode())),
+                        conceptLookup.getPurposeDescription(getPurpose().getCode()),
+                        getPurpose().getCode()),
                 getPatient(),
                 new HIU(hiuId, hiuName),
                 new Requester(requesterId),
@@ -65,7 +55,7 @@ public class Consent {
                 getHiTypes(),
                 getPermission(),
                 ConsentStatus.REQUESTED,
-                getCurrentDate(),
+                LocalDateTime.now(),
                 consentNotificationUrl);
     }
 }

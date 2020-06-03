@@ -9,9 +9,12 @@ import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.Permission;
+import in.org.projecteka.hiu.consent.model.DateRange;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -33,10 +36,12 @@ import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
+import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -63,6 +68,9 @@ public class ConsentServiceTest {
     @Mock
     private ConceptValidator conceptValidator;
 
+    @Captor
+    ArgumentCaptor<in.org.projecteka.hiu.consent.model.ConsentRequest> captor;
+
     @BeforeEach
     public void setUp() {
         initMocks(this);
@@ -84,20 +92,29 @@ public class ConsentServiceTest {
                 healthInformationPublisher,
                 conceptValidator);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
+        Permission permission = consentRequestData.getConsent().getPermission();
+        permission.setDataEraseAt(toDate("2025-01-25T13:25:34.602"));
+        permission.setDateRange(
+                DateRange.builder().from(toDate("2014-01-25T13:25:34.602"))
+                        .to(toDate("2015-01-25T13:25:34.602")).build());
         ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
 
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(consentManagerClient.createConsentRequest(any(), eq(token)))
                 .thenReturn(Mono.just(consentCreationResponse));
-        when(consentRepository.insert(consentRequestData.getConsent().toConsentRequest(
-                consentCreationResponse.getId(),
-                requesterId, hiuProperties.getConsentNotificationUrl())))
+        when(consentRepository.insert(any()))
                 .thenReturn(Mono.create(MonoSink::success));
         when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
 
         StepVerifier.create(consentService.create(requesterId, consentRequestData))
                 .expectNext(consentCreationResponse)
                 .verifyComplete();
+
+        verify(consentRepository).insert(captor.capture());
+        var request = captor.getValue();
+        assertThat(request.getPermission().getDataEraseAt()).isEqualTo("2025-01-25T13:25:34.602");
+        assertThat(request.getPermission().getDateRange().getFrom()).isEqualTo("2014-01-25T13:25:34.602");
+        assertThat(request.getPermission().getDateRange().getTo()).isEqualTo("2015-01-25T13:25:34.602");
     }
 
     @Test
@@ -115,9 +132,9 @@ public class ConsentServiceTest {
                 healthInformationPublisher,
                 conceptValidator);
         var patientRep = patientRepresentation().build();
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
         var consentRequest = consentRequest()
-                .createdDate("2020-06-02T10:15:02Z")
+                .createdDate(toDate("2020-06-02T10:15:02"))
                 .status(ConsentStatus.REQUESTED)
                 .patient(new in.org.projecteka.hiu.consent.model.Patient(patientRep.getIdentifier()))
                 .permission(permission)
@@ -150,10 +167,10 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator);
-        Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
+        Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
         var patientRep = patientRepresentation().build();
         var consentRequest = consentRequest()
-                .createdDate("2020-06-02T10:15:02Z")
+                .createdDate(toDate("2020-06-02T10:15:02"))
                 .status(ConsentStatus.REQUESTED)
                 .patient(new in.org.projecteka.hiu.consent.model.Patient(patientRep.getIdentifier()))
                 .permission(permission)

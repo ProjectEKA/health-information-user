@@ -145,7 +145,7 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("hipName", hipName);
         consentDetailsMap.put("requester", "1");
         consentDetailsMap.put("status", "GRANTED");
-        consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48.363+0000");
+        consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48.363+00:00");
         consentDetails.add(consentDetailsMap);
         Map<String, Object> healthInfo = new HashMap<>();
         String content = "Some dummy content";

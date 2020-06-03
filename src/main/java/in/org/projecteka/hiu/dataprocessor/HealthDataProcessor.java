@@ -14,7 +14,17 @@ import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
-import in.org.projecteka.hiu.dataprocessor.model.*;
+import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
+import in.org.projecteka.hiu.dataprocessor.model.DataContext;
+import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
+import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
+import in.org.projecteka.hiu.dataprocessor.model.HiStatus;
+import in.org.projecteka.hiu.dataprocessor.model.Notifier;
+import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
+import in.org.projecteka.hiu.dataprocessor.model.SessionStatus;
+import in.org.projecteka.hiu.dataprocessor.model.StatusNotification;
+import in.org.projecteka.hiu.dataprocessor.model.StatusResponse;
+import in.org.projecteka.hiu.dataprocessor.model.Type;
 import org.apache.log4j.Logger;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ResourceType;
@@ -24,8 +34,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -149,7 +159,7 @@ public class HealthDataProcessor {
                 .requestId(UUID.randomUUID())
                 .transactionId(context.getTransactionId())
                 .consentId(consentId)
-                .doneAt(new Date())
+                .doneAt(LocalDateTime.now())
                 .notifier(Notifier.builder()
                         .type(Type.HIU)
                         .id(hiuProperties.getId())
