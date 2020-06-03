@@ -10,7 +10,9 @@ import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.DateRange;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -38,7 +42,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
@@ -50,9 +54,13 @@ import static in.org.projecteka.hiu.consent.TestBuilders.consentNotificationRequ
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
+import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -106,6 +114,8 @@ public class ConsentUserJourneyTest {
     @MockBean
     private ConceptValidator conceptValidator;
 
+    @Captor
+    ArgumentCaptor<ConsentRequest> captor;
 
     @AfterAll
     public static void tearDown() throws IOException {
@@ -120,8 +130,6 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldCreateConsentRequest() throws JsonProcessingException {
         var consentRequestId = "consent-request-id";
-        var requesterId = "1";
-        var consentNotificationUrl = "localhost:8080";
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
@@ -132,11 +140,12 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
         var consentRequestDetails = consentRequestDetails().build();
-        consentRequestDetails.getConsent().getPermission().setDataEraseAt("9999-01-15T08:47:48.373Z");
-        when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(
-                consentRequestId,
-                requesterId,
-                consentNotificationUrl))).thenReturn(Mono.create(MonoSink::success));
+        var permission = consentRequestDetails.getConsent().getPermission();
+        permission.setDataEraseAt(toDate("9999-01-15T08:47:48.373"));
+        permission.setDateRange(
+                DateRange.builder().from(toDate("2014-01-25T13:25:34.602"))
+                        .to(toDate("2015-01-25T13:25:34.602")).build());
+        when(consentRepository.insert(any())).thenReturn(Mono.create(MonoSink::success));
 
         webTestClient
                 .post()
@@ -150,6 +159,14 @@ public class ConsentUserJourneyTest {
                 .isOk()
                 .expectBody()
                 .jsonPath("$.id", consentRequestId);
+
+        verify(consentRepository).insert(captor.capture());
+        ConsentRequest request = captor.getValue();
+        assertThat(request.getId()).isEqualTo("consent-request-id");
+        assertThat(request.getConsentNotificationUrl()).isEqualTo("localhost:8080");
+        assertThat(request.getPermission().getDataEraseAt()).isEqualTo("9999-01-15T08:47:48.373");
+        assertThat(request.getPermission().getDateRange().getFrom()).isEqualTo("2014-01-25T13:25:34.602");
+        assertThat(request.getPermission().getDateRange().getTo()).isEqualTo("2015-01-25T13:25:34.602");
     }
 
     @Test
@@ -186,7 +203,7 @@ public class ConsentUserJourneyTest {
                 .status(ConsentStatus.GRANTED)
                 .consentDetail(ConsentArtefact.builder()
                         .permission(Permission.builder()
-                                .dataEraseAt(dataEraseAt)
+                                .dataEraseAt(toDate(dataEraseAt))
                                 .build())
                         .build())
                 .build();
@@ -328,7 +345,7 @@ public class ConsentUserJourneyTest {
     public void shouldUpdateConsentStatus() {
         String consentRequestId = "consent-request-id-1";
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.REVOKED)
@@ -362,7 +379,7 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldReturn500OnNotificationWhenConsentUpdateFails() {
         String consentRequestId = "consent-request-id-1";
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
@@ -398,7 +415,7 @@ public class ConsentUserJourneyTest {
     public void shouldUpdateConsentStatusAndBroadcastConsentDeleteOnExpiry() {
         String consentRequestId = "consent-request-id-1";
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.EXPIRED)
@@ -433,7 +450,7 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldReturn500OnNotificationWhenConsentExpiryUpdateFails() {
         String consentRequestId = "consent-request-id-1";
-        Date date = new Date();
+        LocalDateTime date = LocalDateTime.now();
         ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
         ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
         ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()

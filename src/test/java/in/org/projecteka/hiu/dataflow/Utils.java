@@ -1,16 +1,11 @@
 package in.org.projecteka.hiu.dataflow;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Utils {
-    public static Date toDate(String date) throws ParseException {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        return df.parse(date);
+    public static LocalDateTime toDate(String date) {
+        String pattern = "yyyy-MM-dd['T'HH[:mm][:ss][.SSS]]";
+        return LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
     }
 }

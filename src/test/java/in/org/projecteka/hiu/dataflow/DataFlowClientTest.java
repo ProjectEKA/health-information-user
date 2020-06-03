@@ -2,8 +2,9 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
 import in.org.projecteka.hiu.dataflow.model.DateRange;
 import okhttp3.mockwebserver.MockResponse;
@@ -11,10 +12,13 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.test.StepVerifier;
 
-import java.text.ParseException;
 import java.util.Objects;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
@@ -29,21 +33,38 @@ public class DataFlowClientTest {
     @BeforeEach
     public void init() {
         mockWebServer = new MockWebServer();
-        WebClient.Builder webClientBuilder = WebClient.builder();
+        ExchangeStrategies strategies = ExchangeStrategies
+                .builder()
+                .codecs(clientDefaultCodecsConfigurer -> {
+                    ObjectMapper mapper = new ObjectMapper()
+                            .registerModule(new JavaTimeModule())
+                            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+                    clientDefaultCodecsConfigurer.defaultCodecs()
+                            .jackson2JsonEncoder(new Jackson2JsonEncoder(mapper, MediaType.APPLICATION_JSON));
+                    clientDefaultCodecsConfigurer.defaultCodecs()
+                            .jackson2JsonDecoder(new Jackson2JsonDecoder(mapper, MediaType.APPLICATION_JSON));
+
+                }).build();
+        WebClient.Builder webClientBuilder = WebClient.builder().exchangeStrategies(strategies);
         ConsentManagerServiceProperties consentManagerServiceProperties =
                 new ConsentManagerServiceProperties(mockWebServer.url("").toString(), "@ncg");
         dataFlowClient = new DataFlowClient(webClientBuilder, consentManagerServiceProperties);
     }
 
     @Test
-    public void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException, ParseException {
+    void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException {
         String transactionId = "transactionId";
-        DataFlowRequestResponse dataFlowRequestResponse =
+        var dataFlowRequestResponse =
                 DataFlowRequestResponse.builder().transactionId(transactionId).build();
-        var dataFlowRequestResponseJson = new ObjectMapper().writeValueAsString(dataFlowRequestResponse);
-        DataFlowRequest dataFlowRequest = dataFlowRequest().build();
-        dataFlowRequest.setDateRange(DateRange.builder().from(toDate("2020-01-14T08:47:48Z")).to(toDate("2020" +
-                "-01-20T08:47:48Z")).build());
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        var dataFlowRequestResponseJson = objectMapper.writeValueAsString(dataFlowRequestResponse);
+        var dataFlowRequest = dataFlowRequest()
+                .dateRange(DateRange.builder()
+                        .from(toDate("2020-01-14T08:47:48"))
+                        .to(toDate("2020-01-20T08:47:48")).build())
+                .build();
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
@@ -60,7 +81,7 @@ public class DataFlowClientTest {
         assertThat(Objects.requireNonNull(recordedRequest.getRequestUrl()).toString())
                 .isEqualTo(mockWebServer.url("") + "health-information/request");
         assertThat(recordedRequest.getBody().readUtf8())
-                .isEqualTo(new ObjectMapper().writeValueAsString(dataFlowRequest));
+                .isEqualTo(objectMapper.writeValueAsString(dataFlowRequest));
     }
 
 }
