@@ -6,6 +6,7 @@ import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
+import in.org.projecteka.hiu.consent.model.ConsentFetchResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,5 +67,9 @@ public class ConsentController {
                 .flatMapMany(username -> consentService.requestsOf(username));
     }
 
-
+    @PostMapping("/v1/consent/on-fetch")
+    public Mono<ResponseEntity> onFetch(@RequestBody ConsentFetchResponse consentFetchResponse) {
+        return consentService.saveFetchedResponse(consentFetchResponse)
+                .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
+    }
 }

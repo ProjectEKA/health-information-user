@@ -156,8 +156,9 @@ public class ConsentService {
                 .flatMap(consentArtefactReference -> {
                     switch (consentNotificationRequest.getStatus()) {
                         case GRANTED:
-                            return processGrantedConsent(consentArtefactReference,
-                                    consentNotificationRequest.getConsentRequestId());
+                            return processGrantedConsentFromGateway(consentArtefactReference
+//                                    consentNotificationRequest.getConsentRequestId()
+                            );
                         case REVOKED:
                             return processRevokedConsent(consentArtefactReference,
                                     consentNotificationRequest.getStatus(),
@@ -324,6 +325,21 @@ public class ConsentService {
 //                                consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
 //                                consentArtefactResponse.getSignature(),
 //                                hiuProperties.getDataPushUrl()))))
+    }
+
+    public Mono<Void> saveFetchedResponse(ConsentFetchResponse consentFetchResponse) {
+        if (consentFetchResponse.getError() == null) {
+            return consentRepository.insertConsentArtefact(
+                    consentFetchResponse.getConsentArtefactResponse().getConsentDetail(),
+                    consentFetchResponse.getConsentArtefactResponse().getStatus(),
+                    consentFetchResponse.getRequestId())
+                    .then(Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
+                            consentFetchResponse.getConsentArtefactResponse().getConsentDetail().getConsentId(),
+                            consentFetchResponse.getConsentArtefactResponse().getConsentDetail().getPermission().getDateRange(),
+                            consentFetchResponse.getConsentArtefactResponse().getSignature(),
+                            hiuProperties.getDataPushUrl())));
+        }
+        return Mono.error(ClientError.invalidDataFromGateway());
     }
 
 }
