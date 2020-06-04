@@ -616,4 +616,33 @@ public class ConsentUserJourneyTest {
                 .json(errorJson);
     }
 
+    @Test
+    public void shouldNotifyConsentGranted() throws JsonProcessingException {
+        String notificationFromCM = "{\n" +
+                "  \"requestId\": \"e815dc70-0b18-4f7c-9a03-17aed83d5ac2\",\n" +
+                "  \"timestamp\": \"2020-06-04T11:01:11.045Z\",\n" +
+                "  \"notification\": {\n" +
+                "    \"consentRequestId\": \"46ac0879-7f6d-4a5b-bc03-3f36782937a5\",\n" +
+                "    \"status\": \"GRANTED\",\n" +
+                "    \"consentArtefacts\": [\n" +
+                "      {\n" +
+                "        \"id\": \"ae00bb0c-8e29-4fe3-a09b-4c976757d933\"\n" +
+                "      }\n" +
+                "    ]\n" +
+                "  }\n" +
+                "}";
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        webTestClient
+                .post()
+                .uri("/v1/consents/hiu/notify")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(notificationFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
 }

@@ -14,6 +14,7 @@ import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
@@ -313,4 +314,7 @@ public class ConsentService {
                     .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
+    public Mono<Void> handleNotification(HiuConsentNotificationRequest hiuNotification) {
+        return Mono.empty();
+    }
 }
