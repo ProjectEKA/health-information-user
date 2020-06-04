@@ -5,15 +5,7 @@ import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.consent.model.Consent;
-import in.org.projecteka.hiu.consent.model.ConsentArtefact;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
-import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
-import in.org.projecteka.hiu.consent.model.ConsentRequestData;
-import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
-import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import lombok.AllArgsConstructor;
@@ -311,6 +303,27 @@ public class ConsentService {
                     .map(map -> ConsentStatus.valueOf(map.get("status")))
                     .switchIfEmpty(Mono.just(consentRequest.getStatus()))
                     .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
+    }
+
+    private Mono<Void> processGrantedConsentFromGateway(ConsentArtefactReference consentArtefactReference) {
+        return centralRegistry.token()
+                .flatMap(token -> gatewayServiceClient
+                        .getConsentArtefactRequest(
+                                ConsentFetchRequest.builder()
+                                        .consentRequestId(consentArtefactReference.getId())
+                                        .timestamp(java.time.Instant.now().toString())
+                                        .requestId(UUID.randomUUID())
+                                        .build(),token))
+                .then();
+//                .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
+//                        consentArtefactResponse.getConsentDetail(),
+//                        consentArtefactResponse.getStatus(),
+//                        consentRequestId)
+//                        .then(Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
+//                                consentArtefactResponse.getConsentDetail().getConsentId(),
+//                                consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
+//                                consentArtefactResponse.getSignature(),
+//                                hiuProperties.getDataPushUrl()))))
     }
 
 }
