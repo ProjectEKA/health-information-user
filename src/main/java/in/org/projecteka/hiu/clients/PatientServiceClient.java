@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.clients;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
+import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;

@@ -2,6 +2,9 @@ package in.org.projecteka.hiu.consent;
 
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
+import in.org.projecteka.hiu.GatewayServiceProperties;
+import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
@@ -69,6 +72,10 @@ public class ConsentServiceTest {
     private ConceptValidator conceptValidator;
     @Mock
     private GatewayServiceClient gatewayServiceClient;
+    @Mock
+    HiuProperties hiuProperties;
+    @Mock
+    GatewayServiceProperties gatewayServiceProperties;
 
     @Captor
     ArgumentCaptor<in.org.projecteka.hiu.consent.model.ConsentRequest> captor;
@@ -130,7 +137,7 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient, cache, centralRegistry),
+                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
@@ -167,7 +174,7 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient, cache, centralRegistry),
+                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
@@ -206,7 +213,7 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient, cache, centralRegistry),
+                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
@@ -236,7 +243,7 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient, cache, centralRegistry),
+                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
@@ -263,7 +270,7 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient, cache, centralRegistry),
+                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
