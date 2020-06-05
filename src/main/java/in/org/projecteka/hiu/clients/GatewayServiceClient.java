@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.clients;
 
 import in.org.projecteka.hiu.GatewayServiceProperties;
+import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +18,7 @@ import static java.util.function.Predicate.not;
 
 public class GatewayServiceClient {
     private static final String GATEWAY_PATH_CONSENT_REQUESTS_INIT = "/consent-requests/init";
+    private static final String GATEWAY_PATH_CONSENT_ARTEFACT_FETCH = "/consents/fetch";
     private final WebClient webClient;
     private final GatewayServiceProperties gatewayServiceProperties;
 
@@ -57,5 +59,21 @@ public class GatewayServiceClient {
                 .toBodilessEntity()
                 .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
                 .thenReturn(Boolean.TRUE);
+    }
+
+    public Mono<Void> requestConsentArtefact(ConsentArtefactRequest request, String cmSuffix, String token) {
+        return webClient
+                .post()
+                .uri(GATEWAY_PATH_CONSENT_ARTEFACT_FETCH)
+                .header("Authorization", token)
+                .header("X-CM-ID", cmSuffix)
+                .body(Mono.just(request),
+                        ConsentArtefactRequest.class)
+                .retrieve()
+                .onStatus(not(HttpStatus::is2xxSuccessful),
+                        clientResponse -> Mono.error(creationFailed()))
+                .toBodilessEntity()
+                .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
+                .then();
     }
 }

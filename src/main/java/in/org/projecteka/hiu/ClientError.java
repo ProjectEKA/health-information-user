@@ -94,6 +94,11 @@ public class ClientError extends Throwable {
                 new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY, "Invalid Data from Gateway. Must have either a payload or error")));
     }
 
+    public static ClientError invalidDataFromGateway(String errMsg) {
+        return new ClientError(BAD_REQUEST,
+                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY, errMsg)));
+    }
+
     public static ClientError gatewayTimeOut() {
         return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY, "Didn't receive any result from Gateway")));
     }

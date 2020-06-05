@@ -38,7 +38,7 @@ public class ConsentManagerClient {
     public Mono<ConsentArtefactResponse> getConsentArtefact(String consentId, String token) {
         return webClient
                 .get()
-                .uri(String.format("/consents/%s/", consentId))
+                .uri(String.format("/consents/%s", consentId))
                 .header("Authorization", token)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),

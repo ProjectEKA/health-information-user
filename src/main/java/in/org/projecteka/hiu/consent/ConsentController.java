@@ -6,6 +6,7 @@ import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
+import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import javax.validation.Valid;
 
 @RestController
 @AllArgsConstructor
@@ -64,6 +67,12 @@ public class ConsentController {
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
                 .flatMapMany(username -> consentService.requestsOf(username));
+    }
+
+    @PostMapping("/v1/consents/hiu/notify")
+    public Mono<ResponseEntity> hiuConsentNotification(@RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
+        consentService.handleNotification(hiuNotification).subscribe();
+        return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
 
