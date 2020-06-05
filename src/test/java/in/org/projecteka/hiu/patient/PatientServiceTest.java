@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static in.org.projecteka.hiu.consent.TestBuilders.patient;
 import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
