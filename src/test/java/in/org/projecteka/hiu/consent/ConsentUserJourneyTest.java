@@ -7,12 +7,7 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
-import in.org.projecteka.hiu.consent.model.ConsentArtefact;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
-import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
-import in.org.projecteka.hiu.consent.model.ConsentRequest;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
@@ -635,7 +630,10 @@ public class ConsentUserJourneyTest {
                 "}";
         var token = randomString();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
-        ConsentRequest consentRequest = ConsentRequest.builder().status(ConsentStatus.REQUESTED).build();
+        var patient = Patient.builder()
+                .id("heenapatel@ncg")
+                .build();
+        ConsentRequest consentRequest = ConsentRequest.builder().patient(patient).status(ConsentStatus.REQUESTED).build();
         when(consentRepository.get(consentRequestId)).thenReturn(Mono.just(consentRequest));
         when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
 
@@ -647,17 +645,15 @@ public class ConsentUserJourneyTest {
                                 .permission(Permission.builder().build())
                                 .build())
                 .build();
-        var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consent);
-        consentManagerServer.enqueue(new MockResponse()
-                .setHeader("Content-Type", "application/json")
-                .setBody(consentArtefactResponseJson));
+//        var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consent);
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
         when(consentRepository.insertConsentArtefact(
                 eq(consent.getConsentDetail()),
                 eq(consent.getStatus()),
                 eq(consentRequestId))).thenReturn(Mono.empty());
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), any(),
                 anyString(), anyString())).thenReturn(Mono.empty());
-
         webTestClient
                 .post()
                 .uri("/v1/consents/hiu/notify")

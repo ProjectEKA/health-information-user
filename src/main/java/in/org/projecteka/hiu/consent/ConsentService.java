@@ -1,9 +1,14 @@
 package in.org.projecteka.hiu.consent;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.Consent;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
@@ -20,15 +25,14 @@ import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
@@ -55,6 +59,7 @@ public class ConsentService {
     private final HealthInformationPublisher healthInformationPublisher;
     private final ConceptValidator conceptValidator;
     private final GatewayServiceClient gatewayServiceClient;
+    private Cache<String, Optional<Object>> gatewayResponseCache;
 
     private Map<ConsentStatus, ConsentTask> consentTasks = new HashMap<>();
     private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
@@ -377,9 +382,18 @@ public class ConsentService {
     @PostConstruct
     private void postConstruct() {
         consentTasks.put(GRANTED, new GrantedConsentTask(
-                    consentManagerClient,centralRegistry,consentRepository, dataFlowRequestPublisher, hiuProperties));
+                    gatewayServiceClient,centralRegistry,consentRepository, dataFlowRequestPublisher, hiuProperties));
         consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
         consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
+        this.gatewayResponseCache = CacheBuilder
+                    .newBuilder()
+                    .maximumSize(50)
+                    .expireAfterWrite(1, TimeUnit.HOURS)
+                    .build(new CacheLoader<>() {
+                        public Optional<Object> load(String key) {
+                            return Optional.empty();
+                        }
+                    });
     }
 
     private Flux<Void> handleConsentArtefactNotification(ConsentNotification notification, LocalDateTime timestamp) {
