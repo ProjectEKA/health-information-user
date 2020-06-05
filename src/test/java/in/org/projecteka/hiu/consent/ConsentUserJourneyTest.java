@@ -7,12 +7,7 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
-import in.org.projecteka.hiu.consent.model.ConsentArtefact;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
-import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
-import in.org.projecteka.hiu.consent.model.ConsentRequest;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
@@ -614,6 +609,62 @@ public class ConsentUserJourneyTest {
                 .isNotFound()
                 .expectBody()
                 .json(errorJson);
+    }
+
+    @Test
+    public void shouldNotifyConsentGranted() throws JsonProcessingException, InterruptedException {
+        String consentRequestId = "46ac0879-7f6d-4a5b-bc03-3f36782937a5";
+        String consentId = "ae00bb0c-8e29-4fe3-a09b-4c976757d933";
+        String notificationFromCM = "{\n" +
+                "  \"requestId\": \"e815dc70-0b18-4f7c-9a03-17aed83d5ac2\",\n" +
+                "  \"timestamp\": \"2020-06-04T11:01:11.045Z\",\n" +
+                "  \"notification\": {\n" +
+                "    \"consentRequestId\": \"" + consentRequestId + "\",\n" +
+                "    \"status\": \"GRANTED\",\n" +
+                "    \"consentArtefacts\": [\n" +
+                "      {\n" +
+                "        \"id\": \"" + consentId + "\"\n" +
+                "      }\n" +
+                "    ]\n" +
+                "  }\n" +
+                "}";
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        var patient = Patient.builder()
+                .id("heenapatel@ncg")
+                .build();
+        ConsentRequest consentRequest = ConsentRequest.builder().patient(patient).status(ConsentStatus.REQUESTED).build();
+        when(consentRepository.get(consentRequestId)).thenReturn(Mono.just(consentRequest));
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+
+        var consent = consentArtefactResponse()
+                .status(ConsentStatus.GRANTED)
+                .consentDetail(
+                        ConsentArtefact.builder()
+                                .consentId(consentId)
+                                .permission(Permission.builder().build())
+                                .build())
+                .build();
+//        var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consent);
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        when(consentRepository.insertConsentArtefact(
+                eq(consent.getConsentDetail()),
+                eq(consent.getStatus()),
+                eq(consentRequestId))).thenReturn(Mono.empty());
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), any(),
+                anyString(), anyString())).thenReturn(Mono.empty());
+        webTestClient
+                .post()
+                .uri("/v1/consents/hiu/notify")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(notificationFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+        Thread.sleep(2000);
     }
 
 }

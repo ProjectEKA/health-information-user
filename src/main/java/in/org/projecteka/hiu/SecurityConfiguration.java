@@ -37,6 +37,7 @@ public class SecurityConfiguration {
             add(Map.entry("/consent/notification", HttpMethod.POST));
             add(Map.entry("/data/notification", HttpMethod.POST));
             add(Map.entry("/v1/consent-requests/on-init", HttpMethod.POST));
+            add(Map.entry("/v1/consents/hiu/notify", HttpMethod.POST));
         }
     };
 
