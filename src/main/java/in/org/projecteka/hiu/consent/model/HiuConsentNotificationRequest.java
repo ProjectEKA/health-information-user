@@ -1,8 +1,6 @@
 package in.org.projecteka.hiu.consent.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import in.org.projecteka.hiu.common.GatewayResponse;
-import in.org.projecteka.hiu.common.RespError;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

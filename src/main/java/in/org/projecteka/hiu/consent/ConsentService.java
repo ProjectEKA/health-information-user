@@ -56,6 +56,9 @@ public class ConsentService {
     private final ConceptValidator conceptValidator;
     private final GatewayServiceClient gatewayServiceClient;
 
+    private Map<ConsentStatus, ConsentTask> consentTasks = new HashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
+
     public ConsentService(ConsentManagerClient consentManagerClient,
                           HiuProperties hiuProperties,
                           ConsentRepository consentRepository,
@@ -77,9 +80,6 @@ public class ConsentService {
         this.conceptValidator = conceptValidator;
         this.gatewayServiceClient = gatewayServiceClient;
     }
-
-    private Map<ConsentStatus, ConsentTask> consentTasks = new HashMap<>();
-    private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
 
     /**
      * To be replaced by {@link #createRequest(String, ConsentRequestData) }
