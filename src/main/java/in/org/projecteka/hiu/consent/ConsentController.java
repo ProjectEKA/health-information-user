@@ -14,11 +14,10 @@ import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 
 import javax.validation.Valid;
 
@@ -73,8 +72,8 @@ public class ConsentController {
 
     @PostMapping("/v1/consents/hiu/notify")
     public Mono<ResponseEntity> hiuConsentNotification(@RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
-        return consentService.handleNotification(hiuNotification)
-                .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
+        consentService.handleNotification(hiuNotification).subscribe();
+        return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
 

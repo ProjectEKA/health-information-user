@@ -617,22 +617,47 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldNotifyConsentGranted() throws JsonProcessingException {
+    public void shouldNotifyConsentGranted() throws JsonProcessingException, InterruptedException {
+        String consentRequestId = "46ac0879-7f6d-4a5b-bc03-3f36782937a5";
+        String consentId = "ae00bb0c-8e29-4fe3-a09b-4c976757d933";
         String notificationFromCM = "{\n" +
                 "  \"requestId\": \"e815dc70-0b18-4f7c-9a03-17aed83d5ac2\",\n" +
                 "  \"timestamp\": \"2020-06-04T11:01:11.045Z\",\n" +
                 "  \"notification\": {\n" +
-                "    \"consentRequestId\": \"46ac0879-7f6d-4a5b-bc03-3f36782937a5\",\n" +
+                "    \"consentRequestId\": \"" + consentRequestId + "\",\n" +
                 "    \"status\": \"GRANTED\",\n" +
                 "    \"consentArtefacts\": [\n" +
                 "      {\n" +
-                "        \"id\": \"ae00bb0c-8e29-4fe3-a09b-4c976757d933\"\n" +
+                "        \"id\": \"" + consentId + "\"\n" +
                 "      }\n" +
                 "    ]\n" +
                 "  }\n" +
                 "}";
         var token = randomString();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        ConsentRequest consentRequest = ConsentRequest.builder().status(ConsentStatus.REQUESTED).build();
+        when(consentRepository.get(consentRequestId)).thenReturn(Mono.just(consentRequest));
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+
+        var consent = consentArtefactResponse()
+                .status(ConsentStatus.GRANTED)
+                .consentDetail(
+                        ConsentArtefact.builder()
+                                .consentId(consentId)
+                                .permission(Permission.builder().build())
+                                .build())
+                .build();
+        var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consent);
+        consentManagerServer.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody(consentArtefactResponseJson));
+        when(consentRepository.insertConsentArtefact(
+                eq(consent.getConsentDetail()),
+                eq(consent.getStatus()),
+                eq(consentRequestId))).thenReturn(Mono.empty());
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), any(),
+                anyString(), anyString())).thenReturn(Mono.empty());
+
         webTestClient
                 .post()
                 .uri("/v1/consents/hiu/notify")
@@ -643,6 +668,7 @@ public class ConsentUserJourneyTest {
                 .exchange()
                 .expectStatus()
                 .isAccepted();
+        Thread.sleep(2000);
     }
 
 }
