@@ -393,8 +393,9 @@ public class ConsentService {
             case GRANTED:
                 // TODO: Need to figure out how we are going to figure out consent manager id.
                 // most probably need to have a mapping of @ncg = consent manager id
-                return validateRequest(notification.getConsentRequestId())
-                        .flatMap(consentRequest -> handleConsentArtefactNotification(notification, localDateTime).then());
+//                return validateRequest(notification.getConsentRequestId())
+//                        .flatMap(consentRequest -> handleConsentArtefactNotification(notification, localDateTime).then());
+            return consentTasks.get(GRANTED).perform(notification,localDateTime);
             case REVOKED:
             case EXPIRED:
                 if (notification.getConsentArtefacts().isEmpty()) {

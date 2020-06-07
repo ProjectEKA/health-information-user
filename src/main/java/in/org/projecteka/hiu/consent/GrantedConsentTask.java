@@ -9,7 +9,9 @@ import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
+import in.org.projecteka.hiu.consent.model.ConsentNotification;
 import lombok.AllArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -30,42 +32,47 @@ public class GrantedConsentTask implements ConsentTask {
     private GatewayServiceProperties gatewayServiceProperties;
     private Cache<String, Optional<ConsentArtefactResponse>> gatewayResponseCache;
 
+    private Mono<Void> perform(ConsentArtefactReference reference, String consentRequestId, String cmSuffix) {
+        var requestId = UUID.randomUUID();
+        return centralRegistry.token()
+                .flatMap(token -> {
+                    var consentArtefactRequest = ConsentArtefactRequest
+                            .builder()
+                            .consentId(reference.getId())
+                            .timestamp(LocalDateTime.now())
+                            .requestId(requestId)
+                            .build();
+
+                    return scheduleThis(gatewayClient
+                            .requestConsentArtefact(consentArtefactRequest, cmSuffix, token))
+                            .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
+                            .responseFrom(discard ->
+                                    Mono.defer(() -> gatewayResponseCache.asMap()
+                                            .getOrDefault(requestId.toString(), Optional.empty())
+                                            .map(Mono::just)
+                                            .orElse(Mono.empty())));
+                })
+                .onErrorResume(DelayTimeoutException.class, (e) -> Mono.error(ClientError.invalidDataFromGateway()))
+                .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
+                        consentArtefactResponse.getConsentDetail(),
+                        consentArtefactResponse.getStatus(),
+                        consentRequestId)
+                        .then(Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
+                                consentArtefactResponse.getConsentDetail().getConsentId(),
+                                consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
+                                consentArtefactResponse.getSignature(),
+                                properties.getDataPushUrl()))));
+    }
 
     @Override
-    public Mono<Void> perform(ConsentArtefactReference reference, String consentRequestId, LocalDateTime timestamp) {
-        var requestId = UUID.randomUUID();
-        return consentRepository.get(consentRequestId)
+    public Mono<Void> perform(ConsentNotification consentNotification, LocalDateTime timeStamp) {
+        return consentRepository.get(consentNotification.getConsentRequestId())
+                .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
                 .flatMap(consentRequest -> {
                     var cmSuffix = getCmSuffix(consentRequest.getPatient().getId());
-                    return centralRegistry.token()
-                            .flatMap(token -> {
-                                var consentArtefactRequest = ConsentArtefactRequest
-                                        .builder()
-                                        .consentId(reference.getId())
-                                        .timestamp(LocalDateTime.now())
-                                        .requestId(requestId)
-                                        .build();
-
-                                return scheduleThis(gatewayClient
-                                        .requestConsentArtefact(consentArtefactRequest, cmSuffix, token))
-                                        .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
-                                        .responseFrom(discard ->
-                                                Mono.defer(() -> gatewayResponseCache.asMap()
-                                                        .getOrDefault(requestId.toString(), Optional.empty())
-                                                        .map(Mono::just)
-                                                        .orElse(Mono.empty())));
-                            })
-                            .onErrorResume(DelayTimeoutException.class, (e) -> Mono.error(ClientError.invalidDataFromGateway()))
-                            .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
-                                    consentArtefactResponse.getConsentDetail(),
-                                    consentArtefactResponse.getStatus(),
-                                    consentRequestId)
-                                    .then(Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
-                                            consentArtefactResponse.getConsentDetail().getConsentId(),
-                                            consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
-                                            consentArtefactResponse.getSignature(),
-                                            properties.getDataPushUrl()))));
-
+                    return Flux.fromIterable(consentNotification.getConsentArtefacts())
+                            .flatMap(reference -> perform(reference, consentRequest.getId(), cmSuffix))
+                            .then();
                 });
     }
 
