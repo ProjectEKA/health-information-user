@@ -437,7 +437,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder, GatewayServiceProperties serviceProperties) {
-        return new GatewayServiceClient(builder, serviceProperties);
+    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder, GatewayServiceProperties serviceProperties,CentralRegistry centralRegistry) {
+        return new GatewayServiceClient(builder, serviceProperties, centralRegistry);
     }
 }

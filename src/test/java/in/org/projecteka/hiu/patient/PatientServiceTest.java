@@ -108,7 +108,7 @@ class PatientServiceTest {
         StepVerifier.create(patientPublisher)
                 .expectNext(patient)
                 .verifyComplete();
-        verify(gatewayServiceClient, never()).findPatientWith(any(), any(), any());
+        verify(gatewayServiceClient, never()).findPatientWith(any(), any());
     }
 
     @Test
@@ -124,7 +124,7 @@ class PatientServiceTest {
         when(hiuProperties.getId()).thenReturn("10000005");
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
         when(centralRegistry.token()).thenReturn(Mono.just(token));
-        when(gatewayServiceClient.findPatientWith(any(), any(), any())).thenReturn(Mono.just(Boolean.TRUE));
+        when(gatewayServiceClient.findPatientWith(any(), any())).thenReturn(Mono.just(Boolean.TRUE));
 
         StepVerifier.create(patientService.findPatientWith(patientId))
                 .expectErrorMatches(error -> ((ClientError) error)

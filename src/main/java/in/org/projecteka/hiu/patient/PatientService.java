@@ -55,11 +55,11 @@ public class PatientService {
         {
             var cmSuffix = getCmSuffix(id);
             var request = getFindPatientRequest(id);
-            return centralRegistry.token()
-                    .flatMap(token -> scheduleThis(gatewayServiceClient.findPatientWith(request, token, cmSuffix))
-                            .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
-                            .responseFrom(discard ->
-                                    Mono.defer(() -> getFromCache(request.getRequestId().toString(), Mono::empty))))
+
+            return scheduleThis(gatewayServiceClient.findPatientWith(request, cmSuffix))
+                    .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
+                    .responseFrom(discard ->
+                            Mono.defer(() -> getFromCache(request.getRequestId().toString(), Mono::empty)))
                     .onErrorResume(DelayTimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()))
                     .onErrorResume(TimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()));
         });
