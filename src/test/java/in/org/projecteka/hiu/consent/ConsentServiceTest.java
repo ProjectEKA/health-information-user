@@ -73,9 +73,10 @@ public class ConsentServiceTest {
     @Mock
     private GatewayServiceClient gatewayServiceClient;
     @Mock
-    HiuProperties hiuProperties;
+    private HiuProperties hiuProperties;
     @Mock
-    GatewayServiceProperties gatewayServiceProperties;
+    private GatewayServiceProperties gatewayServiceProperties;
+
 
     @Captor
     ArgumentCaptor<in.org.projecteka.hiu.consent.model.ConsentRequest> captor;
@@ -100,6 +101,7 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         Permission permission = consentRequestData.getConsent().getPermission();
@@ -137,10 +139,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         var patientRep = patientRepresentation().build();
         Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
@@ -174,10 +177,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
         //Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
@@ -213,10 +217,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
@@ -243,11 +248,12 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
-                gatewayServiceClient);
+                gatewayServiceClient,
+                gatewayServiceProperties);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
                 .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
@@ -270,10 +276,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         var consentRequest = consentRequest()
                 .status(DENIED)
@@ -305,6 +312,7 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");

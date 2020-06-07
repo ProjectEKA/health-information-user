@@ -389,26 +389,11 @@ public class ConsentService {
     }
 
     private Mono<Void> processConsentNotification(ConsentNotification notification, LocalDateTime localDateTime) {
-        switch (notification.getStatus()) {
-            case GRANTED:
-                // TODO: Need to figure out how we are going to figure out consent manager id.
-                // most probably need to have a mapping of @ncg = consent manager id
-//                return validateRequest(notification.getConsentRequestId())
-//                        .flatMap(consentRequest -> handleConsentArtefactNotification(notification, localDateTime).then());
-            return consentTasks.get(GRANTED).perform(notification,localDateTime);
-            case REVOKED:
-            case EXPIRED:
-                if (notification.getConsentArtefacts().isEmpty()) {
-                    return processNotificationRequest(notification.getConsentRequestId(), EXPIRED);
-                }
-                return validateConsents(notification.getConsentArtefacts())
-                        .flatMap(consentArtefacts -> handleConsentArtefactNotification(notification, localDateTime).then());
-            case DENIED:
-                return processNotificationRequest(notification.getConsentRequestId(), DENIED);
-            default:
-                return Mono.error(validationFailed());
+        var consentTask = consentTasks.get(notification.getStatus());
+        if (consentTask == null) {
+            return Mono.error(ClientError.validationFailed());
         }
-
+        return consentTask.perform(notification, localDateTime);
     }
 
     @PostConstruct
@@ -418,6 +403,7 @@ public class ConsentService {
                 dataFlowRequestPublisher, hiuProperties, gatewayServiceProperties, gatewayResponseCache));
         consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
         consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
+        consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));
         this.gatewayResponseCache = CacheBuilder
                 .newBuilder()
                 .maximumSize(50)
@@ -429,16 +415,4 @@ public class ConsentService {
                 });
     }
 
-    private Flux<Void> handleConsentArtefactNotification(ConsentNotification notification, LocalDateTime timestamp) {
-        return Flux.fromIterable(notification.getConsentArtefacts())
-                .flatMap(consentArtefactReference -> {
-                    ConsentTask consentTask = consentTasks.get(notification.getStatus());
-                    if (consentTask != null) {
-                        return consentTask.perform(consentArtefactReference, notification.getConsentRequestId(), timestamp);
-                    }
-                    return processRejectedConsent(consentArtefactReference,
-                            notification.getStatus(),
-                            timestamp);
-                });
-    }
 }
