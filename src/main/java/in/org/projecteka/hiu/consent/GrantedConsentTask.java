@@ -66,7 +66,7 @@ public class GrantedConsentTask extends ConsentTask {
                                             .map(Mono::just)
                                             .orElse(Mono.empty())));
                 })
-                .onErrorResume(DelayTimeoutException.class, (e) -> Mono.error(ClientError.invalidDataFromGateway()))
+                .onErrorResume(DelayTimeoutException.class, (e) -> Mono.error(ClientError.gatewayTimeOut()))
                 .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
                         consentArtefactResponse.getConsentDetail(),
                         consentArtefactResponse.getStatus(),
