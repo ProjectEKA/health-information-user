@@ -15,8 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.internal.util.reflection.FieldSetter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
@@ -325,32 +323,5 @@ public class ConsentServiceTest {
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
         StepVerifier.create(consentService.createRequest(requesterId, consentRequestData))
                 .expectComplete().verify();
-    }
-
-    @Test
-    void shouldHandleConsentArtefactResponse() throws NoSuchFieldException {
-        var mockCache = Mockito.mock(Cache.class);
-
-        ConsentService consentService = new ConsentService(
-                consentManagerClient,
-                hiuProperties,
-                consentRepository,
-                dataFlowRequestPublisher,
-                null,
-                null,
-                centralRegistry,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayServiceProperties,
-                gatewayServiceClient);
-
-        FieldSetter.setField(consentService,
-                consentService.getClass().getDeclaredField("gatewayResponseCache"),mockCache);
-
-        when(gatewayConsentArtefactResponse.getConsentArtefactResponse()).thenReturn(consentArtefactResponse);
-
-        StepVerifier.create(consentService.handleConsentArtefact(gatewayConsentArtefactResponse))
-                .expectComplete().verify();
-        verify(mockCache.put();)
     }
 }
