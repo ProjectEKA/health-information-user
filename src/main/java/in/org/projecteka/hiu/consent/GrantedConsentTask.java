@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.Consent;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;

@@ -21,7 +21,7 @@ import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
-import in.org.projecteka.hiu.consent.GatewayServiceClient;
+import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
@@ -153,9 +153,12 @@ public class HiuConfiguration {
 
     @Bean
     public PatientService patientService(PatientServiceClient patientServiceClient,
+                                         GatewayServiceClient gatewayServiceClient,
                                          Cache<String, Optional<Patient>> cache,
-                                         CentralRegistry centralRegistry) {
-        return new PatientService(patientServiceClient, cache, centralRegistry);
+                                         CentralRegistry centralRegistry,
+                                         HiuProperties hiuProperties,
+                                         GatewayServiceProperties gatewayServiceProperties) {
+        return new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties);
     }
 
     @Bean
@@ -434,7 +437,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder, GatewayServiceProperties serviceProperties) {
-        return new GatewayServiceClient(builder, serviceProperties);
+    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder, GatewayServiceProperties serviceProperties,CentralRegistry centralRegistry) {
+        return new GatewayServiceClient(builder, serviceProperties, centralRegistry);
     }
 }

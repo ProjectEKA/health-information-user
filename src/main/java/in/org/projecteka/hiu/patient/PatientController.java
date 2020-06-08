@@ -18,4 +18,9 @@ public class PatientController {
     public Mono<SearchRepresentation> userWith(@PathVariable(name = "id") String consentManagerUserId) {
         return patientService.patientWith(consentManagerUserId).map(patient -> new SearchRepresentation(from(patient)));
     }
+
+    @GetMapping("/v1/patients/{id}")
+    public Mono<SearchRepresentation> findUserWith(@PathVariable(name = "id") String consentManagerUserId) {
+        return patientService.findPatientWith(consentManagerUserId).map(patient -> new SearchRepresentation(from(patient)));
+    }
 }

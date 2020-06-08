@@ -8,6 +8,7 @@ import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.model.Consent;
@@ -31,7 +32,11 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
@@ -73,7 +78,7 @@ public class ConsentService {
                           CentralRegistry centralRegistry,
                           HealthInformationPublisher healthInformationPublisher,
                           ConceptValidator conceptValidator,
-                          in.org.projecteka.hiu.consent.GatewayServiceClient gatewayServiceClient) {
+                          GatewayServiceClient gatewayServiceClient) {
         this.consentManagerClient = consentManagerClient;
         this.hiuProperties = hiuProperties;
         this.consentRepository = consentRepository;

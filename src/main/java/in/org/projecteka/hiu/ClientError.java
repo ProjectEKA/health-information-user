@@ -11,11 +11,13 @@ import static in.org.projecteka.hiu.ErrorCode.QUEUE_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
 import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
+import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.GATEWAY_TIMEOUT;
 
 @Getter
 @ToString
@@ -95,5 +97,9 @@ public class ClientError extends Throwable {
     public static ClientError invalidDataFromGateway(String errMsg) {
         return new ClientError(BAD_REQUEST,
                 new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY, errMsg)));
+    }
+
+    public static ClientError gatewayTimeOut() {
+        return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY, "Didn't receive any result from Gateway")));
     }
 }

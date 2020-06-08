@@ -19,7 +19,9 @@ public enum ErrorCode {
     VALIDATION_FAILED(1010),
     FAILED_TO_NOTIFY_CM(1011),
     INVALID_PURPOSE_OF_USE(1012),
-    INVALID_DATA_FROM_GATEWAY(1013);
+    INVALID_DATA_FROM_GATEWAY(1013),
+    NO_RESULT_FROM_GATEWAY(1014);
+
     private final int value;
 
     ErrorCode(int val) {
