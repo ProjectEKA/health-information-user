@@ -402,7 +402,7 @@ public class ConsentService {
     @PostConstruct
     private void postConstruct() {
         consentTasks.put(GRANTED, new GrantedConsentTask(
-                gatewayServiceClient, centralRegistry, consentRepository,
+                consentRepository,gatewayServiceClient, centralRegistry,
                 dataFlowRequestPublisher, hiuProperties, gatewayServiceProperties, gatewayResponseCache));
         consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
         consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));

@@ -1,8 +1,5 @@
 package in.org.projecteka.hiu.consent;
 
-import in.org.projecteka.hiu.ClientError;
-import in.org.projecteka.hiu.Error;
-import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentNotification;
@@ -14,17 +11,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
-import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
-import static org.springframework.http.HttpStatus.CONFLICT;
 
-public class ExpiredConsentTask implements ConsentTask {
-    private ConsentRepository consentRepository;
+public class ExpiredConsentTask extends ConsentTask {
     private DataFlowDeletePublisher dataFlowDeletePublisher;
 
     public ExpiredConsentTask(ConsentRepository consentRepository, DataFlowDeletePublisher dataFlowDeletePublisher) {
-        this.consentRepository = consentRepository;
+        super(consentRepository);
         this.dataFlowDeletePublisher = dataFlowDeletePublisher;
     }
 
@@ -44,18 +37,6 @@ public class ExpiredConsentTask implements ConsentTask {
                         .flatMap(reference -> processArtefactReference(reference,
                                 consentNotification.getConsentRequestId(), timeStamp))
                         .then()));
-    }
-
-
-    private Mono<Void> processNotificationRequest(String consentRequestId,
-                                                  ConsentStatus status) {
-        return consentRepository.getConsentRequestStatus(consentRequestId)
-                .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
-                .filter(consentStatus -> consentStatus == REQUESTED)
-                .switchIfEmpty(Mono.error(new ClientError(CONFLICT,
-                        new ErrorRepresentation(new Error(VALIDATION_FAILED,
-                                "Consent request is already updated.")))))
-                .flatMap(consentRequest -> consentRepository.updateConsentRequestStatus(status, consentRequestId));
     }
 
     private Mono<List<ConsentArtefact>> validateConsents(List<ConsentArtefactReference> consentArtefacts) {

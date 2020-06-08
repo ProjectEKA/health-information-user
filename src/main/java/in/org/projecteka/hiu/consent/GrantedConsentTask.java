@@ -23,16 +23,29 @@ import java.util.UUID;
 import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
 
 
-@AllArgsConstructor
-public class GrantedConsentTask implements ConsentTask {
-
+public class GrantedConsentTask extends ConsentTask {
     private GatewayServiceClient gatewayClient;
     private CentralRegistry centralRegistry;
-    private ConsentRepository consentRepository;
     private DataFlowRequestPublisher dataFlowRequestPublisher;
     private HiuProperties properties;
     private GatewayServiceProperties gatewayServiceProperties;
     private Cache<String, Optional<ConsentArtefactResponse>> gatewayResponseCache;
+
+    public GrantedConsentTask(ConsentRepository consentRepository,
+                              GatewayServiceClient gatewayClient,
+                              CentralRegistry centralRegistry,
+                              DataFlowRequestPublisher dataFlowRequestPublisher,
+                              HiuProperties properties,
+                              GatewayServiceProperties gatewayServiceProperties,
+                              Cache<String, Optional<ConsentArtefactResponse>> gatewayResponseCache) {
+        super(consentRepository);
+        this.gatewayClient = gatewayClient;
+        this.centralRegistry = centralRegistry;
+        this.dataFlowRequestPublisher = dataFlowRequestPublisher;
+        this.properties = properties;
+        this.gatewayServiceProperties = gatewayServiceProperties;
+        this.gatewayResponseCache = gatewayResponseCache;
+    }
 
     private Mono<Void> perform(ConsentArtefactReference reference, String consentRequestId, String cmSuffix) {
         var requestId = UUID.randomUUID();

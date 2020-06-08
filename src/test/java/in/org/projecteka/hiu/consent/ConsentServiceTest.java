@@ -8,17 +8,15 @@ import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.ConsentRequestData;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import in.org.projecteka.hiu.consent.model.Permission;
-import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.internal.util.reflection.FieldSetter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
@@ -76,6 +74,10 @@ public class ConsentServiceTest {
     private HiuProperties hiuProperties;
     @Mock
     private GatewayServiceProperties gatewayServiceProperties;
+    @Mock
+    private GatewayConsentArtefactResponse gatewayConsentArtefactResponse;
+    @Mock
+    private ConsentArtefactResponse consentArtefactResponse;
 
 
     @Captor
@@ -252,8 +254,8 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
-                gatewayServiceClient,
-                gatewayServiceProperties);
+                gatewayServiceProperties,
+                gatewayServiceClient);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
                 .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
@@ -323,5 +325,32 @@ public class ConsentServiceTest {
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
         StepVerifier.create(consentService.createRequest(requesterId, consentRequestData))
                 .expectComplete().verify();
+    }
+
+    @Test
+    void shouldHandleConsentArtefactResponse() throws NoSuchFieldException {
+        var mockCache = Mockito.mock(Cache.class);
+
+        ConsentService consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties,
+                consentRepository,
+                dataFlowRequestPublisher,
+                null,
+                null,
+                centralRegistry,
+                healthInformationPublisher,
+                conceptValidator,
+                gatewayServiceProperties,
+                gatewayServiceClient);
+
+        FieldSetter.setField(consentService,
+                consentService.getClass().getDeclaredField("gatewayResponseCache"),mockCache);
+
+        when(gatewayConsentArtefactResponse.getConsentArtefactResponse()).thenReturn(consentArtefactResponse);
+
+        StepVerifier.create(consentService.handleConsentArtefact(gatewayConsentArtefactResponse))
+                .expectComplete().verify();
+        verify(mockCache.put();)
     }
 }

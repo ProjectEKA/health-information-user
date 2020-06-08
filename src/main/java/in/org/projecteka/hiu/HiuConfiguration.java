@@ -149,8 +149,8 @@ public class HiuConfiguration {
                 centralRegistry,
                 healthInformationPublisher,
                 validator,
-                gatewayServiceClient,
-                gatewayServiceProperties);
+                gatewayServiceProperties,
+                gatewayServiceClient);
     }
 
     @Bean
