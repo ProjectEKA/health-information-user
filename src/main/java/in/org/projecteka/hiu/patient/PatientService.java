@@ -11,6 +11,7 @@ import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.DelayTimeoutException;
 import in.org.projecteka.hiu.patient.model.FindPatientQuery;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
+import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.patient.model.Requester;
 import lombok.AllArgsConstructor;
 import org.apache.log4j.Logger;
@@ -82,5 +83,19 @@ public class PatientService {
 
     private String getCmSuffix(String id) {
         return id.split("@")[1];
+    }
+
+    public Mono<Void> onFindPatient(PatientSearchGatewayResponse response) {
+        if(response.getError() != null) {
+            logger.error(String.format("[PatientService] Received error response from find-patient. HIU RequestId=%s, Error code = %d, message=%s",
+                    response.getResp().getRequestId(),
+                    response.getError().getCode(),
+                    response.getError().getMessage()));
+            return Mono.empty();
+        }
+        if(response.getPatient() != null) {
+            cache.put(response.getResp().getRequestId(),Optional.of(PatientRepresentation.toPatient(response.getPatient())));
+        }
+        return Mono.empty();
     }
 }
