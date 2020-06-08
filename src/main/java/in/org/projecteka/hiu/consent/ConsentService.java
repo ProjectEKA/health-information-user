@@ -152,6 +152,7 @@ public class ConsentService {
                                 "Invalid Purpose Of Use")))));
     }
 
+    @Deprecated
     public Mono<Void> handleNotification(ConsentNotificationRequest consentNotificationRequest) {
         switch (consentNotificationRequest.getStatus()) {
             case GRANTED:
@@ -173,6 +174,7 @@ public class ConsentService {
         }
     }
 
+    @Deprecated
     private Mono<Void> processNotificationRequest(String consentRequestId,
                                                   ConsentStatus status) {
         return validateRequest(consentRequestId)
@@ -184,6 +186,7 @@ public class ConsentService {
                         consentRequest.toBuilder().status(status).build()));
     }
 
+    @Deprecated
     public Flux<ConsentRequestRepresentation> requestsFrom(String requesterId) {
         return consentRepository.requestsFrom(requesterId)
                 .flatMap(consentRequest ->
