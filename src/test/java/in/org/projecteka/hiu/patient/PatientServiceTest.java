@@ -8,19 +8,24 @@ import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.GatewayResponse;
+import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.patient;
 import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -134,5 +139,28 @@ class PatientServiceTest {
                         .equals("Didn't receive any result from Gateway"))
                 .verify();
 
+    }
+
+    @Test
+    void shouldHandlePatientSearchResponse() {
+        var requestId = UUID.randomUUID();
+        var id = "test@ncg";
+        var name = "test";
+        var mockGatewayResponse = Mockito.mock(GatewayResponse.class);
+        var gatewayPatientSearchResponse = Mockito.mock(PatientSearchGatewayResponse.class);
+        var patientRepresentation = new PatientRepresentation(id, name);
+        var patient = PatientRepresentation.toPatient(patientRepresentation);
+
+
+        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties);
+
+        when(gatewayPatientSearchResponse.getPatient()).thenReturn(patientRepresentation);
+        when(gatewayPatientSearchResponse.getResp()).thenReturn(mockGatewayResponse);
+        when(gatewayPatientSearchResponse.getPatient()).thenReturn(patientRepresentation);
+        when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
+
+        StepVerifier.create(patientService.onFindPatient(gatewayPatientSearchResponse))
+                .expectComplete().verify();
+        verify(cache).put(eq(gatewayPatientSearchResponse.getResp().getRequestId()),eq(Optional.of(patient)));
     }
 }
