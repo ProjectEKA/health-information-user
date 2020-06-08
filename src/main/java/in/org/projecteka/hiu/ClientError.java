@@ -90,7 +90,7 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError gatewayTimeOut() {
-        return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY, "Didn't receive any result from Gateway")));
+        return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY,  "Could not connect to Gateway")));
     }
 
     public static ClientError consentRequestAlreadyUpdated() {
