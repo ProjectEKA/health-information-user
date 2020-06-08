@@ -8,13 +8,13 @@ import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.GatewayResponse;
 import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
+import org.mockito.*;
+import org.mockito.internal.util.reflection.FieldSetter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
@@ -23,6 +23,7 @@ import reactor.test.StepVerifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
@@ -324,4 +325,36 @@ public class ConsentServiceTest {
         StepVerifier.create(consentService.createRequest(requesterId, consentRequestData))
                 .expectComplete().verify();
     }
+
+    @Test
+    void shouldHandleConsentArtefactResponse() throws NoSuchFieldException {
+        var requestId = UUID.randomUUID();
+        var mockCache = Mockito.mock(Cache.class);
+        var mockGatewayResponse = Mockito.mock(GatewayResponse.class);
+
+        ConsentService consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties,
+                consentRepository,
+                dataFlowRequestPublisher,
+                null,
+                null,
+                centralRegistry,
+                healthInformationPublisher,
+                conceptValidator,
+                gatewayServiceProperties,
+                gatewayServiceClient);
+
+        FieldSetter.setField(consentService,
+                consentService.getClass().getDeclaredField("gatewayResponseCache"),mockCache);
+
+        when(gatewayConsentArtefactResponse.getConsentArtefactResponse()).thenReturn(consentArtefactResponse);
+        when(gatewayConsentArtefactResponse.getResp()).thenReturn(mockGatewayResponse);
+        when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
+
+        StepVerifier.create(consentService.handleConsentArtefact(gatewayConsentArtefactResponse))
+                .expectComplete().verify();
+        verify(mockCache).put(eq(gatewayConsentArtefactResponse.getResp().getRequestId()), ArgumentMatchers.<Optional<ConsentArtefactResponse>>any());
+    }
+
 }

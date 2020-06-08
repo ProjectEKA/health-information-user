@@ -373,7 +373,7 @@ public class ConsentService {
 
     public Mono<Void> handleConsentArtefact(GatewayConsentArtefactResponse consentArtefactResponse) {
         if (consentArtefactResponse.getError() != null) {
-            logger.error(String.format("[ConsentService] Received error response from consent-artefact. HIU RequestId=%s, Error code = %d, message=%s",
+            logger.error(String.format("[ConsentService] Received error response for consent-artefact. HIU RequestId=%s, Error code = %d, message=%s",
                     consentArtefactResponse.getResp().getRequestId(),
                     consentArtefactResponse.getError().getCode(),
                     consentArtefactResponse.getError().getMessage()));
