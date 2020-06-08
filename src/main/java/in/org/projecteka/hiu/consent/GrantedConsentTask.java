@@ -6,6 +6,7 @@ import in.org.projecteka.hiu.GatewayServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.DelayTimeoutException;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
@@ -19,7 +20,8 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import static in.org.projecteka.hiu.consent.CustomScheduler.scheduleThis;
+import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
+
 
 @AllArgsConstructor
 public class GrantedConsentTask implements ConsentTask {
