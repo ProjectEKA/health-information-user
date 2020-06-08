@@ -380,8 +380,8 @@ public class ConsentService {
             return Mono.empty();
         }
 
-        if (consentArtefactResponse.getConsentArtefactResponse() != null) {
-            this.gatewayResponseCache.put(consentArtefactResponse.getResp().getRequestId(), Optional.of(consentArtefactResponse.getConsentArtefactResponse()));
+        if (consentArtefactResponse.getConsent() != null) {
+            this.gatewayResponseCache.put(consentArtefactResponse.getResp().getRequestId(), Optional.of(consentArtefactResponse.getConsent()));
         }
 
         return Mono.empty();

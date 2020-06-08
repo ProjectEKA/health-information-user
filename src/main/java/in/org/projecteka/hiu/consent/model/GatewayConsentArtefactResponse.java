@@ -10,7 +10,7 @@ import java.util.UUID;
 public class GatewayConsentArtefactResponse {
     private UUID requestId;
     private String timestamp;
-    private ConsentArtefactResponse consentArtefactResponse;
+    private ConsentArtefactResponse consent;
     private RespError error;
     private GatewayResponse resp;
 }

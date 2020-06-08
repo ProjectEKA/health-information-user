@@ -348,7 +348,7 @@ public class ConsentServiceTest {
         FieldSetter.setField(consentService,
                 consentService.getClass().getDeclaredField("gatewayResponseCache"),mockCache);
 
-        when(gatewayConsentArtefactResponse.getConsentArtefactResponse()).thenReturn(consentArtefactResponse);
+        when(gatewayConsentArtefactResponse.getConsent()).thenReturn(consentArtefactResponse);
         when(gatewayConsentArtefactResponse.getResp()).thenReturn(mockGatewayResponse);
         when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
 
