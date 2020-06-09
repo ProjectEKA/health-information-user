@@ -6,29 +6,26 @@ import in.org.projecteka.hiu.GatewayServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.common.DelayTimeoutException;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
-
-import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
 
 
 public class GrantedConsentTask extends ConsentTask {
+    private static final Logger log = LoggerFactory.getLogger(GrantedConsentTask.class);
     private GatewayServiceClient gatewayClient;
     private CentralRegistry centralRegistry;
     private DataFlowRequestPublisher dataFlowRequestPublisher;
     private HiuProperties properties;
     private GatewayServiceProperties gatewayServiceProperties;
-    private Cache<String, Optional<ConsentArtefactResponse>> gatewayResponseCache;
+    private Cache<String, String> gatewayResponseCache;
 
     public GrantedConsentTask(ConsentRepository consentRepository,
                               GatewayServiceClient gatewayClient,
@@ -36,7 +33,7 @@ public class GrantedConsentTask extends ConsentTask {
                               DataFlowRequestPublisher dataFlowRequestPublisher,
                               HiuProperties properties,
                               GatewayServiceProperties gatewayServiceProperties,
-                              Cache<String, Optional<ConsentArtefactResponse>> gatewayResponseCache) {
+                              Cache<String, String> gatewayResponseCache) {
         super(consentRepository);
         this.gatewayClient = gatewayClient;
         this.centralRegistry = centralRegistry;
@@ -48,6 +45,7 @@ public class GrantedConsentTask extends ConsentTask {
 
     private Mono<Void> perform(ConsentArtefactReference reference, String consentRequestId, String cmSuffix) {
         var requestId = UUID.randomUUID();
+        gatewayResponseCache.put(requestId.toString(), consentRequestId);
         return centralRegistry.token()
                 .flatMap(token -> {
                     var consentArtefactRequest = ConsentArtefactRequest
@@ -56,26 +54,8 @@ public class GrantedConsentTask extends ConsentTask {
                             .timestamp(LocalDateTime.now())
                             .requestId(requestId)
                             .build();
-
-                    return scheduleThis(gatewayClient
-                            .requestConsentArtefact(consentArtefactRequest, cmSuffix, token))
-                            .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
-                            .responseFrom(discard ->
-                                    Mono.defer(() -> gatewayResponseCache.asMap()
-                                            .getOrDefault(requestId.toString(), Optional.empty())
-                                            .map(Mono::just)
-                                            .orElse(Mono.empty())));
-                })
-                .onErrorResume(DelayTimeoutException.class, (e) -> Mono.error(ClientError.gatewayTimeOut()))
-                .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
-                        consentArtefactResponse.getConsentDetail(),
-                        consentArtefactResponse.getStatus(),
-                        consentRequestId)
-                        .then(Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
-                                consentArtefactResponse.getConsentDetail().getConsentId(),
-                                consentArtefactResponse.getConsentDetail().getPermission().getDateRange(),
-                                consentArtefactResponse.getSignature(),
-                                properties.getDataPushUrl()))));
+                    return gatewayClient.requestConsentArtefact(consentArtefactRequest, cmSuffix, token);
+                });
     }
 
     @Override
@@ -85,7 +65,8 @@ public class GrantedConsentTask extends ConsentTask {
                 .flatMap(consentRequest -> {
                     var cmSuffix = getCmSuffix(consentRequest.getPatient().getId());
                     return Flux.fromIterable(consentNotification.getConsentArtefacts())
-                            .flatMap(reference -> perform(reference, consentRequest.getId(), cmSuffix))
+                            .flatMap(reference -> perform(reference, consentNotification.getConsentRequestId(),
+                                    cmSuffix))
                             .then();
                 });
     }

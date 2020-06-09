@@ -6,24 +6,12 @@ import com.google.common.cache.CacheLoader;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
-import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.GatewayServiceProperties;
+import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.consent.model.Consent;
-import in.org.projecteka.hiu.consent.model.ConsentArtefact;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
-import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.ConsentNotification;
-import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
-import in.org.projecteka.hiu.consent.model.ConsentRequestData;
-import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
-import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
-import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -54,6 +41,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
 public class ConsentService {
+    private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
     private final ConsentManagerClient consentManagerClient;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
@@ -65,10 +53,8 @@ public class ConsentService {
     private final ConceptValidator conceptValidator;
     private final GatewayServiceClient gatewayServiceClient;
     private final GatewayServiceProperties gatewayServiceProperties;
-    private Cache<String, Optional<ConsentArtefactResponse>> gatewayResponseCache;
-
+    private Cache<String, String> gatewayResponseCache;
     private Map<ConsentStatus, ConsentTask> consentTasks = new HashMap<>();
-    private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
 
     public ConsentService(ConsentManagerClient consentManagerClient,
                           HiuProperties hiuProperties,
@@ -292,6 +278,7 @@ public class ConsentService {
             ConsentRequestData hiRequest) {
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
         var gatewayRequestId = UUID.randomUUID();
+        logger.info("hiu requestID ========== {}", gatewayRequestId);
         return centralRegistry.token()
                 .flatMap(token -> gatewayServiceClient.sendConsentRequest(
                         token, getCmSuffix(hiRequest.getConsent()),
@@ -311,7 +298,8 @@ public class ConsentService {
 
     public Mono<Void> updatePostedRequest(ConsentRequestInitResponse response) {
         if (response.getError() != null) {
-            logger.error(String.format("[ConsentService] Received error response from consent-request. HIU RequestId=%s, Error code = %d, message=%s",
+            logger.error(String.format("[ConsentService] Received error response from consent-request. HIU " +
+                            "RequestId=%s, Error code = %d, message=%s",
                     response.getResp().getRequestId(),
                     response.getError().getCode(),
                     response.getError().getMessage()));
@@ -344,13 +332,15 @@ public class ConsentService {
     public Flux<ConsentRequestRepresentation> requestsOf(String requesterId) {
         return consentRepository.requestsOf(requesterId)
                 .flatMap(result -> {
-                    var consentRequest = ((in.org.projecteka.hiu.consent.model.ConsentRequest) result.get("consentRequest"));
+                    var consentRequest = ((in.org.projecteka.hiu.consent.model.ConsentRequest) result.get(
+                            "consentRequest"));
                     var consentRequestId = (String) result.get("consentRequestId");
                     var status = (ConsentStatus) result.get("status");
                     return Mono.zip(patientService.patientWith(consentRequest.getPatient().getId()),
                             mergeWithArtefactStatus(consentRequest, status, consentRequestId));
                 })
-                .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2()));
+                .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(),
+                        patientConsentRequest.getT2()));
     }
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeWithArtefactStatus(
@@ -372,18 +362,20 @@ public class ConsentService {
     }
 
     public Mono<Void> handleConsentArtefact(GatewayConsentArtefactResponse consentArtefactResponse) {
+        logger.info(consentArtefactResponse.toString());
         if (consentArtefactResponse.getError() != null) {
-            logger.error(String.format("[ConsentService] Received error response for consent-artefact. HIU RequestId=%s, Error code = %d, message=%s",
+            logger.error(String.format("[ConsentService] Received error response for consent-artefact. HIU " +
+                            "RequestId=%s, Error code = %d, message=%s",
                     consentArtefactResponse.getResp().getRequestId(),
                     consentArtefactResponse.getError().getCode(),
                     consentArtefactResponse.getError().getMessage()));
             return Mono.empty();
         }
-
         if (consentArtefactResponse.getConsent() != null) {
-            this.gatewayResponseCache.put(consentArtefactResponse.getResp().getRequestId(), Optional.of(consentArtefactResponse.getConsent()));
+            return consentRepository.insertConsentArtefact(consentArtefactResponse.getConsent().getConsentDetail(),
+                    consentArtefactResponse.getConsent().getStatus(),
+                    gatewayResponseCache.asMap().get(consentArtefactResponse.getResp().getRequestId()));
         }
-
         return Mono.empty();
     }
 
@@ -397,21 +389,21 @@ public class ConsentService {
 
     @PostConstruct
     private void postConstruct() {
-        consentTasks.put(GRANTED, new GrantedConsentTask(
-                consentRepository,gatewayServiceClient, centralRegistry,
-                dataFlowRequestPublisher, hiuProperties, gatewayServiceProperties, gatewayResponseCache));
-        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
-        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
-        consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));
         this.gatewayResponseCache = CacheBuilder
                 .newBuilder()
                 .maximumSize(50)
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
-                    public Optional<ConsentArtefactResponse> load(String key) {
-                        return Optional.empty();
+                    public String load(String key) {
+                        return "";
                     }
                 });
+        consentTasks.put(GRANTED, new GrantedConsentTask(
+                consentRepository, gatewayServiceClient, centralRegistry,
+                dataFlowRequestPublisher, hiuProperties, gatewayServiceProperties, gatewayResponseCache));
+        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
+        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
+        consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));
     }
 
 }
