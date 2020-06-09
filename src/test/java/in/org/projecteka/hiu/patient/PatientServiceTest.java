@@ -140,7 +140,7 @@ class PatientServiceTest {
                         .getError()
                         .getError()
                         .getMessage()
-                        .equals("Didn't receive any result from Gateway"))
+                        .equals("Could not connect to Gateway"))
                 .verify();
 
     }

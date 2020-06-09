@@ -138,7 +138,8 @@ public class HiuConfiguration {
             CentralRegistry centralRegistry,
             HealthInformationPublisher healthInformationPublisher,
             ConceptValidator validator,
-            GatewayServiceClient gatewayServiceClient) {
+            GatewayServiceClient gatewayServiceClient,
+            GatewayServiceProperties gatewayServiceProperties) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
@@ -149,6 +150,7 @@ public class HiuConfiguration {
                 centralRegistry,
                 healthInformationPublisher,
                 validator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
     }
 
