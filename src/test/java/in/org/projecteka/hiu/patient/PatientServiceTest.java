@@ -41,6 +41,9 @@ class PatientServiceTest {
     Cache<String, Optional<Patient>> cache;
 
     @Mock
+    Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache;
+
+    @Mock
     CentralRegistry centralRegistry;
 
     @Mock
@@ -67,7 +70,7 @@ class PatientServiceTest {
         map.put(patientId, Optional.of(patient));
         when(cache.asMap()).thenReturn(map);
         when(centralRegistry.token()).thenReturn(Mono.just(token));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
 
         Mono<Patient> patientPublisher = patientService.patientWith(patientId);
 
@@ -87,7 +90,7 @@ class PatientServiceTest {
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(client.patientWith(patientId, token)).thenReturn(Mono.just(patientRep));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
 
         Mono<Patient> patientPublisher = patientService.patientWith(patientId);
 
@@ -106,7 +109,7 @@ class PatientServiceTest {
         map.put(patientId, Optional.of(patient));
         when(cache.asMap()).thenReturn(map);
         when(centralRegistry.token()).thenReturn(Mono.just(token));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
 
         Mono<Patient> patientPublisher = patientService.findPatientWith(patientId);
 
@@ -124,12 +127,13 @@ class PatientServiceTest {
         var map = new ConcurrentHashMap<String, Optional<Patient>>();
         map.put(patientId, Optional.of(patient));
 
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
 
         when(hiuProperties.getId()).thenReturn("10000005");
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(gatewayServiceClient.findPatientWith(any(), any())).thenReturn(Mono.just(Boolean.TRUE));
+        when(patientSearchCache.asMap()).thenReturn(new ConcurrentHashMap<>());
 
         StepVerifier.create(patientService.findPatientWith(patientId))
                 .expectErrorMatches(error -> ((ClientError) error)
@@ -149,18 +153,20 @@ class PatientServiceTest {
         var mockGatewayResponse = Mockito.mock(GatewayResponse.class);
         var gatewayPatientSearchResponse = Mockito.mock(PatientSearchGatewayResponse.class);
         var patientRepresentation = new PatientRepresentation(id, name);
-        var patient = PatientRepresentation.toPatient(patientRepresentation);
+        var patient = patientRepresentation.toPatient();
 
 
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
 
         when(gatewayPatientSearchResponse.getPatient()).thenReturn(patientRepresentation);
         when(gatewayPatientSearchResponse.getResp()).thenReturn(mockGatewayResponse);
         when(gatewayPatientSearchResponse.getPatient()).thenReturn(patientRepresentation);
+
         when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
 
         StepVerifier.create(patientService.onFindPatient(gatewayPatientSearchResponse))
                 .expectComplete().verify();
-        verify(cache).put(eq(gatewayPatientSearchResponse.getResp().getRequestId()),eq(Optional.of(patient)));
+        verify(cache).put(eq(gatewayPatientSearchResponse.getPatient().getId()),eq(Optional.of(patient)));
+        verify(patientSearchCache).put(eq(gatewayPatientSearchResponse.getResp().getRequestId()),eq(Optional.of(gatewayPatientSearchResponse)));
     }
 }

@@ -18,7 +18,7 @@ public class PatientRepresentation {
         return new PatientRepresentation(patient.getIdentifier(), patient.getFirstName());
     }
 
-    public static Patient toPatient(PatientRepresentation patientRepresentation) {
-        return new Patient(patientRepresentation.getId(),patientRepresentation.getName(),"");
+    public Patient toPatient() {
+        return new Patient(this.getId(),this.getName(),"");
     }
 }

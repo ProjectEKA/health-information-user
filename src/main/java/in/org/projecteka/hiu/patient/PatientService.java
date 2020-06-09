@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.DelayTimeoutException;
+import in.org.projecteka.hiu.common.ErrorMappings;
 import in.org.projecteka.hiu.patient.model.FindPatientQuery;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
@@ -35,7 +36,9 @@ public class PatientService {
     private final CentralRegistry centralRegistry;
     private final HiuProperties hiuProperties;
     private final GatewayServiceProperties gatewayServiceProperties;
+    private final Cache<String, Optional<PatientSearchGatewayResponse>> gatewayResponseCache;
 
+    @Deprecated
     public Mono<Patient> patientWith(String id) {
         return cache.asMap().getOrDefault(id, Optional.empty())
                 .map(Mono::just)
@@ -60,9 +63,18 @@ public class PatientService {
             return scheduleThis(gatewayServiceClient.findPatientWith(request, cmSuffix))
                     .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
                     .responseFrom(discard ->
-                            Mono.defer(() -> getFromCache(request.getRequestId().toString(), Mono::empty)))
+                            Mono.defer(() -> getFromCache(request.getRequestId(), Mono::empty)))
                     .onErrorResume(DelayTimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()))
-                    .onErrorResume(TimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()));
+                    .onErrorResume(TimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()))
+                    .flatMap(response -> {
+                        if (response.getError() != null) {
+                            return Mono.error(ErrorMappings.get(response.getError().getCode()));
+                        }
+                        if (response.getPatient() != null) {
+                            return Mono.just(response.getPatient().toPatient());
+                        }
+                        return Mono.error(ClientError.unknownError());
+                    });
         });
     }
 
@@ -81,21 +93,27 @@ public class PatientService {
                 .orElseGet(function);
     }
 
+    private Mono<PatientSearchGatewayResponse> getFromCache(UUID requestId, Supplier<Mono<PatientSearchGatewayResponse>> function) {
+        return gatewayResponseCache.asMap().getOrDefault(requestId.toString(), Optional.empty())
+                .map(Mono::just)
+                .orElseGet(function);
+    }
+
     private String getCmSuffix(String id) {
         return id.split("@")[1];
     }
 
     public Mono<Void> onFindPatient(PatientSearchGatewayResponse response) {
-        if(response.getError() != null) {
+        if (response.getError() != null) {
             logger.error(String.format("[PatientService] Received error response from find-patient. HIU RequestId=%s, Error code = %d, message=%s",
                     response.getResp().getRequestId(),
                     response.getError().getCode(),
                     response.getError().getMessage()));
-            return Mono.empty();
         }
-        if(response.getPatient() != null) {
-            cache.put(response.getResp().getRequestId(),Optional.of(PatientRepresentation.toPatient(response.getPatient())));
+        if (response.getPatient() != null) {
+            cache.put(response.getPatient().getId(), Optional.of(response.getPatient().toPatient()));
         }
+        gatewayResponseCache.put(response.getResp().getRequestId(),Optional.of(response));
         return Mono.empty();
     }
 }
