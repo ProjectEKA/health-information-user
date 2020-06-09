@@ -38,6 +38,7 @@ public class PatientService {
     private final GatewayServiceProperties gatewayServiceProperties;
     private final Cache<String, Optional<PatientSearchGatewayResponse>> gatewayResponseCache;
 
+    @Deprecated
     public Mono<Patient> patientWith(String id) {
         return cache.asMap().getOrDefault(id, Optional.empty())
                 .map(Mono::just)
