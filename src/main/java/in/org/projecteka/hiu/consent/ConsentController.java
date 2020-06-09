@@ -7,6 +7,7 @@ import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -75,5 +76,9 @@ public class ConsentController {
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
-
+    @PostMapping("/v1/consents/on-fetch")
+    public Mono<ResponseEntity> onFetchConsentArtefact(@RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
+        consentService.handleConsentArtefact(consentArtefactResponse).subscribe();
+        return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
+    }
 }

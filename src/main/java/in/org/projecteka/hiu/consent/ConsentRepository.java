@@ -40,7 +40,7 @@ public class ConsentRepository {
     private static final String INSERT_CONSENT_REQUEST_QUERY = "INSERT INTO " +
             "consent_request (consent_request, consent_request_id) VALUES ($1, $2)";
     /**
-     * TODO: Should be refactored. 
+     * TODO: Should be refactored.
      * See notes in {@link #get(String)}
      */
     private static final String SELECT_CONSENT_REQUEST_QUERY = "SELECT consent_request " +
@@ -67,6 +67,12 @@ public class ConsentRepository {
     private static final String UPDATE_GATEWAY_CONSENT_REQUEST_STATUS = "UPDATE consent_request " +
             "set consent_request_id=$1, status=$2, date_modified=$3 WHERE gateway_request_id=$4";
 
+    private static final String UPDATE_CONSENT_REQUEST_STATUS = "UPDATE consent_request " +
+            "set status=$2, date_modified=$3 WHERE consent_request_id=$1";
+
+    private static final String SELECT_CONSENT_REQUEST_STATUS = "SELECT status FROM consent_request WHERE " +
+            "consent_request_id = $1" ;
+
 
     private final PgPool dbClient;
 
@@ -87,6 +93,7 @@ public class ConsentRepository {
      * TODO refactor this method. The only purpose of the method is to check whether a ConsentRequest by
      * the CM assigned consentRequestId exists or not. We can return a count and avoid unnecessary record fetch
      * and deserialization
+     *
      * @param consentRequestId
      * @return
      */
@@ -208,6 +215,7 @@ public class ConsentRepository {
      * It can just update the status column
      * the status field should be outside the consentRequest object.
      * the request never changes. the status does.
+     *
      * @param requestId
      * @param consentRequest
      * @return
@@ -258,9 +266,9 @@ public class ConsentRepository {
     public Mono<Void> insertConsentRequestToGateway(ConsentRequest consentRequest) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_GATEWAY_CONSENT_REQUEST)
                 .execute(Tuple.of(
-                            new JsonObject(from(consentRequest)),
-                            consentRequest.getId(),
-                            ConsentStatus.POSTED.toString()),
+                        new JsonObject(from(consentRequest)),
+                        consentRequest.getId(),
+                        ConsentStatus.POSTED.toString()),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to insert to consent request"));
@@ -320,4 +328,36 @@ public class ConsentRepository {
                             fluxSink.complete();
                         }));
     }
+
+    public Mono<Void> updateConsentRequestStatus(ConsentStatus status, String consentRequestId) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(UPDATE_CONSENT_REQUEST_STATUS)
+                        .execute(Tuple.of(consentRequestId, status.toString(), LocalDateTime.now()),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        monoSink.error(dbOperationFailure("Failed to update consent request status"));
+                                        return;
+                                    }
+                                    monoSink.success();
+                                }));
+    }
+
+    public Mono<ConsentStatus> getConsentRequestStatus(String consentId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_REQUEST_STATUS)
+                .execute(Tuple.of(consentId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to identify consent request"));
+                                return;
+                            }
+                            var iterator = handler.result().iterator();
+                            if (!iterator.hasNext()) {
+                                monoSink.success();
+                                return;
+                            }
+                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString("status")));
+
+                        }));
+    }
+
 }

@@ -8,17 +8,13 @@ import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.ConsentRequestData;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import in.org.projecteka.hiu.consent.model.Permission;
-import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.common.GatewayResponse;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
+import org.mockito.*;
+import org.mockito.internal.util.reflection.FieldSetter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
@@ -27,6 +23,7 @@ import reactor.test.StepVerifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
@@ -73,9 +70,14 @@ public class ConsentServiceTest {
     @Mock
     private GatewayServiceClient gatewayServiceClient;
     @Mock
-    HiuProperties hiuProperties;
+    private HiuProperties hiuProperties;
     @Mock
-    GatewayServiceProperties gatewayServiceProperties;
+    private GatewayServiceProperties gatewayServiceProperties;
+    @Mock
+    private GatewayConsentArtefactResponse gatewayConsentArtefactResponse;
+    @Mock
+    private ConsentArtefactResponse consentArtefactResponse;
+
 
     @Captor
     ArgumentCaptor<in.org.projecteka.hiu.consent.model.ConsentRequest> captor;
@@ -100,6 +102,7 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         Permission permission = consentRequestData.getConsent().getPermission();
@@ -137,10 +140,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         var patientRep = patientRepresentation().build();
         Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
@@ -174,10 +178,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
         //Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
@@ -213,10 +218,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
@@ -243,10 +249,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
         when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
@@ -270,10 +277,11 @@ public class ConsentServiceTest {
                 consentRepository,
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties),
+                new PatientService(patientServiceClient, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties),
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         var consentRequest = consentRequest()
                 .status(DENIED)
@@ -305,6 +313,7 @@ public class ConsentServiceTest {
                 centralRegistry,
                 healthInformationPublisher,
                 conceptValidator,
+                gatewayServiceProperties,
                 gatewayServiceClient);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
@@ -316,4 +325,36 @@ public class ConsentServiceTest {
         StepVerifier.create(consentService.createRequest(requesterId, consentRequestData))
                 .expectComplete().verify();
     }
+
+    @Test
+    void shouldHandleConsentArtefactResponse() throws NoSuchFieldException {
+        var requestId = UUID.randomUUID();
+        var mockCache = Mockito.mock(Cache.class);
+        var mockGatewayResponse = Mockito.mock(GatewayResponse.class);
+
+        ConsentService consentService = new ConsentService(
+                consentManagerClient,
+                hiuProperties,
+                consentRepository,
+                dataFlowRequestPublisher,
+                null,
+                null,
+                centralRegistry,
+                healthInformationPublisher,
+                conceptValidator,
+                gatewayServiceProperties,
+                gatewayServiceClient);
+
+        FieldSetter.setField(consentService,
+                consentService.getClass().getDeclaredField("gatewayResponseCache"),mockCache);
+
+        when(gatewayConsentArtefactResponse.getConsent()).thenReturn(consentArtefactResponse);
+        when(gatewayConsentArtefactResponse.getResp()).thenReturn(mockGatewayResponse);
+        when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
+
+        StepVerifier.create(consentService.handleConsentArtefact(gatewayConsentArtefactResponse))
+                .expectComplete().verify();
+        verify(mockCache).put(eq(gatewayConsentArtefactResponse.getResp().getRequestId()), ArgumentMatchers.<Optional<ConsentArtefactResponse>>any());
+    }
+
 }
