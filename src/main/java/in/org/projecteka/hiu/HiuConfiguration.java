@@ -37,6 +37,7 @@ import in.org.projecteka.hiu.dataflow.LocalDataStore;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
+import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
 import in.org.projecteka.hiu.user.UserRepository;
@@ -157,8 +158,9 @@ public class HiuConfiguration {
                                          Cache<String, Optional<Patient>> cache,
                                          CentralRegistry centralRegistry,
                                          HiuProperties hiuProperties,
-                                         GatewayServiceProperties gatewayServiceProperties) {
-        return new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties);
+                                         GatewayServiceProperties gatewayServiceProperties,
+                                         Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache) {
+        return new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties,patientSearchCache);
     }
 
     @Bean
@@ -169,6 +171,19 @@ public class HiuConfiguration {
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
                     public Optional<Patient> load(String key) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    @Bean
+    public Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache() {
+        return CacheBuilder
+                .newBuilder()
+                .maximumSize(50)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build(new CacheLoader<>() {
+                    public Optional<PatientSearchGatewayResponse> load(String key) {
                         return Optional.empty();
                     }
                 });
