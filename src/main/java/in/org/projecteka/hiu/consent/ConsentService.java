@@ -371,7 +371,6 @@ public class ConsentService {
     }
 
     public Mono<Void> handleConsentArtefact(GatewayConsentArtefactResponse consentArtefactResponse) {
-        logger.info(consentArtefactResponse.toString());
         if (consentArtefactResponse.getError() != null) {
             logger.error(String.format("[ConsentService] Received error response for consent-artefact. HIU " +
                             "RequestId=%s, Error code = %d, message=%s",
@@ -409,7 +408,7 @@ public class ConsentService {
                 });
         consentTasks.put(GRANTED, new GrantedConsentTask(
                 consentRepository, gatewayServiceClient, centralRegistry,
-                dataFlowRequestPublisher, hiuProperties, gatewayServiceProperties, gatewayResponseCache));
+                gatewayResponseCache));
         consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
         consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
         consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));

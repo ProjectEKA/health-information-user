@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 import java.util.UUID;
 
@@ -16,7 +15,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @Setter
 @Getter
-@ToString
 public class GatewayConsentArtefactResponse {
     private UUID requestId;
     private String timestamp;
