@@ -21,6 +21,7 @@ import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
@@ -36,6 +37,7 @@ import in.org.projecteka.hiu.dataflow.LocalDataStore;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
+import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
 import in.org.projecteka.hiu.user.UserRepository;
@@ -135,7 +137,9 @@ public class HiuConfiguration {
             PatientService patientService,
             CentralRegistry centralRegistry,
             HealthInformationPublisher healthInformationPublisher,
-            ConceptValidator validator) {
+            ConceptValidator validator,
+            GatewayServiceClient gatewayServiceClient,
+            GatewayServiceProperties gatewayServiceProperties) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
@@ -145,14 +149,20 @@ public class HiuConfiguration {
                 patientService,
                 centralRegistry,
                 healthInformationPublisher,
-                validator);
+                validator,
+                gatewayServiceProperties,
+                gatewayServiceClient);
     }
 
     @Bean
     public PatientService patientService(PatientServiceClient patientServiceClient,
+                                         GatewayServiceClient gatewayServiceClient,
                                          Cache<String, Optional<Patient>> cache,
-                                         CentralRegistry centralRegistry) {
-        return new PatientService(patientServiceClient, cache, centralRegistry);
+                                         CentralRegistry centralRegistry,
+                                         HiuProperties hiuProperties,
+                                         GatewayServiceProperties gatewayServiceProperties,
+                                         Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache) {
+        return new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties,patientSearchCache);
     }
 
     @Bean
@@ -163,6 +173,19 @@ public class HiuConfiguration {
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
                     public Optional<Patient> load(String key) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    @Bean
+    public Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache() {
+        return CacheBuilder
+                .newBuilder()
+                .maximumSize(50)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build(new CacheLoader<>() {
+                    public Optional<PatientSearchGatewayResponse> load(String key) {
                         return Optional.empty();
                     }
                 });
@@ -428,5 +451,10 @@ public class HiuConfiguration {
     @Bean
     public JWTGenerator jwt(byte[] sharedSecret) {
         return new JWTGenerator(sharedSecret);
+    }
+
+    @Bean
+    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder, GatewayServiceProperties serviceProperties,CentralRegistry centralRegistry) {
+        return new GatewayServiceClient(builder, serviceProperties, centralRegistry);
     }
 }

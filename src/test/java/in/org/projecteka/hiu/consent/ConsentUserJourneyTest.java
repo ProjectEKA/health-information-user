@@ -7,18 +7,14 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
-import in.org.projecteka.hiu.consent.model.ConsentArtefact;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
-import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
-import in.org.projecteka.hiu.consent.model.ConsentRequest;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -42,7 +38,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
@@ -69,6 +67,7 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 public class ConsentUserJourneyTest {
     private static final MockWebServer consentManagerServer = new MockWebServer();
+    private static final MockWebServer gatewayServer = new MockWebServer();
 
     @Autowired
     private WebTestClient webTestClient;
@@ -120,6 +119,7 @@ public class ConsentUserJourneyTest {
     @AfterAll
     public static void tearDown() throws IOException {
         consentManagerServer.shutdown();
+        gatewayServer.shutdown();
     }
 
     @BeforeEach
@@ -489,8 +489,262 @@ public class ConsentUserJourneyTest {
         public void initialize(ConfigurableApplicationContext applicationContext) {
             TestPropertyValues values =
                     TestPropertyValues.of(
-                            Stream.of("hiu.consentmanager.url=" + consentManagerServer.url("")));
+                            Stream.of("hiu.consentmanager.url=" + consentManagerServer.url(""),
+                                    "hiu.gatewayservice.baseUrl=" + gatewayServer.url("")));
             values.applyTo(applicationContext);
         }
+    }
+
+
+    @Test
+    public void shouldMakeConsentRequestToGateway() throws JsonProcessingException {
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        var consentRequestDetails = consentRequestDetails().build();
+        consentRequestDetails.getConsent().getPatient().setId("hinapatel79@ncg");
+
+
+        LocalDateTime dateEraseAt = LocalDateTime.of(LocalDate.of(2050, 01, 01), LocalTime.of(10, 30));
+        consentRequestDetails.getConsent().getPermission().setDataEraseAt(dateEraseAt);
+        when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
+        webTestClient
+                .post()
+                .uri("/v1/hiu/consent-requests")
+                .header("Authorization", "MQ==")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentRequestDetails)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldUpdateConsentRequestWithRequestId() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"consentRequest\": {\n" +
+                "    \"id\": \"f29f0e59-8388-4698-9fe6-05db67aeac46\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.just(ConsentStatus.POSTED));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldUpdateConsentRequestStatusAsErrored() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"error\": {\n" +
+                "    \"code\": 1000,\n" +
+                "    \"message\": \"string\"\n" +
+                "  }," +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.ERRORED, ""))
+                .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldThrowConsentRequestNotFound() throws JsonProcessingException {
+        String responseFromCM = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
+                "  \"consentRequest\": {\n" +
+                "    \"id\": \"f29f0e59-8388-4698-9fe6-05db67aeac46\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.create(MonoSink::success));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(Mono.empty());
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        var errorJson = "{\"error\":{\"code\":1003,\"message\":\"Cannot find the consent request\"}}";
+        webTestClient
+                .post()
+                .uri("/v1/consent-requests/on-init")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(responseFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .json(errorJson);
+    }
+
+    @Test
+    public void shouldNotifyConsentGranted() throws JsonProcessingException, InterruptedException {
+        String consentRequestId = "46ac0879-7f6d-4a5b-bc03-3f36782937a5";
+        String consentId = "ae00bb0c-8e29-4fe3-a09b-4c976757d933";
+        String notificationFromCM = "{\n" +
+                "  \"requestId\": \"e815dc70-0b18-4f7c-9a03-17aed83d5ac2\",\n" +
+                "  \"timestamp\": \"2020-06-04T11:01:11.045Z\",\n" +
+                "  \"notification\": {\n" +
+                "    \"consentRequestId\": \"" + consentRequestId + "\",\n" +
+                "    \"status\": \"GRANTED\",\n" +
+                "    \"consentArtefacts\": [\n" +
+                "      {\n" +
+                "        \"id\": \"" + consentId + "\"\n" +
+                "      }\n" +
+                "    ]\n" +
+                "  }\n" +
+                "}";
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        var patient = Patient.builder()
+                .id("heenapatel@ncg")
+                .build();
+        ConsentRequest consentRequest = ConsentRequest.builder().patient(patient).status(ConsentStatus.REQUESTED).build();
+        when(consentRepository.get(consentRequestId)).thenReturn(Mono.just(consentRequest));
+        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+
+        var consent = consentArtefactResponse()
+                .status(ConsentStatus.GRANTED)
+                .consentDetail(
+                        ConsentArtefact.builder()
+                                .consentId(consentId)
+                                .permission(Permission.builder().build())
+                                .build())
+                .build();
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        when(consentRepository.insertConsentArtefact(
+                eq(consent.getConsentDetail()),
+                eq(consent.getStatus()),
+                eq(consentRequestId))).thenReturn(Mono.empty());
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), any(),
+                anyString(), anyString())).thenReturn(Mono.empty());
+        webTestClient
+                .post()
+                .uri("/v1/consents/hiu/notify")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(notificationFromCM)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+        Thread.sleep(2000);
+    }
+
+    @Ignore
+    void shouldInsertConsentArtefact() {
+
+        String gatewayConsentArtefactResponse = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "  \"consent\": {\n" +
+                "    \"status\": \"GRANTED\",\n" +
+                "    \"consentDetail\": {\n" +
+                "      \"schemaVersion\": \"string\",\n" +
+                "      \"consentId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                "      \"createdAt\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "      \"patient\": {\n" +
+                "        \"id\": \"batman@ncg\"\n" +
+                "      },\n" +
+                "      \"careContexts\": [\n" +
+                "        {\n" +
+                "          \"patientReference\": \"batman@tmh\",\n" +
+                "          \"careContextReference\": \"Episode1\"\n" +
+                "        }\n" +
+                "      ],\n" +
+                "      \"purpose\": {\n" +
+                "        \"text\": \"string\",\n" +
+                "        \"code\": \"string\",\n" +
+                "        \"refUri\": \"string\"\n" +
+                "      },\n" +
+                "      \"hip\": {\n" +
+                "        \"id\": \"string\"\n" +
+                "      },\n" +
+                "      \"hiu\": {\n" +
+                "        \"id\": \"string\"\n" +
+                "      },\n" +
+                "      \"consentManager\": {\n" +
+                "        \"id\": \"string\"\n" +
+                "      },\n" +
+                "      \"requester\": {\n" +
+                "        \"name\": \"Dr. Manju\",\n" +
+                "        \"identifier\": {\n" +
+                "          \"type\": \"REGNO\",\n" +
+                "          \"value\": \"MH1001\",\n" +
+                "          \"system\": \"https://www.mciindia.org\"\n" +
+                "        }\n" +
+                "      },\n" +
+                "      \"hiTypes\": [\n" +
+                "        \"Condition\"\n" +
+                "      ],\n" +
+                "      \"permission\": {\n" +
+                "        \"accessMode\": \"VIEW\",\n" +
+                "        \"dateRange\": {\n" +
+                "          \"from\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "          \"to\": \"2020-06-08T05:19:24.739Z\"\n" +
+                "        },\n" +
+                "        \"dataEraseAt\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "        \"frequency\": {\n" +
+                "          \"unit\": \"HOUR\",\n" +
+                "          \"value\": 0,\n" +
+                "          \"repeats\": 0\n" +
+                "        }\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"signature\": \"Signature of CM as defined in W3C standards; Base64 encoded\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+
+        webTestClient
+                .post()
+                .uri("/v1/consents/on-fetch")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(gatewayConsentArtefactResponse)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
     }
 }

@@ -22,5 +22,6 @@ public class Consent {
     private Requester requester;
     private List<HIType> hiTypes;
     private Permission permission;
+    //TODO remove this field
     private String consentNotificationUrl;
 }

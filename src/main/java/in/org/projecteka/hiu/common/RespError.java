@@ -1,4 +1,5 @@
-package in.org.projecteka.hiu.consent.model.consentmanager;
+package in.org.projecteka.hiu.common;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -6,15 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
+import java.io.Serializable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
 @Data
-public class ConsentRequest {
-    private UUID requestId;
-    private String timestamp;
-    private Consent consent;
+public class RespError implements Serializable {
+    private Integer code;
+    private String message;
 }
