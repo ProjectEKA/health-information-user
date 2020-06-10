@@ -184,9 +184,9 @@ public class ConsentService {
         return consentRepository.requestsFrom(requesterId)
                 .flatMap(consentRequest ->
                         Mono.zip(patientService.patientWith(consentRequest.getPatient().getId()),
-                                mergeArtefactWith(consentRequest)))
+                                mergeArtefactWith(consentRequest),Mono.just(consentRequest.getId())))
                 .map(patientConsentRequest ->
-                        toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2()));
+                        toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2(),patientConsentRequest.getT3()));
     }
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeArtefactWith(
@@ -344,12 +344,13 @@ public class ConsentService {
                 .flatMap(result -> {
                     var consentRequest = ((in.org.projecteka.hiu.consent.model.ConsentRequest) result.get("consentRequest"));
                     var consentRequestId = (String) result.get("consentRequestId");
+                    consentRequestId = consentRequestId == null? "" : consentRequestId;
                     var status = (ConsentStatus) result.get("status");
                     return Mono.zip(patientService.patientWith(consentRequest.getPatient().getId()),
-                            mergeWithArtefactStatus(consentRequest, status, consentRequestId));
+                            mergeWithArtefactStatus(consentRequest, status, consentRequestId),Mono.just(consentRequestId));
                 })
-                .map(patientConsentRequest ->
-                        toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2()));
+                .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(),
+                        patientConsentRequest.getT2(),patientConsentRequest.getT3()));
     }
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeWithArtefactStatus(
