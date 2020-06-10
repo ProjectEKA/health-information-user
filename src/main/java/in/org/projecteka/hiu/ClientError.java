@@ -11,11 +11,8 @@ import static in.org.projecteka.hiu.ErrorCode.QUEUE_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
 import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
+import static org.springframework.http.HttpStatus.*;
 
 @Getter
 @ToString
@@ -92,8 +89,20 @@ public class ClientError extends Throwable {
                 new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY, "Invalid Data from Gateway. Must have either a payload or error")));
     }
 
-    public static ClientError invalidDataFromGateway(String errMsg) {
-        return new ClientError(BAD_REQUEST,
-                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY, errMsg)));
+    public static ClientError gatewayTimeOut() {
+        return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY,  "Could not connect to Gateway")));
+    }
+
+    public static ClientError consentRequestAlreadyUpdated() {
+        return new ClientError(CONFLICT,
+                new ErrorRepresentation(new Error(VALIDATION_FAILED, "Consent request is already updated.")));
+    }
+
+    public static ClientError unknownError() {
+        return new ClientError(INTERNAL_SERVER_ERROR, new ErrorRepresentation(new Error(ErrorCode.UNKNOWN_ERROR,"Unknown error")));
+    }
+
+    public static ClientError patientNotFound() {
+        return new ClientError(NOT_FOUND, new ErrorRepresentation(new Error(ErrorCode.PATIENT_NOT_FOUND,"Patient not found")));
     }
 }

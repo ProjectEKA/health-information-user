@@ -14,6 +14,7 @@ import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -645,7 +646,6 @@ public class ConsentUserJourneyTest {
                                 .permission(Permission.builder().build())
                                 .build())
                 .build();
-//        var consentArtefactResponseJson = new ObjectMapper().writeValueAsString(consent);
         gatewayServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
         when(consentRepository.insertConsentArtefact(
@@ -667,4 +667,84 @@ public class ConsentUserJourneyTest {
         Thread.sleep(2000);
     }
 
+    @Ignore
+    void shouldInsertConsentArtefact() {
+
+        String gatewayConsentArtefactResponse = "{\n" +
+                "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
+                "  \"timestamp\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "  \"consent\": {\n" +
+                "    \"status\": \"GRANTED\",\n" +
+                "    \"consentDetail\": {\n" +
+                "      \"schemaVersion\": \"string\",\n" +
+                "      \"consentId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                "      \"createdAt\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "      \"patient\": {\n" +
+                "        \"id\": \"batman@ncg\"\n" +
+                "      },\n" +
+                "      \"careContexts\": [\n" +
+                "        {\n" +
+                "          \"patientReference\": \"batman@tmh\",\n" +
+                "          \"careContextReference\": \"Episode1\"\n" +
+                "        }\n" +
+                "      ],\n" +
+                "      \"purpose\": {\n" +
+                "        \"text\": \"string\",\n" +
+                "        \"code\": \"string\",\n" +
+                "        \"refUri\": \"string\"\n" +
+                "      },\n" +
+                "      \"hip\": {\n" +
+                "        \"id\": \"string\"\n" +
+                "      },\n" +
+                "      \"hiu\": {\n" +
+                "        \"id\": \"string\"\n" +
+                "      },\n" +
+                "      \"consentManager\": {\n" +
+                "        \"id\": \"string\"\n" +
+                "      },\n" +
+                "      \"requester\": {\n" +
+                "        \"name\": \"Dr. Manju\",\n" +
+                "        \"identifier\": {\n" +
+                "          \"type\": \"REGNO\",\n" +
+                "          \"value\": \"MH1001\",\n" +
+                "          \"system\": \"https://www.mciindia.org\"\n" +
+                "        }\n" +
+                "      },\n" +
+                "      \"hiTypes\": [\n" +
+                "        \"Condition\"\n" +
+                "      ],\n" +
+                "      \"permission\": {\n" +
+                "        \"accessMode\": \"VIEW\",\n" +
+                "        \"dateRange\": {\n" +
+                "          \"from\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "          \"to\": \"2020-06-08T05:19:24.739Z\"\n" +
+                "        },\n" +
+                "        \"dataEraseAt\": \"2020-06-08T05:19:24.739Z\",\n" +
+                "        \"frequency\": {\n" +
+                "          \"unit\": \"HOUR\",\n" +
+                "          \"value\": 0,\n" +
+                "          \"repeats\": 0\n" +
+                "        }\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"signature\": \"Signature of CM as defined in W3C standards; Base64 encoded\"\n" +
+                "  },\n" +
+                "  \"resp\": {\n" +
+                "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                "  }\n" +
+                "}";
+        var token = randomString();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+
+        webTestClient
+                .post()
+                .uri("/v1/consents/on-fetch")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(gatewayConsentArtefactResponse)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
 }
