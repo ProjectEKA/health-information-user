@@ -382,7 +382,12 @@ public class ConsentService {
         if (consentArtefactResponse.getConsent() != null) {
             return consentRepository.insertConsentArtefact(consentArtefactResponse.getConsent().getConsentDetail(),
                     consentArtefactResponse.getConsent().getStatus(),
-                    gatewayResponseCache.asMap().get(consentArtefactResponse.getResp().getRequestId()));
+                    gatewayResponseCache.asMap().get(consentArtefactResponse.getResp().getRequestId()))
+                    .then((Mono.defer(() -> dataFlowRequestPublisher.broadcastDataFlowRequest(
+                                            consentArtefactResponse.getConsent().getConsentDetail().getConsentId(),
+                                            consentArtefactResponse.getConsent().getConsentDetail().getPermission().getDateRange(),
+                                            consentArtefactResponse.getConsent().getSignature(),
+                                            hiuProperties.getDataPushUrl()))));
         }
         return Mono.empty();
     }
