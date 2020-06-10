@@ -10,8 +10,6 @@ import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
 import lombok.AllArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -27,6 +25,7 @@ import static in.org.projecteka.hiu.common.Serializer.to;
 
 @AllArgsConstructor
 public class ConsentRepository {
+    private final String CONSENT_REQUEST = "consent_request";
     private static final String SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT = "SELECT consent_artefact_id, " +
             "consent_artefact -> 'hip' ->> 'id' as hipId, consent_artefact -> 'hip' ->> 'name' as hipName, " +
             "consent_artefact -> 'requester' ->> 'name' as requester, " +
@@ -112,7 +111,7 @@ public class ConsentRepository {
                                 monoSink.error(consentRequestNotFound());
                                 return;
                             }
-                            var object = iterator.next().getValue("consent_request").toString();
+                            var object = iterator.next().getValue(CONSENT_REQUEST).toString();
                             monoSink.success(Serializer.to(object, ConsentRequest.class));
                         }));
     }
@@ -205,7 +204,7 @@ public class ConsentRepository {
                             }
                             for (Row result : handler.result()) {
                                 ConsentRequest consentRequest = to(
-                                        result.getValue("consent_request").toString(), ConsentRequest.class);
+                                        result.getValue(CONSENT_REQUEST).toString(), ConsentRequest.class);
                                 fluxSink.next(consentRequest);
                             }
                             fluxSink.complete();
@@ -323,7 +322,7 @@ public class ConsentRepository {
                             }
                             for (Row result : handler.result()) {
                                 ConsentRequest consentRequest = to(
-                                        result.getValue("consent_request").toString(), ConsentRequest.class);
+                                        result.getValue(CONSENT_REQUEST).toString(), ConsentRequest.class);
                                 Map<String, Object> resultMap = new HashMap<>();
                                 resultMap.put("consentRequest", consentRequest);
                                 resultMap.put("status", ConsentStatus.valueOf(result.getString("status")));
