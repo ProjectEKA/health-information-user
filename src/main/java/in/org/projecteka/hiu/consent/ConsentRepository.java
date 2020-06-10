@@ -76,7 +76,6 @@ public class ConsentRepository {
 
     private static final String SELECT_CONSENT_REQUEST_STATUS = "SELECT status FROM consent_request WHERE " +
             "consent_request_id = $1";
-    private static final Logger logger = LoggerFactory.getLogger(ConsentRepository.class);
     private final PgPool dbClient;
 
     @Deprecated
@@ -139,8 +138,6 @@ public class ConsentRepository {
     public Mono<Void> insertConsentArtefact(ConsentArtefact consentArtefact,
                                             ConsentStatus status,
                                             String consentRequestId) {
-        logger.info("====================");
-        logger.info(consentArtefact.toString());
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_CONSENT_ARTEFACT_QUERY)
                 .execute(Tuple.of(consentRequestId,
                         new JsonObject(from(consentArtefact)),
@@ -301,7 +298,8 @@ public class ConsentRepository {
                         }));
     }
 
-    public Mono<Void> updateConsentRequestStatus(String gatewayRequestId, ConsentStatus status,
+    public Mono<Void> updateConsentRequestStatus(String gatewayRequestId,
+                                                 ConsentStatus status,
                                                  String consentRequestId) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(UPDATE_GATEWAY_CONSENT_REQUEST_STATUS)

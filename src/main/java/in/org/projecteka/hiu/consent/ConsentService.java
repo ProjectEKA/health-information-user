@@ -10,8 +10,19 @@ import in.org.projecteka.hiu.GatewayServiceProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.consent.model.*;
+import in.org.projecteka.hiu.consent.model.Consent;
+import in.org.projecteka.hiu.consent.model.ConsentArtefact;
+import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
+import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
+import in.org.projecteka.hiu.consent.model.ConsentNotification;
+import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
+import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
+import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,7 +289,6 @@ public class ConsentService {
             ConsentRequestData hiRequest) {
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
         var gatewayRequestId = UUID.randomUUID();
-        logger.info("hiu requestID ========== {}", gatewayRequestId);
         return centralRegistry.token()
                 .flatMap(token -> gatewayServiceClient.sendConsentRequest(
                         token, getCmSuffix(hiRequest.getConsent()),
@@ -332,15 +342,14 @@ public class ConsentService {
     public Flux<ConsentRequestRepresentation> requestsOf(String requesterId) {
         return consentRepository.requestsOf(requesterId)
                 .flatMap(result -> {
-                    var consentRequest = ((in.org.projecteka.hiu.consent.model.ConsentRequest) result.get(
-                            "consentRequest"));
+                    var consentRequest = ((in.org.projecteka.hiu.consent.model.ConsentRequest) result.get("consentRequest"));
                     var consentRequestId = (String) result.get("consentRequestId");
                     var status = (ConsentStatus) result.get("status");
                     return Mono.zip(patientService.patientWith(consentRequest.getPatient().getId()),
                             mergeWithArtefactStatus(consentRequest, status, consentRequestId));
                 })
-                .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(),
-                        patientConsentRequest.getT2()));
+                .map(patientConsentRequest ->
+                        toConsentRequestRepresentation(patientConsentRequest.getT1(), patientConsentRequest.getT2()));
     }
 
     private Mono<in.org.projecteka.hiu.consent.model.ConsentRequest> mergeWithArtefactStatus(
