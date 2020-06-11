@@ -1,6 +1,8 @@
 package in.org.projecteka.hiu.dataflow;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
@@ -110,7 +112,9 @@ public class DataFlowRequestListener {
 
     @SneakyThrows
     private DataFlowRequest convertToDataFlowRequest(byte[] message) {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(message, DataFlowRequest.class);
+        var objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return objectMapper.readValue(message, DataFlowRequest.class);
     }
 }
