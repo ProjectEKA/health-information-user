@@ -36,6 +36,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -335,6 +336,8 @@ public class ConsentServiceTest {
         var mockCache = Mockito.mock(Cache.class);
         var mockGatewayResponse = Mockito.mock(GatewayResponse.class);
 
+        var consentRequestId = UUID.randomUUID().toString();
+
         ConsentService consentService = new ConsentService(
                 consentManagerClient,
                 hiuProperties,
@@ -351,13 +354,33 @@ public class ConsentServiceTest {
         FieldSetter.setField(consentService,
                 consentService.getClass().getDeclaredField("gatewayResponseCache"),mockCache);
 
+        var consentDetail = Mockito.mock(ConsentArtefact.class);
+        var consentId = UUID.randomUUID().toString();
+        var cacheMap = new ConcurrentHashMap<>();
+        cacheMap.put(requestId.toString(), consentRequestId);
+        var dateRange = Mockito.mock(DateRange.class);
+        var signature = "temp";
+        var dataPushUrl = "tempUrl";
+        var permission = Mockito.mock(in.org.projecteka.hiu.consent.model.consentmanager.Permission.class);
+
         when(gatewayConsentArtefactResponse.getConsent()).thenReturn(consentArtefactResponse);
         when(gatewayConsentArtefactResponse.getResp()).thenReturn(mockGatewayResponse);
+        when(consentArtefactResponse.getConsentDetail()).thenReturn(consentDetail);
+        when(consentDetail.getConsentId()).thenReturn(consentId);
+        when(consentDetail.getPermission()).thenReturn(permission);
+        when(permission.getDateRange()).thenReturn(dateRange);
+        when(consentArtefactResponse.getSignature()).thenReturn(signature);
+        when(consentArtefactResponse.getStatus()).thenReturn(GRANTED);
+        when(mockCache.asMap()).thenReturn(cacheMap);
         when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
+        when(consentRepository.insertConsentArtefact(consentDetail, GRANTED, consentRequestId)).thenReturn(Mono.empty());
+        when(hiuProperties.getDataPushUrl()).thenReturn(dataPushUrl);
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(consentId, dateRange, signature, dataPushUrl)).thenReturn(Mono.empty());
 
         StepVerifier.create(consentService.handleConsentArtefact(gatewayConsentArtefactResponse))
                 .expectComplete().verify();
-        verify(mockCache).put(eq(gatewayConsentArtefactResponse.getResp().getRequestId()), ArgumentMatchers.<Optional<ConsentArtefactResponse>>any());
+        verify(consentRepository).insertConsentArtefact(consentDetail, GRANTED, consentRequestId);
+        verify(dataFlowRequestPublisher).broadcastDataFlowRequest(consentId,dateRange,signature,dataPushUrl);
     }
 
 }
