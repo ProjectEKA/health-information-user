@@ -1,5 +1,8 @@
 package in.org.projecteka.hiu;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -253,7 +256,10 @@ public class HiuConfiguration {
 
     @Bean
     public Jackson2JsonMessageConverter converter() {
-        return new Jackson2JsonMessageConverter();
+        var objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return new Jackson2JsonMessageConverter(objectMapper);
     }
 
     @Bean
