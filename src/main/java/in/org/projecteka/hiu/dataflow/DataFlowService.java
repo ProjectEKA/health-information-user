@@ -90,14 +90,17 @@ public class DataFlowService {
 
     private Mono<String> validateAndRetrieveRequestedConsent(String transactionId, String senderId) {
         //TODO: possibly validate the senderId
-        return dataFlowRepository.retrieveDataFlowRequest(transactionId).flatMap(
-                dataMap -> {
-                    if (hasConsentArtefactExpired((String) dataMap.get("consentExpiryDate"))) {
-                        return Mono.error(ClientError.consentArtefactGone());
-                    }
-                    return Mono.just((String) dataMap.get("consentRequestId"));
-                }
-        );
+        return dataFlowRepository.retrieveDataFlowRequest(transactionId)
+                .flatMap(dataMap -> {
+                            if (hasConsentArtefactExpired((String) dataMap.get("consentExpiryDate"))) {
+                                return Mono.error(ClientError.consentArtefactGone());
+                            }
+                            return Mono.just((String) dataMap.get("consentRequestId"));
+                        }
+                )
+                .doOnError(throwable -> {
+                    logger.error(throwable.getMessage(), throwable);
+                });
     }
 
     private boolean hasConsentArtefactExpired(String dataEraseAt) {
