@@ -323,6 +323,9 @@ public class ConsentRepository {
                             for (Row result : handler.result()) {
                                 ConsentRequest consentRequest = to(
                                         result.getValue(CONSENT_REQUEST).toString(), ConsentRequest.class);
+                                if(consentRequest == null){
+                                    continue;
+                                }
                                 Map<String, Object> resultMap = new HashMap<>();
                                 resultMap.put("consentRequest", consentRequest);
                                 resultMap.put("status", ConsentStatus.valueOf(result.getString("status")));
