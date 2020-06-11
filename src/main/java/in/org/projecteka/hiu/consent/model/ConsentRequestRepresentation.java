@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Value
 public class ConsentRequestRepresentation {
     private String id;
+    private String consentRequestId;
     private PatientRepresentation patient;
     private ConsentStatus status;
     private LocalDateTime expiredDate;
@@ -18,9 +19,10 @@ public class ConsentRequestRepresentation {
     @SneakyThrows
     public static ConsentRequestRepresentation toConsentRequestRepresentation(
             Patient patient,
-            in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest) {
+            in.org.projecteka.hiu.consent.model.ConsentRequest consentRequest, String consentRequestId) {
         return new ConsentRequestRepresentation(
                 consentRequest.getId(),
+                consentRequestId,
                 new PatientRepresentation(
                         patient.getIdentifier(),
                         patient.getFirstName(),
