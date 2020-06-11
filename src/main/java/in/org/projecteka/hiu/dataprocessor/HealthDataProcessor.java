@@ -2,7 +2,9 @@ package in.org.projecteka.hiu.dataprocessor;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.HealthInformation;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
@@ -184,7 +186,10 @@ public class HealthDataProcessor {
     private DataContext createContext(DataAvailableMessage message) {
         Path dataFilePath = Paths.get(message.getPathToFile());
         try (InputStream inputStream = Files.newInputStream(dataFilePath)) {
-            ObjectMapper objectMapper = new ObjectMapper();
+            var objectMapper = new ObjectMapper()
+                    .registerModule(new JavaTimeModule())
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
             DataNotificationRequest dataNotificationRequest = objectMapper.readValue(inputStream,
                     DataNotificationRequest.class);
             return DataContext.builder()
