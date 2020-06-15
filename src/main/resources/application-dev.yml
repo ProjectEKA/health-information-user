@@ -27,6 +27,7 @@ hiu:
     poolSize: 5
   dataflow:
     offsetInDays: 2
+    usingGateway: false
   dicomserver:
     url: http://localhost:8042
     user: orthanc

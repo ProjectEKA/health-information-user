@@ -1,8 +1,10 @@
 package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
+import in.org.projecteka.hiu.GatewayServiceProperties;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
+import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -14,6 +16,7 @@ import static java.util.function.Predicate.not;
 @AllArgsConstructor
 public class DataFlowClient {
     private final WebClient.Builder webClientBuilder;
+    private final GatewayServiceProperties gatewayServiceProperties;
     private final ConsentManagerServiceProperties consentManagerServiceProperties;
 
     public Mono<DataFlowRequestResponse> initiateDataFlowRequest(DataFlowRequest dataFlowRequest, String token) {
@@ -26,5 +29,20 @@ public class DataFlowClient {
                 .onStatus(not(HttpStatus::is2xxSuccessful),
                         clientResponse -> Mono.error(failedToInitiateDataFlowRequest()))
                 .bodyToMono(DataFlowRequestResponse.class);
+    }
+
+
+    public Mono<Void> initiateDataFlowRequest(GatewayDataFlowRequest dataFlowRequest, String token, String cmSuffix) {
+        return webClientBuilder.build()
+                .post()
+                .uri( gatewayServiceProperties.getBaseUrl() + "/health-information/cm/request")
+                .header("Authorization", token)
+                .header("X-CM-ID", cmSuffix)
+                .body(Mono.just(dataFlowRequest), GatewayDataFlowRequest.class)
+                .retrieve()
+                .onStatus(not(HttpStatus::is2xxSuccessful),
+                        clientResponse -> Mono.error(failedToInitiateDataFlowRequest()))
+                .toBodilessEntity()
+                .then();
     }
 }

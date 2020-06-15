@@ -59,6 +59,8 @@ public class ConsentRepository {
             "consent_request set consent_request = $1 where consent_request_id = $2";
     private static final String SELECT_HIP_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'hip' ->> 'id' as hipId " +
             "FROM consent_artefact WHERE consent_artefact_id=$1";
+    private static final String SELECT_PATIENT_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'patient' ->> 'id' as patientId " +
+            "FROM consent_artefact WHERE consent_artefact_id=$1";
     private static final String SELECT_CONSENT_ID_FROM_REQUEST_ID = "SELECT consent_artefact_id from consent_artefact" +
             " WHERE " +
             "consent_request_id = $1";
@@ -250,6 +252,23 @@ public class ConsentRepository {
     public Mono<String> getHipId(String consentId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_HIP_ID_FOR_A_CONSENT)
                 .execute(Tuple.of(consentId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to get hip Id from consent Id"));
+                                return;
+                            }
+                            var iterator = handler.result().iterator();
+                            if (!iterator.hasNext()) {
+                                monoSink.error(dbOperationFailure("Failed to get hip Id from consent Id"));
+                                return;
+                            }
+                            monoSink.success(iterator.next().getString(0));
+                        }));
+    }
+
+    public Mono<String> getPatientId(String consentArtefactId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_PATIENT_ID_FOR_A_CONSENT)
+                .execute(Tuple.of(consentArtefactId),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to get hip Id from consent Id"));

@@ -16,4 +16,5 @@ import org.springframework.context.annotation.Configuration;
 @AllArgsConstructor
 public class DataFlowProperties {
     private int offsetInDays;
+    private boolean usingGateway;
 }
