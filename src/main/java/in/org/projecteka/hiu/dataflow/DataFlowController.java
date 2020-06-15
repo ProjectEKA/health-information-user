@@ -1,6 +1,6 @@
 package in.org.projecteka.hiu.dataflow;
 
-import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.GatewayCaller;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,8 +20,8 @@ public class DataFlowController {
     @PostMapping("/data/notification")
     public Mono<Void> dataNotification(@RequestBody DataNotificationRequest dataNotificationRequest) {
         return ReactiveSecurityContextHolder.getContext()
-                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUsername)
+                .map(securityContext -> (GatewayCaller) securityContext.getAuthentication().getPrincipal())
+                .map(GatewayCaller::getUsername)
                 .flatMap(requesterId -> dataFlowService.handleNotification(dataNotificationRequest, requesterId));
     }
 }

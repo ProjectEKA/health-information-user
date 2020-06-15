@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Configuration
@@ -34,7 +35,6 @@ public class SecurityConfiguration {
 
     private static final List<Map.Entry<String, HttpMethod>> SERVICE_ONLY_URLS = new ArrayList<>() {
         {
-            add(Map.entry("/consent/notification", HttpMethod.POST));
             add(Map.entry("/data/notification", HttpMethod.POST));
             add(Map.entry("/v1/consent-requests/on-init", HttpMethod.POST));
             add(Map.entry("/v1/consents/hiu/notify", HttpMethod.POST));
@@ -63,7 +63,7 @@ public class SecurityConfiguration {
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
         SERVICE_ONLY_URLS.forEach(entry -> {
-            httpSecurity.authorizeExchange().pathMatchers(entry.getValue(), entry.getKey()).authenticated();
+            httpSecurity.authorizeExchange().pathMatchers(entry.getValue(), entry.getKey()).hasAnyRole(GATEWAY.toString());
         });
         httpSecurity.authorizeExchange().pathMatchers("/**").hasAnyRole("VERIFIED");
         return httpSecurity
@@ -127,10 +127,12 @@ public class SecurityConfiguration {
 
         private Mono<SecurityContext> checkCentralRegistry(String token) {
             return centralRegistryTokenVerifier.verify(token)
-                    .map(caller -> new UsernamePasswordAuthenticationToken(
-                            caller,
-                            token,
-                            new ArrayList<SimpleGrantedAuthority>()))
+                    .map(serviceCaller -> {
+                        var authorities = new ArrayList<SimpleGrantedAuthority>();
+                        var authority = new SimpleGrantedAuthority("ROLE_" + serviceCaller.getRole().name().toUpperCase());
+                        authorities.add(authority);
+                        return new UsernamePasswordAuthenticationToken(serviceCaller, token, authorities);
+                    })
                     .map(SecurityContextImpl::new);
         }
 

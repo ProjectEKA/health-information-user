@@ -14,13 +14,17 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
-import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.GatewayCaller;
+import in.org.projecteka.hiu.user.Role;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Mono;
 
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static java.lang.String.format;
 
@@ -41,7 +45,7 @@ public class CentralRegistryTokenVerifier {
                 new HashSet<>(Arrays.asList("sub", "iat", "exp", "scope", "clientId"))));
     }
 
-    public Mono<Caller> verify(String token) {
+    public Mono<GatewayCaller> verify(String token) {
         try {
             var parts = token.split(" ");
             if (parts.length == 2) {
@@ -49,7 +53,8 @@ public class CentralRegistryTokenVerifier {
                 return Mono.justOrEmpty(jwtProcessor.process(credentials, null))
                         .flatMap(jwtClaimsSet -> {
                             try {
-                                return Mono.just(new Caller(jwtClaimsSet.getStringClaim("clientId"), true, null, true));
+                                var clientId = jwtClaimsSet.getStringClaim("clientId");
+                                return Mono.just(new GatewayCaller(clientId, true, getRole(jwtClaimsSet, clientId), true));
                             } catch (ParseException e) {
                                 logger.error(e);
                                 return Mono.empty();
@@ -63,4 +68,16 @@ public class CentralRegistryTokenVerifier {
             return Mono.empty();
         }
     }
+
+    private Role getRole(JWTClaimsSet jwtClaimsSet, String clientId) {
+        var resourceAccess = (JSONObject) jwtClaimsSet.getClaim("resource_access");
+        var clientObject = (JSONObject) resourceAccess.get(clientId);
+        return ((JSONArray) clientObject.get("roles"))
+                .stream()
+                .map(Object::toString)
+                .map((Role::valueOfIgnoreCase))
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
+    }
+
 }

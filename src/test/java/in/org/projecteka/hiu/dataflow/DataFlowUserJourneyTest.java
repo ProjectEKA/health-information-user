@@ -3,11 +3,11 @@ package in.org.projecteka.hiu.dataflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWKSet;
-import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
+import in.org.projecteka.hiu.GatewayCaller;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
@@ -17,6 +17,7 @@ import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
+import in.org.projecteka.hiu.user.Role;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -112,8 +113,14 @@ public class DataFlowUserJourneyTest {
         var token = randomString();
         flowRequestMap.put("consentRequestId", "consentRequestId");
         flowRequestMap.put("consentExpiryDate", LocalDateTime.parse("9999-04-15T16:55:00"));
+        var caller = GatewayCaller.builder()
+                .username("abc@ncg")
+                .isServiceAccount(true)
+                .role(Role.GATEWAY)
+                .verified(true)
+                .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(flowRequestMap));
@@ -252,7 +259,13 @@ public class DataFlowUserJourneyTest {
         DataNotificationRequest dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
         var token = randomString();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        var caller = GatewayCaller.builder()
+                .username("abc@ncg")
+                .isServiceAccount(true)
+                .role(Role.GATEWAY)
+                .verified(true)
+                .build();
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         var errorResponse = new ErrorRepresentation(new Error(
