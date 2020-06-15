@@ -24,9 +24,11 @@ import reactor.core.publisher.Mono;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 
 public class CentralRegistryTokenVerifier {
     private final ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
@@ -54,7 +56,7 @@ public class CentralRegistryTokenVerifier {
                         .flatMap(jwtClaimsSet -> {
                             try {
                                 var clientId = jwtClaimsSet.getStringClaim("clientId");
-                                return Mono.just(new GatewayCaller(clientId, true, getRole(jwtClaimsSet, clientId), true));
+                                return Mono.just(new GatewayCaller(clientId, true, getRoles(jwtClaimsSet, clientId), true));
                             } catch (ParseException e) {
                                 logger.error(e);
                                 return Mono.empty();
@@ -69,15 +71,15 @@ public class CentralRegistryTokenVerifier {
         }
     }
 
-    private Role getRole(JWTClaimsSet jwtClaimsSet, String clientId) {
+    private List<Role> getRoles(JWTClaimsSet jwtClaimsSet, String clientId) {
         var resourceAccess = (JSONObject) jwtClaimsSet.getClaim("resource_access");
         var clientObject = (JSONObject) resourceAccess.get(clientId);
         return ((JSONArray) clientObject.get("roles"))
                 .stream()
                 .map(Object::toString)
-                .map((Role::valueOfIgnoreCase))
+                .map(mayBeRole -> Role.valueOfIgnoreCase(mayBeRole).orElse(null))
                 .filter(Objects::nonNull)
-                .findFirst().orElse(null);
+                .collect(toList());
     }
 
 }

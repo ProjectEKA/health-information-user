@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
@@ -258,7 +259,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
 
@@ -365,7 +366,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token))
@@ -406,7 +407,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token))
@@ -445,7 +446,7 @@ public class ConsentUserJourneyTest {
 
         var token = randomString();
         when(centralRegistryTokenVerifier.verify(token))
-                .thenReturn(Mono.just(new GatewayCaller("", true, Role.GATEWAY, true)));
+                .thenReturn(Mono.just(new GatewayCaller("", true, (List.of(Role.values())), true)));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
                 .thenReturn(Mono.empty());
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
@@ -483,7 +484,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token))
@@ -564,7 +565,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
@@ -599,7 +600,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
@@ -634,7 +635,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller
                 .builder()
                 .username("cliendId")
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .isServiceAccount(true)
                 .verified(true)
                 .build();
@@ -675,7 +676,7 @@ public class ConsentUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));

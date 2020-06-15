@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Configuration
@@ -128,10 +129,11 @@ public class SecurityConfiguration {
         private Mono<SecurityContext> checkCentralRegistry(String token) {
             return centralRegistryTokenVerifier.verify(token)
                     .map(serviceCaller -> {
-                        var authorities = new ArrayList<SimpleGrantedAuthority>();
-                        var authority = new SimpleGrantedAuthority("ROLE_" + serviceCaller.getRole().name().toUpperCase());
-                        authorities.add(authority);
-                        return new UsernamePasswordAuthenticationToken(serviceCaller, token, authorities);
+                        var authority = serviceCaller.getRoles()
+                                .stream()
+                                .map( role -> new SimpleGrantedAuthority("ROLE_" + role.name().toUpperCase()))
+                                .collect(toList());
+                        return new UsernamePasswordAuthenticationToken(serviceCaller, token, authority);
                     })
                     .map(SecurityContextImpl::new);
         }

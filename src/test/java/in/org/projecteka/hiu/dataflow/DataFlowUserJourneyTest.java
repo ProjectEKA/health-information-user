@@ -116,7 +116,7 @@ public class DataFlowUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
 
@@ -262,7 +262,7 @@ public class DataFlowUserJourneyTest {
         var caller = GatewayCaller.builder()
                 .username("abc@ncg")
                 .isServiceAccount(true)
-                .role(Role.GATEWAY)
+                .roles(List.of(Role.values()))
                 .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
