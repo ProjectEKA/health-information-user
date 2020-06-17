@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.DataFlowProperties;
+import in.org.projecteka.hiu.DataFlowRequestWithKeyMaterial;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.CentralRegistry;
@@ -14,6 +15,7 @@ import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyStructure;
+import io.vavr.Tuple;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -21,6 +23,8 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
@@ -41,7 +45,7 @@ public class DataFlowRequestListener {
     private final Decryptor decryptor;
     private final DataFlowProperties dataFlowProperties;
     private final CentralRegistry centralRegistry;
-    private final Cache<String, DataFlowRequest> dataFlowCache;
+    private final Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
     private final ConsentRepository consentRepository;
 
     @PostConstruct
@@ -74,19 +78,28 @@ public class DataFlowRequestListener {
                                 var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);
                                 return consentRepository.getPatientId(consentId)
                                         .flatMap(patientId -> dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest, token, getCmSuffix(patientId)))
+                                        .doOnSuccess(r -> dataFlowRepository.addDataFlowRequest(
+                                                gatewayDataFlowRequest.getRequestId().toString(),
+                                                consentId,
+                                                dataFlowRequest))
                                         .then(Mono.defer(() -> {
-                                            dataFlowCache.put(gatewayDataFlowRequest.getRequestId().toString(), dataFlowRequest);
+                                            dataFlowCache.put(
+                                                    gatewayDataFlowRequest.getRequestId().toString(),
+                                                    dataRequestKeyMaterial);
                                             return Mono.empty();
                                         }));
                             }
                             return dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
-                                    .flatMap(dataFlowRequestResponse ->
-                                            dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                                    consentId,
-                                                    dataFlowRequest)
-                                                    .then(dataFlowRepository.addKeys(
-                                                            dataFlowRequestResponse.getTransactionId(),
-                                                            dataRequestKeyMaterial)));
+                                    .flatMap(dataFlowRequestResponse -> {
+                                        var requestId =  UUID.randomUUID().toString();
+                                        return dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                                consentId,
+                                                dataFlowRequest,
+                                                requestId)
+                                                .then(dataFlowRepository.addKeys(
+                                                        dataFlowRequestResponse.getTransactionId(),
+                                                        dataRequestKeyMaterial));
+                                    });
 
                         }).block();
             } catch (Exception exception) {

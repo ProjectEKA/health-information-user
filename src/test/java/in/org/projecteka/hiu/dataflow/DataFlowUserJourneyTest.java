@@ -44,8 +44,8 @@ import java.util.List;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
-import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
-import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.*;
+import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -245,7 +245,6 @@ public class DataFlowUserJourneyTest {
                 .expectBody()
                 .json(errorResponseJson);
     }
-
 
     @Test
     public void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {

@@ -1,7 +1,11 @@
 package in.org.projecteka.hiu.dataflow;
 
+import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
+import in.org.projecteka.hiu.DataFlowRequestWithKeyMaterial;
 import in.org.projecteka.hiu.consent.TokenUtils;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResult;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
@@ -27,6 +31,8 @@ public class DataFlowService {
     private final DataAvailabilityPublisher dataAvailabilityPublisher;
     private final DataFlowServiceProperties dataFlowServiceProperties;
     private final LocalDataStore localDataStore;
+    private final Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
+
     private static final Logger logger = LoggerFactory.getLogger(DataFlowService.class);
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String senderId) {
@@ -55,6 +61,28 @@ public class DataFlowService {
 
     private Mono<Void> notifyDataProcessor(Map<String, String> contentRef) {
         return dataAvailabilityPublisher.broadcastDataAvailability(contentRef);
+    }
+
+    public Mono<Void> updateDataFlowRequest(DataFlowRequestResult dataFlowRequestResult) {
+        if (dataFlowRequestResult.getError() != null) {
+            logger.error(String.format("[DataFlowService] Received error response for data flow request. HIU " +
+                            "RequestId=%s, Error code = %d, message=%s",
+                    dataFlowRequestResult.getResp().getRequestId(),
+                    dataFlowRequestResult.getError().getCode(),
+                    dataFlowRequestResult.getError().getMessage()));
+            return Mono.empty();
+        }
+        if (dataFlowRequestResult.getHiRequest() != null) {
+            var transactionId = dataFlowRequestResult.getHiRequest().getTransactionId().toString();
+            var dataFlowRequestKeyMaterial = dataFlowCache.asMap().get(dataFlowRequestResult.getResp().getRequestId());
+
+            return dataFlowRepository.updateDataRequest(
+                    transactionId,
+                    dataFlowRequestResult.getHiRequest().getSessionStatus(),
+                    dataFlowRequestResult.getResp().getRequestId()
+                    ).then(dataFlowRepository.addKeys(transactionId, dataFlowRequestKeyMaterial));
+        }
+        return Mono.empty();
     }
 
     private Mono<Map<String, String>> serializeDataTransferred(DataNotificationRequest dataNotificationRequest,

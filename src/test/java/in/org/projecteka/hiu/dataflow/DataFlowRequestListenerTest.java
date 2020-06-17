@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.DataFlowProperties;
+import in.org.projecteka.hiu.DataFlowRequestWithKeyMaterial;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +57,7 @@ class DataFlowRequestListenerTest {
     private CentralRegistry centralRegistry;
 
     @Mock
-    private Cache<String, DataFlowRequest> dataFlowCache;
+    private Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
 
     @Mock
     private ConsentRepository consentRepository;
