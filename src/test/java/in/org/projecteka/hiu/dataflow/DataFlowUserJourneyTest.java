@@ -7,7 +7,7 @@ import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
-import in.org.projecteka.hiu.GatewayCaller;
+import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
@@ -113,11 +113,9 @@ public class DataFlowUserJourneyTest {
         var token = randomString();
         flowRequestMap.put("consentRequestId", "consentRequestId");
         flowRequestMap.put("consentExpiryDate", LocalDateTime.parse("9999-04-15T16:55:00"));
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
-                .roles(List.of(Role.values()))
-                .verified(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
+                .roles(List.of(Role.GATEWAY))
                 .build();
 
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
@@ -259,11 +257,9 @@ public class DataFlowUserJourneyTest {
         DataNotificationRequest dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
         var token = randomString();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
-                .roles(List.of(Role.values()))
-                .verified(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
+                .roles(List.of(Role.GATEWAY))
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))

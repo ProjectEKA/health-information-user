@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
-import in.org.projecteka.hiu.GatewayCaller;
+import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.model.*;
@@ -225,7 +225,7 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new GatewayCaller("", true, null, true)));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",  null)));
         when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
         when(consentRepository.get(eq(consentRequestId))).thenReturn(Mono.just(consentRequest));
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()),
@@ -256,11 +256,9 @@ public class ConsentUserJourneyTest {
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference().build()))
                 .build();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
-                .verified(true)
                 .build();
 
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
@@ -289,7 +287,7 @@ public class ConsentUserJourneyTest {
                 .build();
         var token = randomString();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new GatewayCaller("", true, null, true)));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",null)));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.error(new Exception("Failed to fetch consent request")));
 
@@ -327,7 +325,7 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new GatewayCaller("", true, null, true)));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",null)));
         when(centralRegistry.token()).thenReturn(Mono.just(token));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
@@ -363,11 +361,9 @@ public class ConsentUserJourneyTest {
                 .build();
 
         var token = randomString();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
-                .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token))
                 .thenReturn(Mono.just(caller));
@@ -404,11 +400,9 @@ public class ConsentUserJourneyTest {
                 .build();
 
         var token = randomString();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
-                .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token))
                 .thenReturn(Mono.just(caller));
@@ -446,7 +440,7 @@ public class ConsentUserJourneyTest {
 
         var token = randomString();
         when(centralRegistryTokenVerifier.verify(token))
-                .thenReturn(Mono.just(new GatewayCaller("", true, (List.of(Role.values())), true)));
+                .thenReturn(Mono.just(new ServiceCaller("", (List.of(Role.values())))));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
                 .thenReturn(Mono.empty());
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
@@ -481,11 +475,9 @@ public class ConsentUserJourneyTest {
                 .build();
 
         var token = randomString();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
-                .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token))
                 .thenReturn(Mono.just(caller));
@@ -562,11 +554,9 @@ public class ConsentUserJourneyTest {
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(Mono.empty());
         var token = randomString();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
-                .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         webTestClient
@@ -597,11 +587,9 @@ public class ConsentUserJourneyTest {
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.ERRORED, ""))
                 .thenReturn(Mono.empty());
         var token = randomString();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
-                .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         webTestClient
@@ -632,12 +620,10 @@ public class ConsentUserJourneyTest {
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(Mono.empty());
         var token = randomString();
-        var caller = GatewayCaller
+        var caller = ServiceCaller
                 .builder()
-                .username("cliendId")
+                .clientId("cliendId")
                 .roles(List.of(Role.values()))
-                .isServiceAccount(true)
-                .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         var errorJson = "{\"error\":{\"code\":1003,\"message\":\"Cannot find the consent request\"}}";
@@ -673,11 +659,9 @@ public class ConsentUserJourneyTest {
                 "  }\n" +
                 "}";
         var token = randomString();
-        var caller = GatewayCaller.builder()
-                .username("abc@ncg")
-                .isServiceAccount(true)
+        var caller = ServiceCaller.builder()
+                .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
-                .verified(true)
                 .build();
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         var patient = Patient.builder()
@@ -783,7 +767,7 @@ public class ConsentUserJourneyTest {
                 "  }\n" +
                 "}";
         var token = randomString();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new GatewayCaller("", true, null, true)));
+        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",null)));
 
         webTestClient
                 .post()

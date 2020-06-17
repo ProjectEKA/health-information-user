@@ -10,9 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Builder
-public class GatewayCaller {
-    private String username;
-    private Boolean isServiceAccount;
+public class ServiceCaller {
+    private String clientId;
     List<Role> roles;
-    private boolean verified;
 }

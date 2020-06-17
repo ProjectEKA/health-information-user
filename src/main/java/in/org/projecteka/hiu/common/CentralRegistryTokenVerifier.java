@@ -14,7 +14,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
-import in.org.projecteka.hiu.GatewayCaller;
+import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.user.Role;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -47,7 +47,7 @@ public class CentralRegistryTokenVerifier {
                 new HashSet<>(Arrays.asList("sub", "iat", "exp", "scope", "clientId"))));
     }
 
-    public Mono<GatewayCaller> verify(String token) {
+    public Mono<ServiceCaller> verify(String token) {
         try {
             var parts = token.split(" ");
             if (parts.length == 2) {
@@ -56,7 +56,7 @@ public class CentralRegistryTokenVerifier {
                         .flatMap(jwtClaimsSet -> {
                             try {
                                 var clientId = jwtClaimsSet.getStringClaim("clientId");
-                                return Mono.just(new GatewayCaller(clientId, true, getRoles(jwtClaimsSet, clientId), true));
+                                return Mono.just(new ServiceCaller(clientId,  getRoles(jwtClaimsSet, clientId)));
                             } catch (ParseException e) {
                                 logger.error(e);
                                 return Mono.empty();
