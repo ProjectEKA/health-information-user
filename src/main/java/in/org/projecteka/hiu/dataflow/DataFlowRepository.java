@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
+import static in.org.projecteka.hiu.common.Serializer.to;
 import static java.lang.String.format;
 
 public class DataFlowRepository {
@@ -146,11 +147,9 @@ public class DataFlowRepository {
                             Map<String, Object> flowRequestTransaction = new HashMap<>();
                             flowRequestTransaction.put("consentRequestId", row.getString("consent_request_id"));
                             flowRequestTransaction.put("consentExpiryDate", row.getString("consent_expiry_date"));
-                                var jsonObject = (JsonObject) row.getValue("data_flow_request");
-                                flowRequestTransaction.put("dataFlowRequest",
-                                        jsonObject.mapTo(DataFlowRequest.class));
-                                monoSink.success(flowRequestTransaction);
-
+                            var request = row.getValue("data_flow_request").toString();
+                            flowRequestTransaction.put("dataFlowRequest", to(request, DataFlowRequest.class));
+                            monoSink.success(flowRequestTransaction);
                         }));
     }
 
