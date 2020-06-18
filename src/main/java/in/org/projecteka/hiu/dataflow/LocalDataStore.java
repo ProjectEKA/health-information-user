@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 
 public class LocalDataStore {
     private static final Logger logger = LoggerFactory.getLogger(LocalDataStore.class);
@@ -73,7 +76,10 @@ public class LocalDataStore {
     }
 
     private static Optional<byte[]> contentFromRequest(DataNotificationRequest dataNotificationRequest) {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);
+
         try {
             return Optional.ofNullable(objectMapper.writeValueAsBytes(dataNotificationRequest));
         } catch (JsonProcessingException e) {

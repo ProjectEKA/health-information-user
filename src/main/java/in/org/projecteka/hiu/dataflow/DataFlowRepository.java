@@ -3,17 +3,18 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
-import io.vertx.core.json.JsonObject;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
+import static in.org.projecteka.hiu.common.Serializer.from;
 import static in.org.projecteka.hiu.common.Serializer.to;
 import static java.lang.String.format;
 
@@ -48,7 +49,7 @@ public class DataFlowRepository {
 
     public Mono<Void> addDataRequest(String transactionId, String consentId, DataFlowRequest dataFlowRequest) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST)
-                .execute(Tuple.of(transactionId, consentId, JsonObject.mapFrom(dataFlowRequest)),
+                .execute(Tuple.of(transactionId, consentId, from(dataFlowRequest)),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to insert to data flow request"));
@@ -60,7 +61,7 @@ public class DataFlowRepository {
 
     public Mono<Void> addKeys(String transactionId, DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST_KEYS)
-                .execute(Tuple.of(transactionId, JsonObject.mapFrom(dataFlowRequestKeyMaterial)),
+                .execute(Tuple.of(transactionId, from(dataFlowRequestKeyMaterial)),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to insert to data flow request"));
@@ -85,8 +86,8 @@ public class DataFlowRepository {
                                 return;
                             }
                             var row = iterator.next();
-                            var keyPairsJson = (JsonObject) row.getValue("key_pairs");
-                            monoSink.success(keyPairsJson.mapTo(DataFlowRequestKeyMaterial.class));
+                            var keyPairsJson = row.getValue("key_pairs").toString();
+                            monoSink.success(to(keyPairsJson, DataFlowRequestKeyMaterial.class));
                         }));
     }
 
@@ -146,7 +147,8 @@ public class DataFlowRepository {
                             Row row = iterator.next();
                             Map<String, Object> flowRequestTransaction = new HashMap<>();
                             flowRequestTransaction.put("consentRequestId", row.getString("consent_request_id"));
-                            flowRequestTransaction.put("consentExpiryDate", row.getString("consent_expiry_date"));
+                            flowRequestTransaction.put("consentExpiryDate",
+                                    LocalDateTime.parse(row.getString("consent_expiry_date")));
                             var request = row.getValue("data_flow_request").toString();
                             flowRequestTransaction.put("dataFlowRequest", to(request, DataFlowRequest.class));
                             monoSink.success(flowRequestTransaction);

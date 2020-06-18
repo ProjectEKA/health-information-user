@@ -27,11 +27,11 @@ import in.org.projecteka.hiu.dataprocessor.model.SessionStatus;
 import in.org.projecteka.hiu.dataprocessor.model.StatusNotification;
 import in.org.projecteka.hiu.dataprocessor.model.StatusResponse;
 import in.org.projecteka.hiu.dataprocessor.model.Type;
-import org.apache.log4j.Logger;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,10 +41,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+
 public class HealthDataProcessor {
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
     public static final String MEDIA_APPLICATION_FHIR_XML = "application/fhir+xml";
-    private static final Logger logger = Logger.getLogger(HealthDataProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(HealthDataProcessor.class);
     private final HealthDataRepository healthDataRepository;
     private final DataFlowRepository dataFlowRepository;
     private final Decryptor decryptor;
@@ -84,63 +86,69 @@ public class HealthDataProcessor {
     }
 
     private void processEntries(DataContext context) {
-        updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING);
-        DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(context.getTransactionId()).block();
-        List<String> dataErrors = new ArrayList<>();
-        List<StatusResponse> statusResponses = new ArrayList<>();
-        context.getNotifiedData().getEntries().forEach(entry -> {
-            ProcessedResource processedResource = new ProcessedResource();
-            if (hasContent(entry)) {
-                processedResource = processEntryContent(context, entry, keyMaterial);
-            } else {
-                HealthInformation healthInformation = healthInformationClient.getHealthInformationFor(entry.getLink())
-                        .block();
-                try {
-                    if (healthInformation != null) {
-                        Entry healthInformationEntry = Entry.builder()
-                                .content(healthInformation.getContent())
-                                .checksum(entry.getChecksum())
-                                .media(entry.getMedia())
-                                .build();
-                        processedResource = processEntryContent(context, healthInformationEntry, keyMaterial);
-                    } else {
-                        processedResource.addError("Health Information not found");
+        try {
+            updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING);
+            DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(context.getTransactionId()).block();
+            List<String> dataErrors = new ArrayList<>();
+            List<StatusResponse> statusResponses = new ArrayList<>();
+            context.getNotifiedData().getEntries().forEach(entry -> {
+                ProcessedResource processedResource = new ProcessedResource();
+                if (hasContent(entry)) {
+                    processedResource = processEntryContent(context, entry, keyMaterial);
+                } else {
+                    HealthInformation healthInformation = healthInformationClient.getHealthInformationFor(entry.getLink())
+                            .block();
+                    try {
+                        if (healthInformation != null) {
+                            Entry healthInformationEntry = Entry.builder()
+                                    .content(healthInformation.getContent())
+                                    .checksum(entry.getChecksum())
+                                    .media(entry.getMedia())
+                                    .build();
+                            processedResource = processEntryContent(context, healthInformationEntry, keyMaterial);
+                        } else {
+                            processedResource.addError("Health Information not found");
+                        }
+                    } catch (Exception e) {
+                        processedResource.addError(e.getMessage());
+                        logger.error(e.getMessage());
                     }
-                } catch (Exception e) {
-                    processedResource.addError(e.getMessage());
-                    logger.error(e);
                 }
-            }
-            if (!processedResource.hasErrors()) {
-                String resource =
-                        getEntryParser(entry.getMedia()).encodeResourceToString(processedResource.getResource());
-                healthDataRepository.insertHealthData(
-                        context.getTransactionId(),
-                        context.getDataPartNumber(),
-                        resource,
-                        EntryStatus.SUCCEEDED)
-                        .block();
+                if (!processedResource.hasErrors()) {
+                    String resource =
+                            getEntryParser(entry.getMedia()).encodeResourceToString(processedResource.getResource());
+                    healthDataRepository.insertHealthData(
+                            context.getTransactionId(),
+                            context.getDataPartNumber(),
+                            resource,
+                            EntryStatus.SUCCEEDED)
+                            .block();
 
-                statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
+                    statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
+                } else {
+                    dataErrors.addAll(processedResource.getErrors());
+                    healthDataRepository.insertHealthData(
+                            context.getTransactionId(),
+                            context.getDataPartNumber(),
+                            "",
+                            EntryStatus.ERRORED)
+                            .block();
+                    statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, "Couldn't receive data"));
+                }
+            });
+
+            if (!dataErrors.isEmpty()) {
+                String allErrors = "[ERROR]".concat(String.join("[ERROR]", dataErrors));
+                updateDataProcessStatus(context, allErrors, HealthInfoStatus.ERRORED);
+                notifyHealthInfoStatus(context, statusResponses, SessionStatus.FAILED);
             } else {
-                dataErrors.addAll(processedResource.getErrors());
-                healthDataRepository.insertHealthData(
-                        context.getTransactionId(),
-                        context.getDataPartNumber(),
-                        "",
-                        EntryStatus.ERRORED)
-                        .block();
-                statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, "Couldn't receive data"));
+                updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED);
+                notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
             }
-        });
-
-        if (!dataErrors.isEmpty()) {
-            String allErrors = "[ERROR]".concat(String.join("[ERROR]", dataErrors));
-            updateDataProcessStatus(context, allErrors, HealthInfoStatus.ERRORED);
-            notifyHealthInfoStatus(context, statusResponses, SessionStatus.FAILED);
-        } else {
-            updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED);
-            notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
+        } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
+        } finally {
+            logger.info("Done!");
         }
     }
 
@@ -188,6 +196,7 @@ public class HealthDataProcessor {
         try (InputStream inputStream = Files.newInputStream(dataFilePath)) {
             var objectMapper = new ObjectMapper()
                     .registerModule(new JavaTimeModule())
+                    .configure(WRITE_DATES_AS_TIMESTAMPS, false)
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             DataNotificationRequest dataNotificationRequest = objectMapper.readValue(inputStream,
@@ -197,7 +206,7 @@ public class HealthDataProcessor {
                     .dataFilePath(dataFilePath)
                     .dataPartNumber(message.getPartNumber())
                     .build();
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Could not create context from data file path", e);
             throw new RuntimeException(e);
         }
@@ -206,6 +215,7 @@ public class HealthDataProcessor {
 
     private ProcessedResource processEntryContent(DataContext context, Entry entry,
                                                   DataFlowRequestKeyMaterial keyMaterial) {
+        logger.info("Process entry {}", entry);
         ProcessedResource result = new ProcessedResource();
         IParser parser = getEntryParser(entry.getMedia());
         if (parser == null) {

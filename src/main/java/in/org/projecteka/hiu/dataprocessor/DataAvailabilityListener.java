@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.dataprocessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
@@ -25,6 +26,7 @@ import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
 
@@ -86,7 +88,9 @@ public class DataAvailabilityListener {
 
     @SneakyThrows
     private DataAvailableMessage deserializeMessage(Message msg) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);
         return mapper.readValue(msg.getBody(), DataAvailableMessage.class);
     }
 }
