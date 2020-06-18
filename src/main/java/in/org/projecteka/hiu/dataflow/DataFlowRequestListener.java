@@ -26,6 +26,7 @@ import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 
@@ -144,6 +145,7 @@ public class DataFlowRequestListener {
     private DataFlowRequest convertToDataFlowRequest(byte[] message) {
         var objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
+              .configure(WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return objectMapper.readValue(message, DataFlowRequest.class);
     }

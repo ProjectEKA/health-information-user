@@ -36,6 +36,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -110,7 +111,7 @@ public class DataFlowUserJourneyTest {
         Map<String, Object> flowRequestMap = new HashMap<>();
         var token = randomString();
         flowRequestMap.put("consentRequestId", "consentRequestId");
-        flowRequestMap.put("consentExpiryDate", "9999-04-15T16:55:00.352+0000");
+        flowRequestMap.put("consentExpiryDate", LocalDateTime.parse("9999-04-15T16:55:00"));
 
         when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
@@ -145,7 +146,7 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("hipName", hipName);
         consentDetailsMap.put("requester", "1");
         consentDetailsMap.put("status", "GRANTED");
-        consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48.363+00:00");
+        consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48");
         consentDetails.add(consentDetailsMap);
         Map<String, Object> healthInfo = new HashMap<>();
         String content = "Some dummy content";
@@ -187,7 +188,7 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("hipName", hipName);
         consentDetailsMap.put("requester", "1");
         consentDetailsMap.put("status", "GRANTED");
-        consentDetailsMap.put("consentExpiryDate", "2019-01-15T08:47:48.363+0000");
+        consentDetailsMap.put("consentExpiryDate", "2019-01-15T08:47:48");
         consentDetails.add(consentDetailsMap);
         var errorResponse = new ErrorRepresentation(new Error(
                 ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,

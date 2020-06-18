@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
@@ -63,7 +65,10 @@ public class HealthInformationRepository {
     private Map<String, Object> toHealthInfo(Row row) throws JsonProcessingException {
         String data = row.getString("data");
         Map<String, Object> healthInfo = new HashMap<>();
-        healthInfo.put("data", new ObjectMapper().readTree(data != null ? data : ""));
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);
+        healthInfo.put("data", objectMapper.readTree(data != null ? data : ""));
         healthInfo.put("status", row.getString("status"));
         return healthInfo;
     }

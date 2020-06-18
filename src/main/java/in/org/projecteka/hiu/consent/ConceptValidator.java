@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.consent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -18,6 +19,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 
 @Component
 public class ConceptValidator implements InitializingBean, ConceptLookup {
@@ -46,7 +49,9 @@ public class ConceptValidator implements InitializingBean, ConceptLookup {
             }
             var vsMap = new ConcurrentHashMap<String, Map<String, String>>();
             var valueSets = result.toString(StandardCharsets.UTF_8);
-            var mapper = new ObjectMapper();
+            var mapper = new ObjectMapper()
+                    .registerModule(new JavaTimeModule())
+                    .configure(WRITE_DATES_AS_TIMESTAMPS, false);
             ArrayNode valuesetNodes = mapper.readValue(valueSets, ArrayNode.class);
             for (JsonNode vsNode : valuesetNodes) {
                 vsMap.put(vsNode.get("id").asText(), readValueSet(vsNode));

@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.dataflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.consent.TokenUtils;
@@ -16,6 +17,7 @@ import javax.annotation.PostConstruct;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_DELETE_QUEUE;
 
@@ -62,7 +64,9 @@ public class DataFlowDeleteListener {
 
     @SneakyThrows
     private DataFlowDelete convertToDataFlowDelete(byte[] message) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);;
         return mapper.readValue(message, DataFlowDelete.class);
     }
 

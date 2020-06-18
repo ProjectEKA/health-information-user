@@ -12,14 +12,10 @@ import reactor.core.publisher.Mono;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.ZoneId;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -91,35 +87,16 @@ public class DataFlowService {
     private Mono<String> validateAndRetrieveRequestedConsent(String transactionId, String senderId) {
         //TODO: possibly validate the senderId
         return dataFlowRepository.retrieveDataFlowRequest(transactionId)
-                .flatMap(dataMap -> {
-                            if (hasConsentArtefactExpired((String) dataMap.get("consentExpiryDate"))) {
-                                return Mono.error(ClientError.consentArtefactGone());
-                            }
-                            return Mono.just((String) dataMap.get("consentRequestId"));
-                        }
-                )
+                .filter(dataMap -> !hasConsentArtefactExpired((LocalDateTime) dataMap.get("consentExpiryDate")))
+                .switchIfEmpty(Mono.error(ClientError.consentArtefactGone()))
+                .map(dataMap -> (String) dataMap.get("consentRequestId"))
                 .doOnError(throwable -> {
                     logger.error(throwable.getMessage(), throwable);
                 });
     }
 
-    private boolean hasConsentArtefactExpired(String dataEraseAt) {
-        Date today = new Date();
-        Date expiryDate = toDate(dataEraseAt);
-        return expiryDate != null && expiryDate.before(today);
-    }
-
-    private Date toDate(String dateExpiryAt) {
-        Date date = null;
-        try {
-            var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+0000'");
-            withMillSeconds.setTimeZone(TimeZone.getTimeZone(ZoneId.of("GMT")));
-            date = withMillSeconds.parse(dateExpiryAt);
-            return date;
-        } catch (ParseException e) {
-            logger.error(e.getMessage());
-        }
-        return date;
+    private boolean hasConsentArtefactExpired(LocalDateTime dataEraseAt) {
+        return dataEraseAt != null && dataEraseAt.isBefore(LocalDateTime.now());
     }
 
     private boolean hasContent(Entry entry) {
