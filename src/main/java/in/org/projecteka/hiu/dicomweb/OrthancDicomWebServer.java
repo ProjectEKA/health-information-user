@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.dicomweb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import org.springframework.util.Base64Utils;
 
@@ -10,6 +11,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 
 public class OrthancDicomWebServer {
     LocalDicomServerProperties properties;
@@ -27,7 +30,7 @@ public class OrthancDicomWebServer {
         try {
             DicomInstance dicomInstance = uploadStudyInstance(savedFilePath);
             return retrieveStudyDetails(dicomInstance);
-        } catch (IOException |  InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
         return null;
@@ -45,7 +48,10 @@ public class OrthancDicomWebServer {
                 .build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request,
                 HttpResponse.BodyHandlers.ofString());
-        return new ObjectMapper().readValue(response.body(), DicomStudy.class);
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);
+        return objectMapper.readValue(response.body(), DicomStudy.class);
     }
 
     private DicomInstance uploadStudyInstance(Path savedFilePath) throws IOException, InterruptedException {
@@ -61,7 +67,10 @@ public class OrthancDicomWebServer {
         HttpResponse<String> response = HttpClient.newHttpClient().send(request,
                 HttpResponse.BodyHandlers.ofString());
 
-        return new ObjectMapper().readValue(response.body(), DicomInstance.class);
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);
+        return objectMapper.readValue(response.body(), DicomInstance.class);
     }
 
     private URI instanceStudyURI(String studyUuid) {
@@ -76,7 +85,7 @@ public class OrthancDicomWebServer {
         return !"".equals(properties.getUser());
     }
 
-    private  String authCredentials() {
+    private String authCredentials() {
         return "Basic " + Base64Utils.encodeToString(String.format("%s:%s", properties.getUser(), properties.getPassword()).getBytes());
     }
 }
