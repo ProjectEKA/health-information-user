@@ -3,12 +3,15 @@ package in.org.projecteka.hiu.dataflow;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyStructure;
 import lombok.AllArgsConstructor;
@@ -17,9 +20,11 @@ import org.apache.log4j.Logger;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
@@ -36,6 +41,8 @@ public class DataFlowRequestListener {
     private final Decryptor decryptor;
     private final DataFlowProperties dataFlowProperties;
     private final CentralRegistry centralRegistry;
+    private final Cache<String, DataFlowRequest> dataFlowCache;
+    private final ConsentRepository consentRepository;
 
     @PostConstruct
     @SneakyThrows
@@ -62,14 +69,26 @@ public class DataFlowRequestListener {
 
                 logger.info("Initiating data flow request to consent manager");
                 centralRegistry.token()
-                        .flatMap(token -> dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
-                                .flatMap(dataFlowRequestResponse ->
-                                        dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                                consentId,
-                                                dataFlowRequest)
-                                                .then(dataFlowRepository.addKeys(
-                                                        dataFlowRequestResponse.getTransactionId(),
-                                                        dataRequestKeyMaterial)))).block();
+                        .flatMap(token -> {
+                            if (dataFlowProperties.isUsingGateway()) {
+                                var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);
+                                return consentRepository.getPatientId(consentId)
+                                        .flatMap(patientId -> dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest, token, getCmSuffix(patientId)))
+                                        .then(Mono.defer(() -> {
+                                            dataFlowCache.put(gatewayDataFlowRequest.getRequestId().toString(), dataFlowRequest);
+                                            return Mono.empty();
+                                        }));
+                            }
+                            return dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
+                                    .flatMap(dataFlowRequestResponse ->
+                                            dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                                    consentId,
+                                                    dataFlowRequest)
+                                                    .then(dataFlowRepository.addKeys(
+                                                            dataFlowRequestResponse.getTransactionId(),
+                                                            dataRequestKeyMaterial)));
+
+                        }).block();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.fatal("Exception on key creation {exception}", exception);
@@ -80,6 +99,17 @@ public class DataFlowRequestListener {
         mlc.setupMessageListener(messageListener);
 
         mlc.start();
+    }
+
+
+    private GatewayDataFlowRequest getDataFlowRequest(DataFlowRequest dataFlowRequest) {
+        var requestId = UUID.randomUUID();
+        var timestamp = java.time.Instant.now().toString();
+        return new GatewayDataFlowRequest(requestId, timestamp, dataFlowRequest);
+    }
+
+    private String getCmSuffix(String patientId) {
+        return patientId.split("@")[1];
     }
 
     private DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial() throws Exception {

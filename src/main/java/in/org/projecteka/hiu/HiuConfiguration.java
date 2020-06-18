@@ -37,6 +37,8 @@ import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.dataflow.LocalDataStore;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
+import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
@@ -182,6 +184,19 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public Cache<String, DataFlowRequest> dataFlowCache() {
+        return CacheBuilder
+                .newBuilder()
+                .maximumSize(50)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build(new CacheLoader<>() {
+                    public DataFlowRequest load(String key) {
+                        return DataFlowRequest.builder().build();
+                    }
+                });
+    }
+
+    @Bean
     public Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache() {
         return CacheBuilder
                 .newBuilder()
@@ -271,8 +286,9 @@ public class HiuConfiguration {
 
     @Bean
     public DataFlowClient dataFlowClient(WebClient.Builder builder,
+                                         GatewayServiceProperties gatewayServiceProperties,
                                          ConsentManagerServiceProperties consentManagerServiceProperties) {
-        return new DataFlowClient(builder, consentManagerServiceProperties);
+        return new DataFlowClient(builder,gatewayServiceProperties, consentManagerServiceProperties);
     }
 
     @Bean
@@ -298,7 +314,10 @@ public class HiuConfiguration {
             DataFlowRepository dataFlowRepository,
             Decryptor decryptor,
             DataFlowProperties dataFlowProperties,
-            CentralRegistry centralRegistry) {
+            CentralRegistry centralRegistry,
+            Cache<String, DataFlowRequest> dataFlowCache,
+            ConsentRepository consentRepository
+            ) {
         return new DataFlowRequestListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
@@ -306,7 +325,9 @@ public class HiuConfiguration {
                 dataFlowRepository,
                 decryptor,
                 dataFlowProperties,
-                centralRegistry);
+                centralRegistry,
+                dataFlowCache,
+                consentRepository);
     }
 
     @Bean
