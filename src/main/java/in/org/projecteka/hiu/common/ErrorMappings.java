@@ -6,13 +6,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ErrorMappings {
-    private static final Map<Integer, Throwable> errorMappings = new HashMap<>();
+    
+    private static final Map<Integer, Throwable> codeErrorMapping = new HashMap<>();
+
+    private ErrorMappings() {}
 
     static {
-        errorMappings.put(1006, ClientError.patientNotFound());
+        codeErrorMapping.put(1006, ClientError.patientNotFound());
     }
 
     public static Throwable get(Integer errorCode) {
-        return errorMappings.getOrDefault(errorCode, ClientError.unknownError());
+        return codeErrorMapping.getOrDefault(errorCode, ClientError.unknownError());
     }
 }
