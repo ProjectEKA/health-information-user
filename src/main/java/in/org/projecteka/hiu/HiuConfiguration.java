@@ -37,8 +37,7 @@ import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.dataflow.LocalDataStore;
-import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
-import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
@@ -184,14 +183,14 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public Cache<String, DataFlowRequest> dataFlowCache() {
+    public Cache<String, DataFlowRequestKeyMaterial> dataFlowCache() {
         return CacheBuilder
                 .newBuilder()
                 .maximumSize(50)
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
-                    public DataFlowRequest load(String key) {
-                        return DataFlowRequest.builder().build();
+                    public DataFlowRequestKeyMaterial load(String key) {
+                        return DataFlowRequestKeyMaterial.builder().build();
                     }
                 });
     }
@@ -315,7 +314,7 @@ public class HiuConfiguration {
             Decryptor decryptor,
             DataFlowProperties dataFlowProperties,
             CentralRegistry centralRegistry,
-            Cache<String, DataFlowRequest> dataFlowCache,
+            Cache<String, DataFlowRequestKeyMaterial> dataFlowCache,
             ConsentRepository consentRepository
             ) {
         return new DataFlowRequestListener(
@@ -356,12 +355,14 @@ public class HiuConfiguration {
     public DataFlowService dataFlowService(DataFlowRepository dataFlowRepository,
                                            DataAvailabilityPublisher dataAvailabilityPublisher,
                                            DataFlowServiceProperties properties,
-                                           LocalDataStore localDataStore) {
+                                           LocalDataStore localDataStore,
+                                           Cache<String, DataFlowRequestKeyMaterial> dataFlowCache) {
         return new DataFlowService(
                 dataFlowRepository,
                 dataAvailabilityPublisher,
                 properties,
-                localDataStore);
+                localDataStore,
+                dataFlowCache);
     }
 
     @Bean

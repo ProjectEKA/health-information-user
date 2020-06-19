@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResult;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import org.jeasy.random.EasyRandom;
@@ -23,6 +24,10 @@ public class TestBuilders {
 
     public static DataFlowRequestKeyMaterial.DataFlowRequestKeyMaterialBuilder dataFlowRequestKeyMaterial() {
         return easyRandom.nextObject(DataFlowRequestKeyMaterial.DataFlowRequestKeyMaterialBuilder.class);
+    }
+
+    public static DataFlowRequestResult.DataFlowRequestResultBuilder dataFlowRequestResult() {
+        return easyRandom.nextObject(DataFlowRequestResult.DataFlowRequestResultBuilder.class);
     }
 
     public static String string() {

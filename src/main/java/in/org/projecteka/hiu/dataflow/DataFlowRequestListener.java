@@ -41,7 +41,7 @@ public class DataFlowRequestListener {
     private final Decryptor decryptor;
     private final DataFlowProperties dataFlowProperties;
     private final CentralRegistry centralRegistry;
-    private final Cache<String, DataFlowRequest> dataFlowCache;
+    private final Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
     private final ConsentRepository consentRepository;
 
     @PostConstruct
@@ -74,19 +74,28 @@ public class DataFlowRequestListener {
                                 var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);
                                 return consentRepository.getPatientId(consentId)
                                         .flatMap(patientId -> dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest, token, getCmSuffix(patientId)))
+                                        .then(Mono.defer(() -> dataFlowRepository.addDataFlowRequest(
+                                                gatewayDataFlowRequest.getRequestId().toString(),
+                                                consentId,
+                                                dataFlowRequest)))
                                         .then(Mono.defer(() -> {
-                                            dataFlowCache.put(gatewayDataFlowRequest.getRequestId().toString(), dataFlowRequest);
+                                            dataFlowCache.put(
+                                                    gatewayDataFlowRequest.getRequestId().toString(),
+                                                    dataRequestKeyMaterial);
                                             return Mono.empty();
                                         }));
                             }
                             return dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
-                                    .flatMap(dataFlowRequestResponse ->
-                                            dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                                    consentId,
-                                                    dataFlowRequest)
-                                                    .then(dataFlowRepository.addKeys(
-                                                            dataFlowRequestResponse.getTransactionId(),
-                                                            dataRequestKeyMaterial)));
+                                    .flatMap(dataFlowRequestResponse -> {
+                                        var requestId =  UUID.randomUUID().toString();
+                                        return dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
+                                                consentId,
+                                                dataFlowRequest,
+                                                requestId)
+                                                .then(dataFlowRepository.addKeys(
+                                                        dataFlowRequestResponse.getTransactionId(),
+                                                        dataRequestKeyMaterial));
+                                    });
 
                         }).block();
             } catch (Exception exception) {

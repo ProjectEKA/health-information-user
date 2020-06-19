@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
+import in.org.projecteka.hiu.dataflow.model.RequestStatus;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
@@ -16,18 +17,23 @@ import java.util.Map;
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 import static in.org.projecteka.hiu.common.Serializer.from;
 import static in.org.projecteka.hiu.common.Serializer.to;
+import static in.org.projecteka.hiu.dataflow.model.RequestStatus.REQUESTED;
 import static java.lang.String.format;
 
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
+            "consent_artefact_id, data_flow_request, request_id) VALUES ($1, $2, $3, $4)";
+    private static final String INSERT_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (request_id, " +
             "consent_artefact_id, data_flow_request) VALUES ($1, $2, $3)";
+    private static final String UPDATE_DATA_FLOW_REQUEST = "UPDATE data_flow_request SET transaction_id = $1, status = $2 " +
+            "WHERE request_id = $3";
     private static final String INSERT_TO_DATA_FLOW_REQUEST_KEYS = "INSERT INTO data_flow_request_keys " +
             "(transaction_id, " +
             "key_pairs) VALUES ($1, $2)";
     private static final String GET_KEY_FOR_ID = "SELECT key_pairs FROM data_flow_request_keys WHERE transaction_id =" +
             " $1";
     private static final String SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST = "SELECT transaction_id FROM " +
-            "data_flow_request WHERE consent_artefact_id = $1";
+            "data_flow_request WHERE consent_artefact_id = $1 and status = $2";
     private static final String INSERT_HEALTH_DATA_AVAILABILITY = "INSERT INTO data_flow_parts (transaction_id, " +
             "part_number, status) VALUES ($1, $2, $3)";
     private static final String SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION =
@@ -47,12 +53,39 @@ public class DataFlowRepository {
         this.dbClient = pgPool;
     }
 
-    public Mono<Void> addDataRequest(String transactionId, String consentId, DataFlowRequest dataFlowRequest) {
+    public Mono<Void> addDataRequest(String transactionId,
+                                     String consentId,
+                                     DataFlowRequest dataFlowRequest,
+                                     String requestId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST)
-                .execute(Tuple.of(transactionId, consentId, from(dataFlowRequest)),
+                .execute(Tuple.of(transactionId, consentId, from(dataFlowRequest), requestId),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to insert to data flow request"));
+                                return;
+                            }
+                            monoSink.success();
+                        }));
+    }
+
+    public Mono<Void> addDataFlowRequest(String requestId, String consentId, DataFlowRequest dataFlowRequest) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_DATA_FLOW_REQUEST)
+                .execute(Tuple.of(requestId, consentId, from(dataFlowRequest)),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to insert to data flow request"));
+                                return;
+                            }
+                            monoSink.success();
+                        }));
+    }
+
+    public Mono<Void> updateDataRequest(String transactionId, RequestStatus status, String requestId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_DATA_FLOW_REQUEST)
+                .execute(Tuple.of( transactionId, status.toString(), requestId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to update data flow request"));
                                 return;
                             }
                             monoSink.success();
@@ -93,7 +126,7 @@ public class DataFlowRepository {
 
     public Mono<String> getTransactionId(String consentArtefactId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST)
-                .execute(Tuple.of(consentArtefactId),
+                .execute(Tuple.of(consentArtefactId, REQUESTED.toString()),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to get transaction Id from consent Id"));

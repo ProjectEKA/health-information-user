@@ -38,7 +38,8 @@ public class SecurityConfiguration {
             V_1_CONSENT_REQUESTS_ON_INIT,
             V_1_CONSENTS_HIU_NOTIFY,
             V_1_CONSENTS_ON_FETCH,
-            V_1_CONSENTS_ON_FIND
+            V_1_CONSENTS_ON_FIND,
+            V_1_HEALTH_INFORMATION_HIU_ON_REQUEST
     };
 
     private static final List<String> SERVICE_ONLY_URLS = new ArrayList<>() {
@@ -49,6 +50,7 @@ public class SecurityConfiguration {
             add(V_1_CONSENTS_HIU_NOTIFY);
             add(V_1_CONSENTS_ON_FETCH);
             add(V_1_CONSENTS_ON_FIND);
+            add(V_1_HEALTH_INFORMATION_HIU_ON_REQUEST);
         }
     };
 
