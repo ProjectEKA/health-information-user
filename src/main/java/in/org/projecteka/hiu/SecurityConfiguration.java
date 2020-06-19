@@ -24,22 +24,31 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import static in.org.projecteka.hiu.common.Constants.*;
+import static in.org.projecteka.hiu.user.Role.GATEWAY;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
 
-    private static final List<Map.Entry<String, HttpMethod>> SERVICE_ONLY_URLS = new ArrayList<>() {
+    public static final String[] GATEWAY_APIS = new String[]{
+            V_1_CONSENT_REQUESTS_ON_INIT,
+            V_1_CONSENTS_HIU_NOTIFY,
+            V_1_CONSENTS_ON_FETCH,
+            V_1_CONSENTS_ON_FIND
+    };
+
+    private static final List<String> SERVICE_ONLY_URLS = new ArrayList<>() {
         {
-            add(Map.entry("/consent/notification", HttpMethod.POST));
-            add(Map.entry("/data/notification", HttpMethod.POST));
-            add(Map.entry("/v1/consent-requests/on-init", HttpMethod.POST));
-            add(Map.entry("/v1/consents/hiu/notify", HttpMethod.POST));
-            add(Map.entry("/v1/consents/on-fetch", HttpMethod.POST));
-            add(Map.entry("/v1/patients/on-find", HttpMethod.POST));
+            add("/consent/notification");
+            add("/data/notification");
+            add(V_1_CONSENT_REQUESTS_ON_INIT);
+            add(V_1_CONSENTS_HIU_NOTIFY);
+            add(V_1_CONSENTS_ON_FETCH);
+            add(V_1_CONSENTS_ON_FIND);
         }
     };
 
@@ -63,9 +72,13 @@ public class SecurityConfiguration {
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
         SERVICE_ONLY_URLS.forEach(entry -> {
-            httpSecurity.authorizeExchange().pathMatchers(entry.getValue(), entry.getKey()).authenticated();
+            httpSecurity.authorizeExchange().pathMatchers(entry).authenticated();
         });
-        httpSecurity.authorizeExchange().pathMatchers("/**").hasAnyRole("VERIFIED");
+        httpSecurity.authorizeExchange()
+                .pathMatchers(GATEWAY_APIS)
+                .hasAnyRole(GATEWAY.toString())
+                .pathMatchers("/**")
+                .hasAnyRole("VERIFIED");
         return httpSecurity
                 .authenticationManager(authenticationManager)
                 .securityContextRepository(securityContextRepository)
@@ -104,8 +117,7 @@ public class SecurityConfiguration {
             }
 
             if (isCentralRegistryAuthenticatedOnlyRequest(
-                    exchange.getRequest().getPath().toString(),
-                    exchange.getRequest().getMethod())) {
+                    exchange.getRequest().getPath().toString())) {
                 return checkCentralRegistry(token);
             }
             return check(token);
@@ -127,18 +139,21 @@ public class SecurityConfiguration {
 
         private Mono<SecurityContext> checkCentralRegistry(String token) {
             return centralRegistryTokenVerifier.verify(token)
-                    .map(caller -> new UsernamePasswordAuthenticationToken(
-                            caller,
-                            token,
-                            new ArrayList<SimpleGrantedAuthority>()))
+                    .map(serviceCaller -> {
+                        var authorities = serviceCaller.getRoles()
+                                .stream()
+                                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name().toUpperCase()))
+                                .collect(toList());
+                        return new UsernamePasswordAuthenticationToken(serviceCaller, token, authorities);
+                    })
                     .map(SecurityContextImpl::new);
         }
 
-        private boolean isCentralRegistryAuthenticatedOnlyRequest(String url, HttpMethod method) {
+        private boolean isCentralRegistryAuthenticatedOnlyRequest(String url) {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return SERVICE_ONLY_URLS.stream()
                     .anyMatch(pattern ->
-                            antPathMatcher.matchStart(pattern.getKey(), url) && pattern.getValue().equals(method));
+                            antPathMatcher.matchStart(pattern,url));
         }
     }
 
