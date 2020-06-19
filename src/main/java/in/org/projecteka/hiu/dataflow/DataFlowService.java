@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
-import in.org.projecteka.hiu.DataFlowRequestWithKeyMaterial;
 import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResult;
@@ -80,7 +79,8 @@ public class DataFlowService {
                     transactionId,
                     dataFlowRequestResult.getHiRequest().getSessionStatus(),
                     dataFlowRequestResult.getResp().getRequestId()
-                    ).then(dataFlowRepository.addKeys(transactionId, dataFlowRequestKeyMaterial));
+                    )
+                    .then(Mono.defer(() -> dataFlowRepository.addKeys(transactionId, dataFlowRequestKeyMaterial)));
         }
         return Mono.empty();
     }

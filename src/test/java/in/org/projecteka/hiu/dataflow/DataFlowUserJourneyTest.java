@@ -45,8 +45,10 @@ import java.util.Map;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.*;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestResult;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -279,5 +281,50 @@ public class DataFlowUserJourneyTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .json(errorResponseJson);
+    }
+
+    @Test
+    public void shouldUpdateDataFlowRequest() {
+        var token = string();
+        var dataFlowRequestResult = dataFlowRequestResult().error(null).build();
+        var transactionId = dataFlowRequestResult.getHiRequest().getTransactionId().toString();
+        when(centralRegistryTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new Caller("", true, "", true)));
+        when(dataFlowRepository.updateDataRequest(
+                transactionId,
+                dataFlowRequestResult.getHiRequest().getSessionStatus(),
+                dataFlowRequestResult.getResp().getRequestId()
+        )).thenReturn(Mono.empty());
+        when(dataFlowRepository.addKeys(eq(transactionId), any())).thenReturn(Mono.empty());
+
+        webTestClient
+                .post()
+                .uri("/v1/health-information/hiu/on-request")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(dataFlowRequestResult)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    public void shouldNotUpdateDataFlowRequest() {
+        var token = string();
+        var dataFlowRequestResult = dataFlowRequestResult().hiRequest(null).build();
+        when(centralRegistryTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new Caller("", true, "", true)));
+
+        webTestClient
+                .post()
+                .uri("/v1/health-information/hiu/on-request")
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(dataFlowRequestResult)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
     }
 }

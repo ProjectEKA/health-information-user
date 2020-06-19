@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.DataFlowProperties;
-import in.org.projecteka.hiu.DataFlowRequestWithKeyMaterial;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.CentralRegistry;
@@ -25,8 +24,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 import static org.mockito.Mockito.*;
@@ -102,16 +99,20 @@ class DataFlowRequestListenerTest {
         when(dataFlowProperties.isUsingGateway()).thenReturn(true);
         when(mockMessage.getBody()).thenReturn(dataFlowRequestBytes);
         when(centralRegistry.token()).thenReturn(Mono.just("temp"));
-        when(dataFlowClient.initiateDataFlowRequest(any(GatewayDataFlowRequest.class),anyString(),anyString())).thenReturn(Mono.empty());
+        when(dataFlowClient.initiateDataFlowRequest(any(GatewayDataFlowRequest.class),anyString(),anyString()))
+                .thenReturn(Mono.empty());
         when(consentRepository.getPatientId(anyString())).thenReturn(Mono.just("temp@ncg"));
+        when(dataFlowRepository.addDataFlowRequest(anyString(),anyString(),any())).thenReturn(Mono.empty());
 
         dataFlowRequestListener.subscribe();
         verify(messageListenerContainer,times(1)).start();
-        verify(messageListenerContainer,times(1)).setupMessageListener(messageListenerCaptor.capture());
+        verify(messageListenerContainer,times(1))
+                .setupMessageListener(messageListenerCaptor.capture());
 
         MessageListener messageListener = messageListenerCaptor.getValue();
         messageListener.onMessage(mockMessage);
         verify(dataFlowClient,times(1)).initiateDataFlowRequest(any(),any(),any());
         verify(dataFlowClient,times(0)).initiateDataFlowRequest(any(),any());
+        verify(dataFlowRepository,times(1)).addDataFlowRequest(anyString(),anyString(),any());
     }
 }
