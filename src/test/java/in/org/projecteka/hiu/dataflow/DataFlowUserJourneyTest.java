@@ -284,7 +284,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldUpdateDataFlowRequest() {
+    void shouldUpdateDataFlowRequest() {
         var token = string();
         var dataFlowRequestResult = dataFlowRequestResult().error(null).build();
         var transactionId = dataFlowRequestResult.getHiRequest().getTransactionId().toString();
@@ -310,7 +310,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldNotUpdateDataFlowRequest() {
+    void shouldNotUpdateDataFlowRequest() {
         var token = string();
         var dataFlowRequestResult = dataFlowRequestResult().hiRequest(null).build();
         when(centralRegistryTokenVerifier.verify(token))

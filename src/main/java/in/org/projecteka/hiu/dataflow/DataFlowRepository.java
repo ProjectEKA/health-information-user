@@ -22,7 +22,7 @@ import static java.lang.String.format;
 
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
-            "consent_artefact_id, data_flow_request) VALUES ($1, $2, $3)";
+            "consent_artefact_id, data_flow_request, request_id) VALUES ($1, $2, $3, $4)";
     private static final String INSERT_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (request_id, " +
             "consent_artefact_id, data_flow_request) VALUES ($1, $2, $3)";
     private static final String UPDATE_DATA_FLOW_REQUEST = "UPDATE data_flow_request SET transaction_id = $1, status = $2 " +
@@ -53,9 +53,12 @@ public class DataFlowRepository {
         this.dbClient = pgPool;
     }
 
-    public Mono<Void> addDataRequest(String transactionId, String consentId, DataFlowRequest dataFlowRequest, String requestId) {
+    public Mono<Void> addDataRequest(String transactionId,
+                                     String consentId,
+                                     DataFlowRequest dataFlowRequest,
+                                     String requestId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST)
-                .execute(Tuple.of(transactionId, consentId, from(dataFlowRequest)),
+                .execute(Tuple.of(transactionId, consentId, from(dataFlowRequest), requestId),
                         handler -> {
                             if (handler.failed()) {
                                 monoSink.error(dbOperationFailure("Failed to insert to data flow request"));
