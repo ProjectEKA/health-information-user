@@ -16,17 +16,7 @@ import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
-import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
-import in.org.projecteka.hiu.dataprocessor.model.DataContext;
-import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
-import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
-import in.org.projecteka.hiu.dataprocessor.model.HiStatus;
-import in.org.projecteka.hiu.dataprocessor.model.Notifier;
-import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
-import in.org.projecteka.hiu.dataprocessor.model.SessionStatus;
-import in.org.projecteka.hiu.dataprocessor.model.StatusNotification;
-import in.org.projecteka.hiu.dataprocessor.model.StatusResponse;
-import in.org.projecteka.hiu.dataprocessor.model.Type;
+import in.org.projecteka.hiu.dataprocessor.model.*;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.slf4j.Logger;
@@ -165,23 +155,47 @@ public class HealthDataProcessor {
                                         SessionStatus sessionStatus) {
         String consentId = dataFlowRepository.getConsentId(context.getTransactionId()).block();
         String hipId = consentRepository.getHipId(consentId).block();
-        HealthInfoNotificationRequest healthInfoNotificationRequest = HealthInfoNotificationRequest.builder()
-                .requestId(UUID.randomUUID())
-                .transactionId(context.getTransactionId())
-                .consentId(consentId)
-                .doneAt(LocalDateTime.now())
-                .notifier(Notifier.builder()
-                        .type(Type.HIU)
-                        .id(hiuProperties.getId())
-                        .build())
-                .statusNotification(StatusNotification.builder()
-                        .sessionStatus(sessionStatus)
-                        .hipId(hipId)
-                        .statusResponses(statusResponses)
-                        .build())
-                .build();
+//        HealthInfoNotificationRequest healthInfoNotificationRequest = HealthInfoNotificationRequest.builder()
+//                .requestId(UUID.randomUUID())
+//                .transactionId(context.getTransactionId())
+//                .consentId(consentId)
+//                .doneAt(LocalDateTime.now())
+//                .notifier(Notifier.builder()
+//                        .type(Type.HIU)
+//                        .id(hiuProperties.getId())
+//                        .build())
+//                .statusNotification(StatusNotification.builder()
+//                        .sessionStatus(sessionStatus)
+//                        .hipId(hipId)
+//                        .statusResponses(statusResponses)
+//                        .build())
+//                .build();
+        HealthInformationNotificationRequest healthInformationNotificationRequest =
+                HealthInformationNotificationRequest.builder()
+                        .requestId(UUID.randomUUID())
+                        .timestamp(LocalDateTime.now())
+                        .notification(Notification.builder()
+                                .consentId(consentId)
+                                .transactionId(context.getTransactionId())
+                                .doneAt(LocalDateTime.now())
+                                .notifier(Notifier.builder()
+                                        .type(Type.HIU)
+                                        .id(hiuProperties.getId())
+                                        .build())
+                                .build())
+                        .statusNotification(StatusNotification.builder()
+                                .sessionStatus(sessionStatus)
+                                .hipId(hipId)
+                                .statusResponses(statusResponses)
+                                .build())
+                        .build();
         String token = centralRegistry.token().block();
-        healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token).block();
+        String consentManagerId = fetchCMId(healthInformationNotificationRequest.getNotification().getConsentId());
+        healthInformationClient.notifyHealthInformation(healthInformationNotificationRequest, token, consentManagerId).block();
+    }
+
+    private String fetchCMId(String consentId) {
+        return consentRepository.getConsentMangerId(consentId).block();
     }
 
     private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status) {

@@ -77,6 +77,8 @@ public class ConsentRepository {
 
     private static final String SELECT_CONSENT_REQUEST_STATUS = "SELECT status FROM consent_request WHERE " +
             "consent_request_id = $1";
+    private static final String SELECT_CM_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'consentManager' ->> 'id' as " +
+            "consentManagerId FROM consent_artefact WHERE consent_artefact_id=$1";
     private final PgPool dbClient;
 
     @Deprecated
@@ -271,12 +273,12 @@ public class ConsentRepository {
                 .execute(Tuple.of(consentArtefactId),
                         handler -> {
                             if (handler.failed()) {
-                                monoSink.error(dbOperationFailure("Failed to get hip Id from consent Id"));
+                                monoSink.error(dbOperationFailure("Failed to get patient Id from consent Id"));
                                 return;
                             }
                             var iterator = handler.result().iterator();
                             if (!iterator.hasNext()) {
-                                monoSink.error(dbOperationFailure("Failed to get hip Id from consent Id"));
+                                monoSink.error(dbOperationFailure("Failed to get patient Id from consent Id"));
                                 return;
                             }
                             monoSink.success(iterator.next().getString(0));
@@ -386,4 +388,20 @@ public class ConsentRepository {
                         }));
     }
 
+    public Mono<String> getConsentMangerId(String consentId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CM_ID_FOR_A_CONSENT)
+                .execute(Tuple.of(consentId),
+                        handler -> {
+                            if (handler.failed()) {
+                                monoSink.error(dbOperationFailure("Failed to get CM Id from consent Id"));
+                                return;
+                            }
+                            var iterator = handler.result().iterator();
+                            if (!iterator.hasNext()) {
+                                monoSink.error(dbOperationFailure("Failed to get CM Id from consent Id"));
+                                return;
+                            }
+                            monoSink.success(iterator.next().getString(0));
+                        }));
+    }
 }
