@@ -413,8 +413,8 @@ public class HiuConfiguration {
 
     @Bean
     public HealthInformationClient healthInformationClient(WebClient.Builder builder,
-                                                           ConsentManagerServiceProperties consentManagerServiceProperties) {
-        return new HealthInformationClient(builder, consentManagerServiceProperties);
+                                                           GatewayServiceProperties gatewayServiceProperties) {
+        return new HealthInformationClient(builder, gatewayServiceProperties);
     }
 
     @Bean

@@ -1,6 +1,6 @@
 package in.org.projecteka.hiu.clients;
 
-import in.org.projecteka.hiu.ConsentManagerServiceProperties;
+import in.org.projecteka.hiu.GatewayServiceProperties;
 import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,7 +13,7 @@ import static java.util.function.Predicate.not;
 @AllArgsConstructor
 public class HealthInformationClient {
     private final WebClient.Builder builder;
-    private final ConsentManagerServiceProperties consentManagerServiceProperties;
+    private final GatewayServiceProperties gatewayServiceProperties;
 
     public Mono<HealthInformation> getHealthInformationFor(String url) {
         return builder.build()
@@ -29,11 +29,14 @@ public class HealthInformationClient {
                 .bodyToMono(HealthInformation.class);
     }
 
-    public Mono<Void> notifyHealthInfo(HealthInfoNotificationRequest notificationRequest, String token) {
+    public Mono<Void> notifyHealthInfo(HealthInfoNotificationRequest notificationRequest,
+                                       String token,
+                                       String consentManagerId) {
         return builder.build()
                 .post()
-                .uri(consentManagerServiceProperties.getUrl() + "/health-information/notification")
+                .uri(gatewayServiceProperties.getBaseUrl() + "/health-information/notify")
                 .header("Authorization", token)
+                .header("X-CM-ID", consentManagerId)
                 .body(Mono.just(notificationRequest), HealthInfoNotificationRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> Mono.error(failedToNotifyCM()))

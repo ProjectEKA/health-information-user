@@ -21,6 +21,7 @@ import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
 import in.org.projecteka.hiu.dataprocessor.model.HiStatus;
+import in.org.projecteka.hiu.dataprocessor.model.Notification;
 import in.org.projecteka.hiu.dataprocessor.model.Notifier;
 import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
 import in.org.projecteka.hiu.dataprocessor.model.SessionStatus;
@@ -165,14 +166,29 @@ public class HealthDataProcessor {
                                         SessionStatus sessionStatus) {
         String consentId = dataFlowRepository.getConsentId(context.getTransactionId()).block();
         String hipId = consentRepository.getHipId(consentId).block();
-        HealthInfoNotificationRequest healthInfoNotificationRequest = HealthInfoNotificationRequest.builder()
+        HealthInfoNotificationRequest healthInfoNotificationRequest =
+                getHealthInfoNotificationRequest(context, statusResponses, sessionStatus, consentId, hipId);
+        String token = centralRegistry.token().block();
+        String consentManagerId = fetchCMId(healthInfoNotificationRequest.getNotification().getConsentId());
+        healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token, consentManagerId).block();
+    }
+
+    private HealthInfoNotificationRequest getHealthInfoNotificationRequest(DataContext context,
+                                                                           List<StatusResponse> statusResponses,
+                                                                           SessionStatus sessionStatus,
+                                                                           String consentId,
+                                                                           String hipId) {
+        return HealthInfoNotificationRequest.builder()
                 .requestId(UUID.randomUUID())
-                .transactionId(context.getTransactionId())
-                .consentId(consentId)
-                .doneAt(LocalDateTime.now())
-                .notifier(Notifier.builder()
-                        .type(Type.HIU)
-                        .id(hiuProperties.getId())
+                .timestamp(LocalDateTime.now())
+                .notification(Notification.builder()
+                        .consentId(consentId)
+                        .transactionId(context.getTransactionId())
+                        .doneAt(LocalDateTime.now())
+                        .notifier(Notifier.builder()
+                                .type(Type.HIU)
+                                .id(hiuProperties.getId())
+                                .build())
                         .build())
                 .statusNotification(StatusNotification.builder()
                         .sessionStatus(sessionStatus)
@@ -180,8 +196,10 @@ public class HealthDataProcessor {
                         .statusResponses(statusResponses)
                         .build())
                 .build();
-        String token = centralRegistry.token().block();
-        healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token).block();
+    }
+
+    private String fetchCMId(String consentId) {
+        return consentRepository.getConsentMangerId(consentId).block();
     }
 
     private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status) {
