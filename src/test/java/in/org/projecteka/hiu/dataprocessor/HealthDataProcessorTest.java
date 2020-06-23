@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
-import static in.org.projecteka.hiu.dataflow.TestBuilders.string;
+import static in.org.projecteka.hiu.dataprocessor.TestBuilders.string;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -104,6 +104,7 @@ class HealthDataProcessorTest {
         var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
         String consentId = "consentId";
+        String cmId = "ncg";
         String token = string();
 
         when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
@@ -118,10 +119,17 @@ class HealthDataProcessorTest {
         when(hiuProperties.getId()).thenReturn(string());
         when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
         when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
-        when(healthInformationClient.notifyHealthInfo(any(), eq(token))).thenReturn(Mono.empty());
+        when(consentRepository.getConsentMangerId(consentId)).thenReturn(Mono.just(cmId));
+        when(healthInformationClient.notifyHealthInfo(any(), eq(token),eq(cmId))).thenReturn(Mono.empty());
 
         processor.process(message);
 
+        verify(healthInformationClient,times(1))
+                .notifyHealthInfo(any(),eq(token),eq(cmId));
+        verify(consentRepository,times(1))
+                .getHipId(eq(consentId));
+        verify(consentRepository,times(1))
+                .getConsentMangerId(eq(consentId));
         verify(healthDataRepository, times(1))
                 .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
         verify(dataFlowRepository, times(1))
@@ -150,6 +158,7 @@ class HealthDataProcessorTest {
         var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
         String consentId = "consentId";
+        String cmId = "ncg";
         String token = string();
 
         when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
@@ -164,10 +173,17 @@ class HealthDataProcessorTest {
         when(hiuProperties.getId()).thenReturn(string());
         when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
         when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
-        when(healthInformationClient.notifyHealthInfo(any(), eq(token))).thenReturn(Mono.empty());
+        when(consentRepository.getConsentMangerId(consentId)).thenReturn(Mono.just(cmId));
+        when(healthInformationClient.notifyHealthInfo(any(), eq(token),eq(cmId))).thenReturn(Mono.empty());
 
         processor.process(message);
 
+        verify(healthInformationClient,times(1))
+                .notifyHealthInfo(any(),eq(token),eq(cmId));
+        verify(consentRepository,times(1))
+                .getHipId(eq(consentId));
+        verify(consentRepository,times(1))
+                .getConsentMangerId(eq(consentId));
         verify(healthDataRepository, times(1))
                 .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
         verify(dataFlowRepository, times(1))
@@ -193,6 +209,7 @@ class HealthDataProcessorTest {
         String transactionId = "123456";
         String partNumber = "1";
         String consentId = "consentId";
+        String cmId = "ncg";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
         var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
@@ -210,10 +227,17 @@ class HealthDataProcessorTest {
         when(hiuProperties.getId()).thenReturn(string());
         when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
         when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
-        when(healthInformationClient.notifyHealthInfo(any(), eq(token))).thenReturn(Mono.empty());
+        when(consentRepository.getConsentMangerId(consentId)).thenReturn(Mono.just(cmId));
+        when(healthInformationClient.notifyHealthInfo(any(), eq(token),eq(cmId))).thenReturn(Mono.empty());
 
         processor.process(message);
 
+        verify(healthInformationClient,times(1))
+                .notifyHealthInfo(any(),eq(token),eq(cmId));
+        verify(consentRepository,times(1))
+                .getHipId(eq(consentId));
+        verify(consentRepository,times(1))
+                .getConsentMangerId(eq(consentId));
         verify(healthDataRepository, times(1))
                 .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
         verify(dataFlowRepository, times(1))
