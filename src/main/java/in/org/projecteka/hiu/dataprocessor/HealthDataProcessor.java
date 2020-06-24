@@ -189,11 +189,11 @@ public class HealthDataProcessor {
                                 .type(Type.HIU)
                                 .id(hiuProperties.getId())
                                 .build())
-                        .build())
-                .statusNotification(StatusNotification.builder()
-                        .sessionStatus(sessionStatus)
-                        .hipId(hipId)
-                        .statusResponses(statusResponses)
+                        .statusNotification(StatusNotification.builder()
+                                .sessionStatus(sessionStatus)
+                                .hipId(hipId)
+                                .statusResponses(statusResponses)
+                                .build())
                         .build())
                 .build();
     }

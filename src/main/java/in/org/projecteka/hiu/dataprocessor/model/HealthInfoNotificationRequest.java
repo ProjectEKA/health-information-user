@@ -16,5 +16,4 @@ public class HealthInfoNotificationRequest {
     private UUID requestId;
     private LocalDateTime timestamp;
     private Notification notification;
-    private StatusNotification statusNotification;
 }
