@@ -13,11 +13,10 @@ import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Authenticator;
-import in.org.projecteka.hiu.common.Base64Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
+import in.org.projecteka.hiu.common.JwtAuthenticator;
 import in.org.projecteka.hiu.common.UserAuthenticator;
-import in.org.projecteka.hiu.common.UserBase64Authenticator;
 import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
@@ -434,21 +433,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "jwt")
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "jwt", matchIfMissing = true)
     public Authenticator userAuthenticator(byte[] sharedSecret) throws JOSEException {
-        return new UserAuthenticator(sharedSecret);
-    }
-
-    @Bean
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "base64")
-    public Authenticator base64Authenticator() {
-        return new Base64Authenticator();
-    }
-
-    @Bean
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
-    public Authenticator userBase64Authenticator(byte[] sharedSecret) throws JOSEException {
-        return new UserBase64Authenticator(new Base64Authenticator(), new UserAuthenticator(sharedSecret));
+        return new UserAuthenticator(new JwtAuthenticator(sharedSecret));
     }
 
     @Bean

@@ -3,8 +3,10 @@ package in.org.projecteka.hiu.consent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWKSet;
+import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.ServiceCaller;
+import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.model.*;
@@ -105,6 +107,9 @@ public class ConsentUserJourneyTest {
     @MockBean
     private CentralRegistryTokenVerifier centralRegistryTokenVerifier;
 
+    @MockBean
+    private Authenticator authenticator;
+
     @SuppressWarnings("unused")
     @MockBean
     private JWKSet centralRegistryJWKSet;
@@ -138,6 +143,10 @@ public class ConsentUserJourneyTest {
         when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
         when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
 
+        var token = randomString();
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
         consentManagerServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
 
@@ -152,7 +161,7 @@ public class ConsentUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/consent-requests")
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentRequestDetails)
                 .accept(MediaType.APPLICATION_JSON)
@@ -185,10 +194,14 @@ public class ConsentUserJourneyTest {
                 "requesterId", "localhost:8080"))).
                 thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
 
+        var token = randomString();
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
         webTestClient
                 .post()
                 .uri("/consent-requests")
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentRequestDetails)
                 .accept(MediaType.APPLICATION_JSON)
@@ -361,12 +374,16 @@ public class ConsentUserJourneyTest {
                 .build();
 
         var token = randomString();
-        var caller = ServiceCaller.builder()
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
+        var serviceToken = randomString();
+        var serviceCaller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token))
-                .thenReturn(Mono.just(caller));
+        when(centralRegistryTokenVerifier.verify(serviceToken))
+                .thenReturn(Mono.just(serviceCaller));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
                 .thenReturn(Mono.empty());
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
@@ -377,7 +394,7 @@ public class ConsentUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -400,12 +417,16 @@ public class ConsentUserJourneyTest {
                 .build();
 
         var token = randomString();
-        var caller = ServiceCaller.builder()
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
+        var serviceToken = randomString();
+        var serviceCaller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token))
-                .thenReturn(Mono.just(caller));
+        when(centralRegistryTokenVerifier.verify(serviceToken))
+                .thenReturn(Mono.just(serviceCaller));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
                 .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
@@ -416,7 +437,7 @@ public class ConsentUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -439,7 +460,11 @@ public class ConsentUserJourneyTest {
                 .build();
 
         var token = randomString();
-        when(centralRegistryTokenVerifier.verify(token))
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
+        var serviceToken = randomString();
+        when(centralRegistryTokenVerifier.verify(serviceToken))
                 .thenReturn(Mono.just(new ServiceCaller("", (List.of(Role.values())))));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
                 .thenReturn(Mono.empty());
@@ -452,7 +477,7 @@ public class ConsentUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -475,12 +500,16 @@ public class ConsentUserJourneyTest {
                 .build();
 
         var token = randomString();
-        var caller = ServiceCaller.builder()
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
+        var serviceToken = randomString();
+        var serviceCaller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token))
-                .thenReturn(Mono.just(caller));
+        when(centralRegistryTokenVerifier.verify(serviceToken))
+                .thenReturn(Mono.just(serviceCaller));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
                 .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
         when(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(), consentRequestId)).thenReturn(Mono.empty());
@@ -490,7 +519,7 @@ public class ConsentUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/consent/notification/")
-                .header("Authorization", "bmNn")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -522,6 +551,10 @@ public class ConsentUserJourneyTest {
         var consentRequestDetails = consentRequestDetails().build();
         consentRequestDetails.getConsent().getPatient().setId("hinapatel79@ncg");
 
+        var token = randomString();
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
 
         LocalDateTime dateEraseAt = LocalDateTime.of(LocalDate.of(2050, 01, 01), LocalTime.of(10, 30));
         consentRequestDetails.getConsent().getPermission().setDataEraseAt(dateEraseAt);
@@ -529,7 +562,7 @@ public class ConsentUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/v1/hiu/consent-requests")
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentRequestDetails)
                 .accept(MediaType.APPLICATION_JSON)
