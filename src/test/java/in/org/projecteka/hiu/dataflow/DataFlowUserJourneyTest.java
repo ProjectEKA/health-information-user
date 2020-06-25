@@ -3,11 +3,13 @@ package in.org.projecteka.hiu.dataflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWKSet;
+import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.ServiceCaller;
+import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
@@ -17,6 +19,7 @@ import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
+import in.org.projecteka.hiu.user.Role;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -83,6 +86,8 @@ public class DataFlowUserJourneyTest {
     private DataAvailabilityListener dataAvailabilityListener;
     @MockBean
     private CentralRegistryTokenVerifier centralRegistryTokenVerifier;
+    @MockBean
+    private Authenticator authenticator;
     @SuppressWarnings("unused")
     @MockBean
     private JWKSet centralRegistryJWKSet;
@@ -152,10 +157,15 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("consentId", consentId);
         consentDetailsMap.put("hipId", hipId);
         consentDetailsMap.put("hipName", hipName);
-        consentDetailsMap.put("requester", "1");
+        consentDetailsMap.put("requester", "testUser");
         consentDetailsMap.put("status", "GRANTED");
         consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48");
         consentDetails.add(consentDetailsMap);
+
+        var token = randomString();
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+
         Map<String, Object> healthInfo = new HashMap<>();
         String content = "Some dummy content";
         healthInfo.put("data", content);
@@ -172,7 +182,7 @@ public class DataFlowUserJourneyTest {
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
                         .queryParam("limit", "20").build())
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(HealthInformation.class)
@@ -189,12 +199,15 @@ public class DataFlowUserJourneyTest {
         var transactionId = "transactionId";
         var hipId = "10000005";
         var hipName = "Max health care";
+        var token = randomString();
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
         List<Map<String, String>> consentDetails = new ArrayList<>();
         Map<String, String> consentDetailsMap = new HashMap<>();
         consentDetailsMap.put("consentId", consentId);
         consentDetailsMap.put("hipId", hipId);
         consentDetailsMap.put("hipName", hipName);
-        consentDetailsMap.put("requester", "1");
+        consentDetailsMap.put("requester", "testUser");
         consentDetailsMap.put("status", "GRANTED");
         consentDetailsMap.put("consentExpiryDate", "2019-01-15T08:47:48");
         consentDetails.add(consentDetailsMap);
@@ -210,7 +223,7 @@ public class DataFlowUserJourneyTest {
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
                         .queryParam("limit", "20").build())
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .exchange()
                 .expectStatus().is4xxClientError()
                 .expectBody()
@@ -228,8 +241,11 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("consentId", consentId);
         consentDetailsMap.put("hipId", hipId);
         consentDetailsMap.put("hipName", hipName);
-        consentDetailsMap.put("requester", "2");
+        consentDetailsMap.put("requester", "tempUser");
         consentDetails.add(consentDetailsMap);
+        var token = randomString();
+        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
 
         var errorResponse = new ErrorRepresentation(new Error(
                 ErrorCode.UNAUTHORIZED_REQUESTER,
@@ -242,7 +258,7 @@ public class DataFlowUserJourneyTest {
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
                         .queryParam("limit", "20").build())
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .exchange()
                 .expectStatus().isUnauthorized()
                 .expectBody()
