@@ -15,7 +15,6 @@ import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CentralRegistry;
 import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
-import in.org.projecteka.hiu.common.JwtAuthenticator;
 import in.org.projecteka.hiu.common.UserAuthenticator;
 import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
@@ -433,9 +432,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "jwt", matchIfMissing = true)
     public Authenticator userAuthenticator(byte[] sharedSecret) throws JOSEException {
-        return new UserAuthenticator(new JwtAuthenticator(sharedSecret));
+        return new UserAuthenticator(sharedSecret);
     }
 
     @Bean
