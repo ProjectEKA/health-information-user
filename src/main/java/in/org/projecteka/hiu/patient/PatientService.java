@@ -2,12 +2,12 @@ package in.org.projecteka.hiu.patient;
 
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
-import in.org.projecteka.hiu.GatewayServiceProperties;
+import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.DelayTimeoutException;
 import in.org.projecteka.hiu.common.ErrorMappings;
 import in.org.projecteka.hiu.patient.model.FindPatientQuery;
@@ -33,9 +33,9 @@ public class PatientService {
     private final PatientServiceClient client;
     private final GatewayServiceClient gatewayServiceClient;
     private final Cache<String, Optional<Patient>> cache;
-    private final CentralRegistry centralRegistry;
+    private final Gateway gateway;
     private final HiuProperties hiuProperties;
-    private final GatewayServiceProperties gatewayServiceProperties;
+    private final GatewayProperties gatewayProperties;
     private final Cache<String, Optional<PatientSearchGatewayResponse>> gatewayResponseCache;
 
     @Deprecated
@@ -43,7 +43,7 @@ public class PatientService {
         return cache.asMap().getOrDefault(id, Optional.empty())
                 .map(Mono::just)
                 .orElseGet(() ->
-                        centralRegistry.token()
+                        gateway.token()
                                 .flatMap(token -> client.patientWith(id, token))
                                 .map(patientRep -> {
                                     cache.put(id, Optional.of(patientRep.toPatient()));
@@ -61,7 +61,7 @@ public class PatientService {
             var request = getFindPatientRequest(id);
 
             return scheduleThis(gatewayServiceClient.findPatientWith(request, cmSuffix))
-                    .timeout(Duration.ofMillis(gatewayServiceProperties.getRequestTimeout()))
+                    .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout()))
                     .responseFrom(discard ->
                             Mono.defer(() -> getFromCache(request.getRequestId(), Mono::empty)))
                     .onErrorResume(DelayTimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()))

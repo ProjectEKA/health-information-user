@@ -21,7 +21,6 @@ public class HealthInfoManager {
     private final ConsentRepository consentRepository;
     private final DataFlowRepository dataFlowRepository;
     private final HealthInformationRepository healthInformationRepository;
-    private static final Logger logger = LoggerFactory.getLogger(HealthInfoManager.class);
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return consentRepository.getConsentDetails(consentRequestId)

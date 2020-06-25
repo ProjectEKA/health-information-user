@@ -7,7 +7,7 @@ import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
@@ -38,7 +38,7 @@ public class DataAvailabilityListener {
     private final DataFlowRepository dataFlowRepository;
     private final LocalDicomServerProperties dicomServerProperties;
     private final HealthInformationClient healthInformationClient;
-    private final CentralRegistry centralRegistry;
+    private final Gateway gateway;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
 
@@ -69,7 +69,7 @@ public class DataAvailabilityListener {
                         new Decryptor(),
                         allResourceProcessors(),
                         healthInformationClient,
-                        centralRegistry,
+                        gateway,
                         hiuProperties,
                         consentRepository);
                 healthDataProcessor.process(dataAvailableMessage);

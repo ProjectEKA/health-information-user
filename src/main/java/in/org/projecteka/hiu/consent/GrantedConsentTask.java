@@ -3,7 +3,7 @@ package in.org.projecteka.hiu.consent;
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.ConsentNotification;
@@ -16,23 +16,23 @@ import java.util.UUID;
 
 public class GrantedConsentTask extends ConsentTask {
     private GatewayServiceClient gatewayClient;
-    private CentralRegistry centralRegistry;
+    private Gateway gateway;
     private Cache<String, String> gatewayResponseCache;
 
     public GrantedConsentTask(ConsentRepository consentRepository,
                               GatewayServiceClient gatewayClient,
-                              CentralRegistry centralRegistry,
+                              Gateway gateway,
                               Cache<String, String> gatewayResponseCache) {
         super(consentRepository);
         this.gatewayClient = gatewayClient;
-        this.centralRegistry = centralRegistry;
+        this.gateway = gateway;
         this.gatewayResponseCache = gatewayResponseCache;
     }
 
     private Mono<Void> perform(ConsentArtefactReference reference, String consentRequestId, String cmSuffix) {
         var requestId = UUID.randomUUID();
         gatewayResponseCache.put(requestId.toString(), consentRequestId);
-        return centralRegistry.token()
+        return gateway.token()
                 .flatMap(token -> {
                     var consentArtefactRequest = ConsentArtefactRequest
                             .builder()

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.GatewayServiceProperties;
+import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
 import in.org.projecteka.hiu.dataflow.model.DateRange;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
@@ -37,7 +37,7 @@ public class DataFlowClientTest {
     private MockWebServer mockWebServer;
 
     @Mock
-    GatewayServiceProperties gatewayServiceProperties;
+    GatewayProperties gatewayProperties;
 
     @BeforeEach
     public void init() {
@@ -58,7 +58,7 @@ public class DataFlowClientTest {
         WebClient.Builder webClientBuilder = WebClient.builder().exchangeStrategies(strategies);
         ConsentManagerServiceProperties consentManagerServiceProperties =
                 new ConsentManagerServiceProperties(mockWebServer.url("").toString(), "@ncg");
-        dataFlowClient = new DataFlowClient(webClientBuilder,gatewayServiceProperties, consentManagerServiceProperties);
+        dataFlowClient = new DataFlowClient(webClientBuilder, gatewayProperties, consentManagerServiceProperties);
     }
 
     @Test
@@ -104,7 +104,7 @@ public class DataFlowClientTest {
         var gatewayDataFlowRequest = new GatewayDataFlowRequest(UUID.randomUUID(),string(),dataFlowRequest);
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(202));
-        when(gatewayServiceProperties.getBaseUrl()).thenReturn(mockWebServer.url("").toString());
+        when(gatewayProperties.getBaseUrl()).thenReturn(mockWebServer.url("").toString());
 
         StepVerifier.create(dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest, string(), string()))
                 .verifyComplete();

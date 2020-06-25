@@ -15,14 +15,14 @@ import java.util.Properties;
 import static java.lang.String.format;
 
 @AllArgsConstructor
-public class CentralRegistryClient {
+public class GatewayAuthenticationClient {
     private final WebClient.Builder builder;
-    private final Logger logger = Logger.getLogger(CentralRegistryClient.class);
+    private final Logger logger = Logger.getLogger(GatewayAuthenticationClient.class);
 
     public Mono<Token> getTokenFor(String clientId, String clientSecret) {
         return builder.build()
                 .post()
-                .uri("/api/1.0/sessions")
+                .uri("/sessions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(requestWith(clientId, clientSecret)))
@@ -35,7 +35,7 @@ public class CentralRegistryClient {
     }
 
     private SessionRequest requestWith(String clientId, String clientSecret) {
-        return new SessionRequest(clientId, clientSecret, "password");
+        return new SessionRequest(clientId, clientSecret);
     }
 
     @AllArgsConstructor
@@ -43,6 +43,5 @@ public class CentralRegistryClient {
     private static class SessionRequest {
         private String clientId;
         private String clientSecret;
-        private String grantType;
     }
 }

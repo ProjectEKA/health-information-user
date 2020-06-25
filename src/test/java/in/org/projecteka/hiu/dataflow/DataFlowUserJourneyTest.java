@@ -10,7 +10,7 @@ import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.common.Authenticator;
-import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
+import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
@@ -84,10 +84,12 @@ public class DataFlowUserJourneyTest {
     @SuppressWarnings("unused")
     @MockBean
     private DataAvailabilityListener dataAvailabilityListener;
-    @MockBean
-    private CentralRegistryTokenVerifier centralRegistryTokenVerifier;
+
     @MockBean
     private Authenticator authenticator;
+
+    @MockBean
+    private GatewayTokenVerifier gatewayTokenVerifier;
     @SuppressWarnings("unused")
     @MockBean
     private JWKSet centralRegistryJWKSet;
@@ -125,8 +127,7 @@ public class DataFlowUserJourneyTest {
                 .clientId("abc@ncg")
                 .roles(List.of(GATEWAY))
                 .build();
-
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(flowRequestMap));
@@ -163,7 +164,7 @@ public class DataFlowUserJourneyTest {
         consentDetails.add(consentDetailsMap);
 
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
         when(authenticator.verify(token)).thenReturn(Mono.just(caller));
 
         Map<String, Object> healthInfo = new HashMap<>();
@@ -200,7 +201,7 @@ public class DataFlowUserJourneyTest {
         var hipId = "10000005";
         var hipName = "Max health care";
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
         when(authenticator.verify(token)).thenReturn(Mono.just(caller));
         List<Map<String, String>> consentDetails = new ArrayList<>();
         Map<String, String> consentDetailsMap = new HashMap<>();
@@ -244,7 +245,7 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("requester", "tempUser");
         consentDetails.add(consentDetailsMap);
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
         when(authenticator.verify(token)).thenReturn(Mono.just(caller));
 
         var errorResponse = new ErrorRepresentation(new Error(
@@ -279,7 +280,7 @@ public class DataFlowUserJourneyTest {
                 .clientId("abc@ncg")
                 .roles(List.of(GATEWAY))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         var errorResponse = new ErrorRepresentation(new Error(
@@ -306,7 +307,7 @@ public class DataFlowUserJourneyTest {
         var clientId = string();
         var dataFlowRequestResult = dataFlowRequestResult().error(null).build();
         var transactionId = dataFlowRequestResult.getHiRequest().getTransactionId().toString();
-        when(centralRegistryTokenVerifier.verify(token))
+        when(gatewayTokenVerifier.verify(token))
                 .thenReturn(Mono.just(new ServiceCaller(clientId, (List.of(GATEWAY)))));
         when(dataFlowRepository.updateDataRequest(
                 transactionId,
@@ -332,7 +333,7 @@ public class DataFlowUserJourneyTest {
         var token = string();
         var clientId = string();
         var dataFlowRequestResult = dataFlowRequestResult().hiRequest(null).build();
-        when(centralRegistryTokenVerifier.verify(token))
+        when(gatewayTokenVerifier.verify(token))
                 .thenReturn(Mono.just(new ServiceCaller(clientId, (List.of(GATEWAY)))));
 
         webTestClient

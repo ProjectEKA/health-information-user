@@ -7,7 +7,7 @@ import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -40,7 +40,7 @@ public class DataFlowRequestListener {
     private final DataFlowRepository dataFlowRepository;
     private final Decryptor decryptor;
     private final DataFlowProperties dataFlowProperties;
-    private final CentralRegistry centralRegistry;
+    private final Gateway gateway;
     private final Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
     private final ConsentRepository consentRepository;
 
@@ -68,7 +68,7 @@ public class DataFlowRequestListener {
                 dataFlowRequest.setKeyMaterial(keyMaterial);
 
                 logger.info("Initiating data flow request to consent manager");
-                centralRegistry.token()
+                gateway.token()
                         .flatMap(token -> {
                             if (dataFlowProperties.isUsingGateway()) {
                                 var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);

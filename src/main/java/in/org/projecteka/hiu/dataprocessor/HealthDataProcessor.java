@@ -8,7 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.HealthInformation;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
@@ -52,7 +52,7 @@ public class HealthDataProcessor {
     private final DataFlowRepository dataFlowRepository;
     private final Decryptor decryptor;
     private final HealthInformationClient healthInformationClient;
-    private final CentralRegistry centralRegistry;
+    private final Gateway gateway;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
     private final FhirContext fhirContext = FhirContext.forR4();
@@ -63,7 +63,7 @@ public class HealthDataProcessor {
                                Decryptor decryptor,
                                List<HITypeResourceProcessor> hiTypeResourceProcessors,
                                HealthInformationClient healthInformationClient,
-                               CentralRegistry centralRegistry,
+                               Gateway gateway,
                                HiuProperties hiuProperties,
                                ConsentRepository consentRepository) {
         this.healthDataRepository = healthDataRepository;
@@ -71,7 +71,7 @@ public class HealthDataProcessor {
         this.decryptor = decryptor;
         this.healthInformationClient = healthInformationClient;
         this.resourceProcessors.addAll(hiTypeResourceProcessors);
-        this.centralRegistry = centralRegistry;
+        this.gateway = gateway;
         this.hiuProperties = hiuProperties;
         this.consentRepository = consentRepository;
     }
@@ -168,7 +168,7 @@ public class HealthDataProcessor {
         String hipId = consentRepository.getHipId(consentId).block();
         HealthInfoNotificationRequest healthInfoNotificationRequest =
                 getHealthInfoNotificationRequest(context, statusResponses, sessionStatus, consentId, hipId);
-        String token = centralRegistry.token().block();
+        String token = gateway.token().block();
         String consentManagerId = fetchCMId(healthInfoNotificationRequest.getNotification().getConsentId());
         healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token, consentManagerId).block();
     }

@@ -2,12 +2,12 @@ package in.org.projecteka.hiu.patient;
 
 import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
-import in.org.projecteka.hiu.GatewayServiceProperties;
+import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayResponse;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,13 +44,13 @@ class PatientServiceTest {
     Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache;
 
     @Mock
-    CentralRegistry centralRegistry;
+    Gateway gateway;
 
     @Mock
     HiuProperties hiuProperties;
 
     @Mock
-    GatewayServiceProperties gatewayServiceProperties;
+    GatewayProperties gatewayProperties;
 
     @Mock
     GatewayServiceClient gatewayServiceClient;
@@ -69,8 +69,8 @@ class PatientServiceTest {
         var map = new ConcurrentHashMap<String, Optional<Patient>>();
         map.put(patientId, Optional.of(patient));
         when(cache.asMap()).thenReturn(map);
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
+        when(gateway.token()).thenReturn(Mono.just(token));
+        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
 
         Mono<Patient> patientPublisher = patientService.patientWith(patientId);
 
@@ -88,9 +88,9 @@ class PatientServiceTest {
         var patient =
                 patient().identifier(patientRep.getIdentifier()).firstName(patientRep.getName()).lastName(null).build();
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(gateway.token()).thenReturn(Mono.just(token));
         when(client.patientWith(patientId, token)).thenReturn(Mono.just(patientRep));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
 
         Mono<Patient> patientPublisher = patientService.patientWith(patientId);
 
@@ -108,8 +108,8 @@ class PatientServiceTest {
         var map = new ConcurrentHashMap<String, Optional<Patient>>();
         map.put(patientId, Optional.of(patient));
         when(cache.asMap()).thenReturn(map);
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
+        when(gateway.token()).thenReturn(Mono.just(token));
+        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
 
         Mono<Patient> patientPublisher = patientService.findPatientWith(patientId);
 
@@ -127,11 +127,11 @@ class PatientServiceTest {
         var map = new ConcurrentHashMap<String, Optional<Patient>>();
         map.put(patientId, Optional.of(patient));
 
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
 
         when(hiuProperties.getId()).thenReturn("10000005");
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(gateway.token()).thenReturn(Mono.just(token));
         when(gatewayServiceClient.findPatientWith(any(), any())).thenReturn(Mono.just(Boolean.TRUE));
         when(patientSearchCache.asMap()).thenReturn(new ConcurrentHashMap<>());
 
@@ -156,7 +156,7 @@ class PatientServiceTest {
         var patient = patientRepresentation.toPatient();
 
 
-        var patientService = new PatientService(client, gatewayServiceClient, cache, centralRegistry, hiuProperties, gatewayServiceProperties,patientSearchCache);
+        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
 
         when(gatewayPatientSearchResponse.getPatient()).thenReturn(patientRepresentation);
         when(gatewayPatientSearchResponse.getResp()).thenReturn(mockGatewayResponse);

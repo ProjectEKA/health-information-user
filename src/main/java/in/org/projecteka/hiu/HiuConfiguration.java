@@ -8,13 +8,14 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
-import in.org.projecteka.hiu.clients.CentralRegistryClient;
+import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
+import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Authenticator;
-import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
+import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.UserAuthenticator;
 import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.ConsentManagerClient;
@@ -22,7 +23,6 @@ import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
-import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
@@ -58,7 +58,6 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.context.ApplicationContext;
@@ -137,11 +136,11 @@ public class HiuConfiguration {
             DataFlowRequestPublisher dataFlowRequestPublisher,
             DataFlowDeletePublisher dataFlowDeletePublisher,
             PatientService patientService,
-            CentralRegistry centralRegistry,
+            Gateway gateway,
             HealthInformationPublisher healthInformationPublisher,
             ConceptValidator validator,
             GatewayServiceClient gatewayServiceClient,
-            GatewayServiceProperties gatewayServiceProperties) {
+            GatewayProperties gatewayProperties) {
         return new ConsentService(
                 new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
@@ -149,10 +148,10 @@ public class HiuConfiguration {
                 dataFlowRequestPublisher,
                 dataFlowDeletePublisher,
                 patientService,
-                centralRegistry,
+                gateway,
                 healthInformationPublisher,
                 validator,
-                gatewayServiceProperties,
+                gatewayProperties,
                 gatewayServiceClient);
     }
 
@@ -160,11 +159,17 @@ public class HiuConfiguration {
     public PatientService patientService(PatientServiceClient patientServiceClient,
                                          GatewayServiceClient gatewayServiceClient,
                                          Cache<String, Optional<Patient>> cache,
-                                         CentralRegistry centralRegistry,
+                                         Gateway gateway,
                                          HiuProperties hiuProperties,
-                                         GatewayServiceProperties gatewayServiceProperties,
+                                         GatewayProperties gatewayProperties,
                                          Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache) {
-        return new PatientService(patientServiceClient,gatewayServiceClient, cache, centralRegistry,hiuProperties,gatewayServiceProperties,patientSearchCache);
+        return new PatientService(patientServiceClient,
+                gatewayServiceClient,
+                cache,
+                gateway,
+                hiuProperties,
+                gatewayProperties,
+                patientSearchCache);
     }
 
     @Bean
@@ -283,9 +288,9 @@ public class HiuConfiguration {
 
     @Bean
     public DataFlowClient dataFlowClient(WebClient.Builder builder,
-                                         GatewayServiceProperties gatewayServiceProperties,
+                                         GatewayProperties gatewayProperties,
                                          ConsentManagerServiceProperties consentManagerServiceProperties) {
-        return new DataFlowClient(builder,gatewayServiceProperties, consentManagerServiceProperties);
+        return new DataFlowClient(builder, gatewayProperties, consentManagerServiceProperties);
     }
 
     @Bean
@@ -311,10 +316,9 @@ public class HiuConfiguration {
             DataFlowRepository dataFlowRepository,
             Decryptor decryptor,
             DataFlowProperties dataFlowProperties,
-            CentralRegistry centralRegistry,
+            Gateway gateway,
             Cache<String, DataFlowRequestKeyMaterial> dataFlowCache,
-            ConsentRepository consentRepository
-            ) {
+            ConsentRepository consentRepository) {
         return new DataFlowRequestListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
@@ -322,7 +326,7 @@ public class HiuConfiguration {
                 dataFlowRepository,
                 decryptor,
                 dataFlowProperties,
-                centralRegistry,
+                gateway,
                 dataFlowCache,
                 consentRepository);
     }
@@ -388,7 +392,7 @@ public class HiuConfiguration {
                                                              DataFlowRepository dataFlowRepository,
                                                              LocalDicomServerProperties dicomServerProperties,
                                                              HealthInformationClient healthInformationClient,
-                                                             CentralRegistry centralRegistry,
+                                                             Gateway gateway,
                                                              HiuProperties hiuProperties,
                                                              ConsentRepository consentRepository) {
         return new DataAvailabilityListener(
@@ -398,37 +402,37 @@ public class HiuConfiguration {
                 dataFlowRepository,
                 dicomServerProperties,
                 healthInformationClient,
-                centralRegistry,
+                gateway,
                 hiuProperties,
                 consentRepository);
     }
 
     @Bean
-    public CentralRegistryClient centralRegistryClient(WebClient.Builder builder,
-                                                       CentralRegistryProperties centralRegistryProperties) {
-        return new CentralRegistryClient(builder.baseUrl(centralRegistryProperties.url));
+    public GatewayAuthenticationClient centralRegistryClient(WebClient.Builder builder,
+                                                             GatewayProperties gatewayProperties) {
+        return new GatewayAuthenticationClient(builder.baseUrl(gatewayProperties.getBaseUrl()));
     }
 
     @Bean
     public HealthInformationClient healthInformationClient(WebClient.Builder builder,
-                                                           GatewayServiceProperties gatewayServiceProperties) {
-        return new HealthInformationClient(builder, gatewayServiceProperties);
+                                                           GatewayProperties gatewayProperties) {
+        return new HealthInformationClient(builder, gatewayProperties);
     }
 
     @Bean
-    public CentralRegistry connector(CentralRegistryProperties centralRegistryProperties,
-                                     CentralRegistryClient centralRegistryClient) {
-        return new CentralRegistry(centralRegistryProperties, centralRegistryClient);
+    public Gateway connector(GatewayProperties gatewayProperties,
+                             GatewayAuthenticationClient gatewayAuthenticationClient) {
+        return new Gateway(gatewayProperties, gatewayAuthenticationClient);
     }
 
     @Bean("centralRegistryJWKSet")
-    public JWKSet jwkSet(CentralRegistryProperties clientRegistryProperties) throws IOException, ParseException {
-        return JWKSet.load(new URL(clientRegistryProperties.getJwkUrl()));
+    public JWKSet jwkSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
+        return JWKSet.load(new URL(gatewayProperties.getJwkUrl()));
     }
 
     @Bean
-    public CentralRegistryTokenVerifier centralRegistryTokenVerifier(@Qualifier("centralRegistryJWKSet") JWKSet jwkSet) {
-        return new CentralRegistryTokenVerifier(jwkSet);
+    public GatewayTokenVerifier centralRegistryTokenVerifier(@Qualifier("centralRegistryJWKSet") JWKSet jwkSet) {
+        return new GatewayTokenVerifier(jwkSet);
     }
 
     @Bean
@@ -467,7 +471,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder, GatewayServiceProperties serviceProperties,CentralRegistry centralRegistry) {
-        return new GatewayServiceClient(builder, serviceProperties, centralRegistry);
+    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder,
+                                                     GatewayProperties serviceProperties,
+                                                     Gateway gateway) {
+        return new GatewayServiceClient(builder, serviceProperties, gateway);
     }
 }
