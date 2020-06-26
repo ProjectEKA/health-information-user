@@ -133,8 +133,9 @@ public class ConsentRepository {
                                 monoSink.error(consentArtefactNotFound());
                                 return;
                             }
-                            var artefact = (JsonObject) iterator.next().getValue("consent_artefact");
-                            monoSink.success(artefact.mapTo(ConsentArtefact.class));
+                            var consentArtefact = to(iterator.next().getValue("consent_artefact").toString(),
+                                    ConsentArtefact.class);
+                            monoSink.success(consentArtefact);
                         }));
     }
 
