@@ -1,0 +1,43 @@
+server:
+  port: 8003
+hiu:
+  id: 10000005
+  name: Max Health Care
+  dataPushUrl: http://localhost:8003/data/notification
+  consentNotificationUrl: http://localhost:8003/consent/notification
+  valueSets: classpath:/static/ValueSet/valuesets.json
+  consentmanager:
+    suffix: ncg
+    url: http://localhost:9000
+  dataflowservice:
+    defaultPageSize: 20
+    maxPageSize: 100
+    localStoragePath: /tmp/
+  centralregistry:
+    url: http://localhost:8083
+    clientId: 10000005
+    clientSecret: ${CLIENTREGISTRY_CLIENTSECRET}
+    jwkUrl: http://localhost:8083/certs
+  database:
+    host: localhost
+    port: 5432
+    schema: health_information_user
+    user: postgres
+    password: password
+    poolSize: 5
+  dataflow:
+    offsetInDays: 2
+    usingGateway: false
+  dicomserver:
+    url: http://localhost:8042
+    user: orthanc
+    password: orthanc
+  gatewayservice:
+    baseUrl: http://localhost:8000/v1
+    requestTimeout: 2000
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+  codec:
+    max-in-memory-size: 500MB
