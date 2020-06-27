@@ -12,7 +12,6 @@ import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
-import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,7 +106,7 @@ class HealthDataProcessorTest {
         String cmId = "ncg";
         String token = string();
 
-        when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any()))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
@@ -130,8 +129,7 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1))
-                .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
         verify(dataFlowRepository, times(1))
                 .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
         verify(dataFlowRepository, times(1))
@@ -161,8 +159,7 @@ class HealthDataProcessorTest {
         String cmId = "ncg";
         String token = string();
 
-        when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
-                .thenReturn(Mono.empty());
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any())).thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
                 .thenReturn(Mono.empty());
@@ -184,8 +181,7 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1))
-                .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
         verify(dataFlowRepository, times(1))
                 .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
         verify(dataFlowRepository, times(1))
@@ -215,8 +211,7 @@ class HealthDataProcessorTest {
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
         String token = string();
 
-        when(healthDataRepository.insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED)))
-                .thenReturn(Mono.empty());
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any())).thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
                 .thenReturn(Mono.empty());
@@ -238,8 +233,7 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1))
-                .insertHealthData(eq(transactionId), eq(partNumber), any(), eq(EntryStatus.SUCCEEDED));
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
         verify(dataFlowRepository, times(1))
                 .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
         verify(dataFlowRepository, times(1))

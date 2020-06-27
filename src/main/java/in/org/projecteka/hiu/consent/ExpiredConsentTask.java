@@ -14,7 +14,7 @@ import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 
 public class ExpiredConsentTask extends ConsentTask {
-    private DataFlowDeletePublisher dataFlowDeletePublisher;
+    private final DataFlowDeletePublisher dataFlowDeletePublisher;
 
     public ExpiredConsentTask(ConsentRepository consentRepository, DataFlowDeletePublisher dataFlowDeletePublisher) {
         super(consentRepository);

@@ -6,10 +6,7 @@ import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
-import in.org.projecteka.hiu.clients.PatientServiceClient;
-import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.DelayTimeoutException;
-import in.org.projecteka.hiu.common.ErrorMappings;
 import in.org.projecteka.hiu.patient.model.FindPatientQuery;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
@@ -25,33 +22,27 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
-import static java.lang.String.format;
+import static in.org.projecteka.hiu.common.ErrorMappings.get;
+import static reactor.core.publisher.Mono.error;
+import static reactor.core.publisher.Mono.just;
 
 @AllArgsConstructor
 public class PatientService {
     private static final Logger logger = Logger.getLogger(PatientService.class);
-    private final PatientServiceClient client;
     private final GatewayServiceClient gatewayServiceClient;
     private final Cache<String, Optional<Patient>> cache;
-    private final Gateway gateway;
     private final HiuProperties hiuProperties;
     private final GatewayProperties gatewayProperties;
     private final Cache<String, Optional<PatientSearchGatewayResponse>> gatewayResponseCache;
 
-    @Deprecated
-    public Mono<Patient> patientWith(String id) {
-        return cache.asMap().getOrDefault(id, Optional.empty())
-                .map(Mono::just)
-                .orElseGet(() ->
-                        gateway.token()
-                                .flatMap(token -> client.patientWith(id, token))
-                                .map(patientRep -> {
-                                    cache.put(id, Optional.of(patientRep.toPatient()));
-                                    logger.debug(format("Updated cache for patient %s with id: %s",
-                                            patientRep.toPatient().getFirstName(),
-                                            patientRep.toPatient().getIdentifier()));
-                                    return patientRep.toPatient();
-                                }));
+    private static Mono<? extends Patient> apply(PatientSearchGatewayResponse response) {
+        if (response.getPatient() != null) {
+            return just(response.getPatient().toPatient());
+        }
+        if (response.getError() != null) {
+            return error(get(response.getError().getCode()));
+        }
+        return error(ClientError.unknownError());
     }
 
     public Mono<Patient> findPatientWith(String id) {
@@ -59,22 +50,13 @@ public class PatientService {
         {
             var cmSuffix = getCmSuffix(id);
             var request = getFindPatientRequest(id);
-
             return scheduleThis(gatewayServiceClient.findPatientWith(request, cmSuffix))
                     .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout()))
                     .responseFrom(discard ->
                             Mono.defer(() -> getFromCache(request.getRequestId(), Mono::empty)))
-                    .onErrorResume(DelayTimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()))
-                    .onErrorResume(TimeoutException.class, discard -> Mono.error(ClientError.gatewayTimeOut()))
-                    .flatMap(response -> {
-                        if (response.getError() != null) {
-                            return Mono.error(ErrorMappings.get(response.getError().getCode()));
-                        }
-                        if (response.getPatient() != null) {
-                            return Mono.just(response.getPatient().toPatient());
-                        }
-                        return Mono.error(ClientError.unknownError());
-                    });
+                    .onErrorResume(DelayTimeoutException.class, discard -> error(ClientError.gatewayTimeOut()))
+                    .onErrorResume(TimeoutException.class, discard -> error(ClientError.gatewayTimeOut()))
+                    .flatMap(PatientService::apply);
         });
     }
 
@@ -93,7 +75,8 @@ public class PatientService {
                 .orElseGet(function);
     }
 
-    private Mono<PatientSearchGatewayResponse> getFromCache(UUID requestId, Supplier<Mono<PatientSearchGatewayResponse>> function) {
+    private Mono<PatientSearchGatewayResponse> getFromCache(UUID requestId,
+                                                            Supplier<Mono<PatientSearchGatewayResponse>> function) {
         return gatewayResponseCache.asMap().getOrDefault(requestId.toString(), Optional.empty())
                 .map(Mono::just)
                 .orElseGet(function);

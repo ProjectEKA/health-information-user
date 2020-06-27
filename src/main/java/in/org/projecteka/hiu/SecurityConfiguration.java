@@ -46,14 +46,6 @@ public class SecurityConfiguration {
             V_1_HEALTH_INFORMATION_HIU_ON_REQUEST
     };
 
-    private static final List<String> SERVICE_ONLY_URLS = List.of("/consent/notification",
-            "/data/notification",
-            V_1_CONSENT_REQUESTS_ON_INIT,
-            V_1_CONSENTS_HIU_NOTIFY,
-            V_1_CONSENTS_ON_FETCH,
-            V_1_CONSENTS_ON_FIND,
-            V_1_HEALTH_INFORMATION_HIU_ON_REQUEST);
-
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity httpSecurity,
@@ -67,13 +59,13 @@ public class SecurityConfiguration {
                                        "/**.css",
                                        "/**.png",
                                        "/health-information/fetch/**/attachments/**",
+                                       "/data/notification",
                                        "/sessions",
                                        "/config"};
         httpSecurity.authorizeExchange().pathMatchers(allowedLists).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
-        SERVICE_ONLY_URLS.forEach(entry -> httpSecurity.authorizeExchange().pathMatchers(entry).authenticated());
         httpSecurity.authorizeExchange()
                 .pathMatchers(GATEWAY_APIS)
                 .hasAnyRole(GATEWAY.toString())
@@ -91,15 +83,13 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public SecurityContextRepository contextRepository(ReactiveAuthenticationManager manager,
-                                                       GatewayTokenVerifier gatewayTokenVerifier,
+    public SecurityContextRepository contextRepository(GatewayTokenVerifier gatewayTokenVerifier,
                                                        Authenticator authenticator) {
-        return new SecurityContextRepository(manager, gatewayTokenVerifier, authenticator);
+        return new SecurityContextRepository(gatewayTokenVerifier, authenticator);
     }
 
     @AllArgsConstructor
     private static class SecurityContextRepository implements ServerSecurityContextRepository {
-        private final ReactiveAuthenticationManager manager;
         private final GatewayTokenVerifier gatewayTokenVerifier;
         private final Authenticator authenticator;
 
@@ -114,10 +104,8 @@ public class SecurityConfiguration {
             if (isEmpty(token)) {
                 return Mono.empty();
             }
-
-            if (isCentralRegistryAuthenticatedOnlyRequest(
-                    exchange.getRequest().getPath().toString())) {
-                return checkCentralRegistry(token);
+            if (isGatewayOnlyRequest(exchange.getRequest().getPath().toString())) {
+                return checkGateway(token);
             }
             return check(token);
         }
@@ -137,7 +125,7 @@ public class SecurityConfiguration {
                     .map(SecurityContextImpl::new);
         }
 
-        private Mono<SecurityContext> checkCentralRegistry(String token) {
+        private Mono<SecurityContext> checkGateway(String token) {
             return gatewayTokenVerifier.verify(token)
                     .map(serviceCaller -> {
                         var authorities = serviceCaller.getRoles()
@@ -149,9 +137,10 @@ public class SecurityConfiguration {
                     .map(SecurityContextImpl::new);
         }
 
-        private boolean isCentralRegistryAuthenticatedOnlyRequest(String url) {
+        private boolean isGatewayOnlyRequest(String url) {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
-            return SERVICE_ONLY_URLS.stream()
+            return List.of(GATEWAY_APIS)
+                    .stream()
                     .anyMatch(pattern -> antPathMatcher.matchStart(pattern, url));
         }
     }

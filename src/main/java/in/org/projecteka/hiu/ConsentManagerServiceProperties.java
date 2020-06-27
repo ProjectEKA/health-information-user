@@ -14,6 +14,5 @@ import org.springframework.context.annotation.Configuration;
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @AllArgsConstructor
 public class ConsentManagerServiceProperties {
-    private String url;
     private String suffix;
 }

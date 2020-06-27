@@ -6,16 +6,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ErrorMappings {
-    
-    private static final Map<Integer, Throwable> codeErrorMapping = new HashMap<>();
 
-    private ErrorMappings() {}
+    private static final Map<Integer, ClientError> codeErrorMapping = new HashMap<>();
+
+    private ErrorMappings() {
+    }
 
     static {
         codeErrorMapping.put(1006, ClientError.patientNotFound());
     }
 
-    public static Throwable get(Integer errorCode) {
+    public static ClientError get(Integer errorCode) {
         return codeErrorMapping.getOrDefault(errorCode, ClientError.unknownError());
     }
 }

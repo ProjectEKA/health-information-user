@@ -3,7 +3,6 @@ package in.org.projecteka.hiu.dataprocessor;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dicomweb.DicomStudy;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
-import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -14,6 +13,8 @@ import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Media;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,23 +26,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class DiagnosticReportResourceProcessor implements HITypeResourceProcessor {
 
+    private static final Logger logger = LoggerFactory.getLogger(DiagnosticReportResourceProcessor.class);
     public static final String VS_SYSTEM_DIAGNOSTIC_SERVICE_SECTIONS = "http://hl7.org/fhir/ValueSet/diagnostic" +
             "-service-sections";
-    public static final String RADILOGY_CATEGORY_CODE = "RAD";
-    private final String DEFAULT_FILE_EXTN = ".txt";
-    private final Map<String, String> mediaTypeToFileExtnMap = new HashMap<>() {{
-        put("APPLICATION/PDF", ".pdf");
-        put("APPLICATION/DICOM", ".dcm");
-        put("APPLICATION/MSWORD", ".doc");
-        put("TEXT/RTF", ".rtf");
-    }};
+    public static final String RADIOLOGY_CATEGORY_CODE = "RAD";
+    private static final String DEFAULT_FILE_EXTENSION = ".txt";
+    private static final Map<String, String> MEDIA_TO_FILE_EXTENSION = Map.of("APPLICATION/PDF", ".pdf",
+            "APPLICATION/DICOM", ".dcm",
+            "APPLICATION/MSWORD", ".doc",
+            "TEXT/RTF", ".rtf");
+
     private final OrthancDicomWebServer localDicomWebServer;
 
     public DiagnosticReportResourceProcessor(OrthancDicomWebServer localDicomWebServer) {
@@ -103,7 +103,7 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
                 buffer.flip();
                 channel.write(buffer);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                logger.error(ex.getMessage(), ex);
                 throw new RuntimeException(ex);
             }
             attachment.setData(null);
@@ -114,7 +114,6 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         }
     }
 
-    @SneakyThrows
     private Path downloadAndSaveFile(Attachment attachment, Path localStorePath) {
         Path attachmentFilePath = getFileAttachmentPath(attachment, localStorePath);
         HttpGet request = new HttpGet(URI.create(attachment.getUrl()));
@@ -123,6 +122,8 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
             HttpEntity entity = response.getEntity();
             InputStream inputStream = entity.getContent();
             Files.copy(inputStream, attachmentFilePath);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
         }
         attachment.setUrl(referenceWebUrl(attachmentFilePath));
         return attachmentFilePath;
@@ -139,8 +140,8 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
     }
 
     private String getFileExtension(Attachment attachment) {
-        String extension = mediaTypeToFileExtnMap.get(attachment.getContentType().toUpperCase());
-        return (extension != null) ? extension : DEFAULT_FILE_EXTN;
+        String extension = MEDIA_TO_FILE_EXTENSION.get(attachment.getContentType().toUpperCase());
+        return (extension != null) ? extension : DEFAULT_FILE_EXTENSION;
     }
 
     private boolean hasLink(Attachment attachment) {
@@ -148,13 +149,13 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
     }
 
     private boolean isRadiologyFile(Attachment attachment) {
-        String extension = mediaTypeToFileExtnMap.get(attachment.getContentType().toUpperCase());
+        String extension = MEDIA_TO_FILE_EXTENSION.get(attachment.getContentType().toUpperCase());
         return (extension != null) && extension.equals(".dcm");
     }
 
     private boolean isRadiologyCategory(DiagnosticReport diagnosticReport) {
         return diagnosticReport.getCategoryFirstRep().getCoding().stream()
-                .filter(c -> c.getCode().equalsIgnoreCase(RADILOGY_CATEGORY_CODE)).count() > 0;
+                .anyMatch(c -> c.getCode().equalsIgnoreCase(RADIOLOGY_CATEGORY_CODE));
     }
 
     private void uploadToLocalDicomServer(Attachment content, Path savedFilePath) {

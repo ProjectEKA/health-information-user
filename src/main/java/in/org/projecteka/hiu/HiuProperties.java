@@ -18,5 +18,4 @@ public class HiuProperties {
     private String id;
     private String name;
     private String dataPushUrl;
-    private String consentNotificationUrl;
 }

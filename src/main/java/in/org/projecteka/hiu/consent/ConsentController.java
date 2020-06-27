@@ -1,13 +1,11 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.Caller;
-import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
-import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
-import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
+import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,27 +23,6 @@ import javax.validation.Valid;
 @AllArgsConstructor
 public class ConsentController {
     private final ConsentService consentService;
-
-    @PostMapping("/consent-requests")
-    public Mono<ConsentCreationResponse> createConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUsername)
-                .flatMap(requesterId -> consentService.create(requesterId, consentRequestData));
-    }
-
-    @PostMapping("/consent/notification")
-    public Mono<Void> consentNotification(@RequestBody ConsentNotificationRequest consentNotificationRequest) {
-        return consentService.handleNotification(consentNotificationRequest);
-    }
-
-    @GetMapping("/consent-requests")
-    public Flux<ConsentRequestRepresentation> consentsFor() {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
-                .map(Caller::getUsername)
-                .flatMapMany(username -> consentService.requestsFrom(username));
-    }
 
     @PostMapping("/v1/hiu/consent-requests")
     public Mono<ResponseEntity> postConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
@@ -67,7 +44,7 @@ public class ConsentController {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
-                .flatMapMany(username -> consentService.requestsOf(username));
+                .flatMapMany(consentService::requestsOf);
     }
 
     @PostMapping("/v1/consents/hiu/notify")

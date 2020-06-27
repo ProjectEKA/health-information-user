@@ -19,7 +19,7 @@ public class HealthInformationClient {
     private final WebClient.Builder builder;
     private final GatewayProperties gatewayProperties;
 
-    public Mono<HealthInformation> getHealthInformationFor(String url) {
+    public Mono<HealthInformation> informationFrom(String url) {
         return builder.build()
                 .get()
                 .uri(url)

@@ -6,7 +6,6 @@ import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
-import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayResponse;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
@@ -22,20 +21,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.patient;
-import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 class PatientServiceTest {
-
-    @Mock
-    PatientServiceClient client;
 
     @Mock
     Cache<String, Optional<Patient>> cache;
@@ -55,49 +48,9 @@ class PatientServiceTest {
     @Mock
     GatewayServiceClient gatewayServiceClient;
 
-
     @BeforeEach
     void init() {
         initMocks(this);
-    }
-
-    @Test
-    void returnPatientFromCache() {
-        var patientId = randomString();
-        var token = randomString();
-        var patient = patient().build();
-        var map = new ConcurrentHashMap<String, Optional<Patient>>();
-        map.put(patientId, Optional.of(patient));
-        when(cache.asMap()).thenReturn(map);
-        when(gateway.token()).thenReturn(Mono.just(token));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
-
-        Mono<Patient> patientPublisher = patientService.patientWith(patientId);
-
-        StepVerifier.create(patientPublisher)
-                .expectNext(patient)
-                .verifyComplete();
-        verify(client, never()).patientWith(patientId, token);
-    }
-
-    @Test
-    void returnPatientFromDownstreamServiceIfCacheIsEmpty() {
-        var patientId = randomString();
-        var token = randomString();
-        var patientRep = patientRepresentation().name("arun").build();
-        var patient =
-                patient().identifier(patientRep.getIdentifier()).firstName(patientRep.getName()).lastName(null).build();
-        when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
-        when(gateway.token()).thenReturn(Mono.just(token));
-        when(client.patientWith(patientId, token)).thenReturn(Mono.just(patientRep));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
-
-        Mono<Patient> patientPublisher = patientService.patientWith(patientId);
-
-        StepVerifier.create(patientPublisher)
-                .expectNext(patient)
-                .verifyComplete();
-        verify(client, atMostOnce()).patientWith(patientId, token);
     }
 
     @Test
@@ -109,7 +62,11 @@ class PatientServiceTest {
         map.put(patientId, Optional.of(patient));
         when(cache.asMap()).thenReturn(map);
         when(gateway.token()).thenReturn(Mono.just(token));
-        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
+        var patientService = new PatientService(gatewayServiceClient,
+                cache,
+                hiuProperties,
+                gatewayProperties,
+                patientSearchCache);
 
         Mono<Patient> patientPublisher = patientService.findPatientWith(patientId);
 
@@ -123,11 +80,12 @@ class PatientServiceTest {
     void shouldReturnGatewayTimeoutWhenNoResponseFromGatewayWithinTimeLimit() {
         var patientId = "temp@ncg";
         var token = randomString();
-        var patient = patient().build();
-        var map = new ConcurrentHashMap<String, Optional<Patient>>();
-        map.put(patientId, Optional.of(patient));
 
-        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
+        var patientService = new PatientService(gatewayServiceClient,
+                cache,
+                hiuProperties,
+                gatewayProperties,
+                patientSearchCache);
 
         when(hiuProperties.getId()).thenReturn("10000005");
         when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
@@ -142,7 +100,6 @@ class PatientServiceTest {
                         .getMessage()
                         .equals("Could not connect to Gateway"))
                 .verify();
-
     }
 
     @Test
@@ -154,19 +111,23 @@ class PatientServiceTest {
         var gatewayPatientSearchResponse = Mockito.mock(PatientSearchGatewayResponse.class);
         var patientRepresentation = new PatientRepresentation(id, name);
         var patient = patientRepresentation.toPatient();
-
-
-        var patientService = new PatientService(client, gatewayServiceClient, cache, gateway, hiuProperties, gatewayProperties,patientSearchCache);
-
+        var patientService = new PatientService(gatewayServiceClient,
+                cache,
+                hiuProperties,
+                gatewayProperties,
+                patientSearchCache);
         when(gatewayPatientSearchResponse.getPatient()).thenReturn(patientRepresentation);
         when(gatewayPatientSearchResponse.getResp()).thenReturn(mockGatewayResponse);
         when(gatewayPatientSearchResponse.getPatient()).thenReturn(patientRepresentation);
-
         when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
 
-        StepVerifier.create(patientService.onFindPatient(gatewayPatientSearchResponse))
-                .expectComplete().verify();
-        verify(cache).put(eq(gatewayPatientSearchResponse.getPatient().getId()),eq(Optional.of(patient)));
-        verify(patientSearchCache).put(eq(gatewayPatientSearchResponse.getResp().getRequestId()),eq(Optional.of(gatewayPatientSearchResponse)));
+        Mono<Void> publisher = patientService.onFindPatient(gatewayPatientSearchResponse);
+
+        StepVerifier.create(publisher)
+                .expectComplete()
+                .verify();
+        verify(cache).put(gatewayPatientSearchResponse.getPatient().getId(), Optional.of(patient));
+        verify(patientSearchCache).put(gatewayPatientSearchResponse.getResp().getRequestId(),
+                        Optional.of(gatewayPatientSearchResponse));
     }
 }

@@ -21,7 +21,6 @@ import org.bouncycastle.jce.spec.ECPrivateKeySpec;
 
 import javax.crypto.KeyAgreement;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;

@@ -66,7 +66,7 @@ public class DataFlowDeleteListener {
     private DataFlowDelete convertToDataFlowDelete(byte[] message) {
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
-                .configure(WRITE_DATES_AS_TIMESTAMPS, false);;
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);
         return mapper.readValue(message, DataFlowDelete.class);
     }
 

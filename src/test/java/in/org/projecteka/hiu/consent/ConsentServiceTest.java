@@ -1,52 +1,40 @@
 package in.org.projecteka.hiu.consent;
 
 import com.google.common.cache.Cache;
-import in.org.projecteka.hiu.ClientError;
-import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
-import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayResponse;
-import in.org.projecteka.hiu.consent.model.*;
-import in.org.projecteka.hiu.patient.PatientService;
+import in.org.projecteka.hiu.consent.model.ConsentArtefact;
+import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
+import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.FieldSetter;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static in.org.projecteka.hiu.consent.TestBuilders.consentCreationResponse;
-import static in.org.projecteka.hiu.consent.TestBuilders.consentNotificationRequest;
-import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
-import static in.org.projecteka.hiu.consent.TestBuilders.patientRepresentation;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
-import static in.org.projecteka.hiu.dataflow.Utils.toDate;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
-import static org.springframework.http.HttpStatus.CONFLICT;
 
 public class ConsentServiceTest {
     @Mock
@@ -54,19 +42,13 @@ public class ConsentServiceTest {
     @Mock
     Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache;
     @Mock
-    private ConsentManagerClient consentManagerClient;
-    @Mock
     private ConsentRepository consentRepository;
     @Mock
     private DataFlowRequestPublisher dataFlowRequestPublisher;
     @Mock
     private DataFlowDeletePublisher dataFlowDeletePublisher;
-
-    @Mock
-    private PatientServiceClient patientServiceClient;
     @Mock
     private Gateway gateway;
-
     @Mock
     private HealthInformationPublisher healthInformationPublisher;
     @Mock
@@ -76,230 +58,13 @@ public class ConsentServiceTest {
     @Mock
     private HiuProperties hiuProperties;
     @Mock
-    private GatewayProperties gatewayProperties;
-    @Mock
     private GatewayConsentArtefactResponse gatewayConsentArtefactResponse;
     @Mock
     private ConsentArtefactResponse consentArtefactResponse;
 
-
-    @Captor
-    ArgumentCaptor<in.org.projecteka.hiu.consent.model.ConsentRequest> captor;
-
     @BeforeEach
     public void setUp() {
         initMocks(this);
-    }
-
-    @Test
-    public void shouldCreateConsentRequest() {
-        String requesterId = randomString();
-        var hiuProperties = hiuProperties().build();
-        var token = randomString();
-        ConsentService consentService = new ConsentService(
-                consentManagerClient,
-                hiuProperties,
-                consentRepository,
-                dataFlowRequestPublisher,
-                null,
-                null,
-                gateway,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayProperties,
-                gatewayServiceClient);
-        ConsentRequestData consentRequestData = consentRequestDetails().build();
-        Permission permission = consentRequestData.getConsent().getPermission();
-        permission.setDataEraseAt(toDate("2025-01-25T13:25:34.602"));
-        permission.setDateRange(
-                DateRange.builder().from(toDate("2014-01-25T13:25:34.602"))
-                        .to(toDate("2015-01-25T13:25:34.602")).build());
-        ConsentCreationResponse consentCreationResponse = consentCreationResponse().build();
-
-        when(gateway.token()).thenReturn(Mono.just(token));
-        when(consentManagerClient.createConsentRequest(any(), eq(token)))
-                .thenReturn(Mono.just(consentCreationResponse));
-        when(consentRepository.insert(any()))
-                .thenReturn(Mono.create(MonoSink::success));
-        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
-
-        StepVerifier.create(consentService.create(requesterId, consentRequestData))
-                .expectNext(consentCreationResponse)
-                .verifyComplete();
-
-        verify(consentRepository).insert(captor.capture());
-        var request = captor.getValue();
-        assertThat(request.getPermission().getDataEraseAt()).isEqualTo("2025-01-25T13:25:34.602");
-        assertThat(request.getPermission().getDateRange().getFrom()).isEqualTo("2014-01-25T13:25:34.602");
-        assertThat(request.getPermission().getDateRange().getTo()).isEqualTo("2015-01-25T13:25:34.602");
-    }
-
-    @Test
-    void returnsRequestsFrom() {
-        var requesterId = randomString();
-        var token = randomString();
-        var consentService = new ConsentService(
-                consentManagerClient,
-                hiuProperties().build(),
-                consentRepository,
-                dataFlowRequestPublisher,
-                dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, gateway,hiuProperties, gatewayProperties,patientSearchCache),
-                gateway,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayProperties,
-                gatewayServiceClient);
-        var patientRep = patientRepresentation().build();
-        Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
-        var consentRequest = consentRequest()
-                .createdDate(toDate("2020-06-02T10:15:02"))
-                .status(ConsentStatus.REQUESTED)
-                .patient(new in.org.projecteka.hiu.consent.model.Patient(patientRep.getIdentifier()))
-                .permission(permission)
-                .build();
-        when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
-        when(consentRepository.getConsentDetails(consentRequest.getId())).thenReturn(Flux.empty());
-        when(consentRepository.requestsFrom(requesterId)).thenReturn(Flux.just(consentRequest));
-        when(gateway.token()).thenReturn(Mono.just(token));
-        when(patientServiceClient.patientWith(consentRequest.getPatient().getId(), token))
-                .thenReturn(Mono.just(patientRep));
-
-        var consents = consentService.requestsFrom(requesterId);
-
-        StepVerifier.create(consents)
-                .assertNext(request -> assertThat(request.getStatus()).isEqualTo(ConsentStatus.REQUESTED))
-                .verifyComplete();
-    }
-
-    @Test
-    void returnsRequestsWithConsentArtefactStatus() {
-        var requesterId = randomString();
-        var token = randomString();
-        var consentService = new ConsentService(
-                consentManagerClient,
-                hiuProperties().build(),
-                consentRepository,
-                dataFlowRequestPublisher,
-                dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, gateway,hiuProperties, gatewayProperties,patientSearchCache),
-                gateway,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayProperties,
-                gatewayServiceClient);
-        Permission permission = Permission.builder().dataEraseAt(toDate("2021-06-02T10:15:02.325")).build();
-        //Permission permission = Permission.builder().dataEraseAt("2021-06-02T10:15:02.325Z").build();
-        var patientRep = patientRepresentation().build();
-        var consentRequest = consentRequest()
-                .createdDate(toDate("2020-06-02T10:15:02"))
-                .status(ConsentStatus.REQUESTED)
-                .patient(new in.org.projecteka.hiu.consent.model.Patient(patientRep.getIdentifier()))
-                .permission(permission)
-                .build();
-        var statusMap = new HashMap<String, String>();
-        statusMap.put("status", "GRANTED");
-        when(gateway.token()).thenReturn(Mono.just(token));
-        when(cache.asMap()).thenReturn(new ConcurrentHashMap<>());
-        when(consentRepository.getConsentDetails(consentRequest.getId())).thenReturn(Flux.just(statusMap));
-        when(consentRepository.requestsFrom(requesterId)).thenReturn(Flux.just(consentRequest));
-        when(patientServiceClient.patientWith(consentRequest.getPatient().getId(), token))
-                .thenReturn(Mono.just(patientRep));
-
-        var consents = consentService.requestsFrom(requesterId);
-
-        StepVerifier.create(consents)
-                .assertNext(request -> assertThat(request.getStatus()).isEqualTo(ConsentStatus.GRANTED))
-                .verifyComplete();
-    }
-
-    @Test
-    void handleDeniedConsentRequest() {
-        var consentNotificationRequest = consentNotificationRequest().status(DENIED).build();
-        var consentService = new ConsentService(
-                consentManagerClient,
-                hiuProperties().build(),
-                consentRepository,
-                dataFlowRequestPublisher,
-                dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, gateway,hiuProperties, gatewayProperties,patientSearchCache),
-                gateway,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayProperties,
-                gatewayServiceClient);
-        var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
-        when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
-                .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
-        when(consentRepository.updateConsent(consentNotificationRequest.getConsentRequestId(),
-                consentRequest.status(DENIED).build()))
-                .thenReturn(Mono.empty());
-
-        var publisher = consentService.handleNotification(consentNotificationRequest);
-
-        StepVerifier.create(publisher)
-                .verifyComplete();
-    }
-
-    @Test
-    void handleExpiredConsentRequest() {
-        var consentNotificationRequest = consentNotificationRequest()
-                .status(EXPIRED)
-                .consentArtefacts(Collections.emptyList())
-                .build();
-        var consentService = new ConsentService(
-                consentManagerClient,
-                hiuProperties().build(),
-                consentRepository,
-                dataFlowRequestPublisher,
-                dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, gateway,hiuProperties, gatewayProperties,patientSearchCache),
-                gateway,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayProperties,
-                gatewayServiceClient);
-        var consentRequest = consentRequest().id(consentNotificationRequest.getConsentRequestId());
-        when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
-                .thenReturn(Mono.just(consentRequest.status(REQUESTED).build()));
-        when(consentRepository.updateConsent(consentNotificationRequest.getConsentRequestId(),
-                consentRequest.status(EXPIRED).build()))
-                .thenReturn(Mono.empty());
-
-        var publisher = consentService.handleNotification(consentNotificationRequest);
-
-        StepVerifier.create(publisher)
-                .verifyComplete();
-    }
-
-    @Test
-    void returnConflictWhenConsentRequestAlreadyUpdated() {
-        var consentNotificationRequest = consentNotificationRequest().status(DENIED).build();
-        var consentService = new ConsentService(
-                consentManagerClient,
-                hiuProperties().build(),
-                consentRepository,
-                dataFlowRequestPublisher,
-                dataFlowDeletePublisher,
-                new PatientService(patientServiceClient,gatewayServiceClient, cache, gateway,hiuProperties, gatewayProperties,patientSearchCache),
-                gateway,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayProperties,
-                gatewayServiceClient);
-        var consentRequest = consentRequest()
-                .status(DENIED)
-                .id(consentNotificationRequest.getConsentRequestId())
-                .build();
-        when(consentRepository.get(consentNotificationRequest.getConsentRequestId()))
-                .thenReturn(Mono.just(consentRequest));
-
-        var publisher = consentService.handleNotification(consentNotificationRequest);
-
-        StepVerifier.create(publisher)
-                .expectErrorMatches(e -> (e instanceof ClientError) &&
-                        ((ClientError) e).getHttpStatus() == CONFLICT)
-                .verify();
     }
 
     @Test
@@ -308,7 +73,6 @@ public class ConsentServiceTest {
         var hiuProperties = hiuProperties().build();
         var token = randomString();
         ConsentService consentService = new ConsentService(
-                consentManagerClient,
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
@@ -317,7 +81,6 @@ public class ConsentServiceTest {
                 gateway,
                 healthInformationPublisher,
                 conceptValidator,
-                gatewayProperties,
                 gatewayServiceClient);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
@@ -326,8 +89,10 @@ public class ConsentServiceTest {
         when(gatewayServiceClient.sendConsentRequest(eq(token), anyString(), any()))
                 .thenReturn(Mono.empty());
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
-        StepVerifier.create(consentService.createRequest(requesterId, consentRequestData))
-                .expectComplete().verify();
+
+        Mono<Void> request = consentService.createRequest(requesterId, consentRequestData);
+
+        StepVerifier.create(request).expectComplete().verify();
     }
 
     @Test
@@ -335,11 +100,8 @@ public class ConsentServiceTest {
         var requestId = UUID.randomUUID();
         var mockCache = Mockito.mock(Cache.class);
         var mockGatewayResponse = Mockito.mock(GatewayResponse.class);
-
         var consentRequestId = UUID.randomUUID().toString();
-
         ConsentService consentService = new ConsentService(
-                consentManagerClient,
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
@@ -348,12 +110,9 @@ public class ConsentServiceTest {
                 gateway,
                 healthInformationPublisher,
                 conceptValidator,
-                gatewayProperties,
                 gatewayServiceClient);
-
         FieldSetter.setField(consentService,
-                consentService.getClass().getDeclaredField("gatewayResponseCache"),mockCache);
-
+                consentService.getClass().getDeclaredField("gatewayResponseCache"), mockCache);
         var consentDetail = Mockito.mock(ConsentArtefact.class);
         var consentId = UUID.randomUUID().toString();
         var cacheMap = new ConcurrentHashMap<>();
@@ -362,7 +121,6 @@ public class ConsentServiceTest {
         var signature = "temp";
         var dataPushUrl = "tempUrl";
         var permission = Mockito.mock(in.org.projecteka.hiu.consent.model.consentmanager.Permission.class);
-
         when(gatewayConsentArtefactResponse.getConsent()).thenReturn(consentArtefactResponse);
         when(gatewayConsentArtefactResponse.getResp()).thenReturn(mockGatewayResponse);
         when(consentArtefactResponse.getConsentDetail()).thenReturn(consentDetail);
@@ -375,12 +133,13 @@ public class ConsentServiceTest {
         when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
         when(consentRepository.insertConsentArtefact(consentDetail, GRANTED, consentRequestId)).thenReturn(Mono.empty());
         when(hiuProperties.getDataPushUrl()).thenReturn(dataPushUrl);
-        when(dataFlowRequestPublisher.broadcastDataFlowRequest(consentId, dateRange, signature, dataPushUrl)).thenReturn(Mono.empty());
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(consentId, dateRange, signature, dataPushUrl))
+                .thenReturn(Mono.empty());
 
-        StepVerifier.create(consentService.handleConsentArtefact(gatewayConsentArtefactResponse))
-                .expectComplete().verify();
+        Mono<Void> publisher = consentService.handleConsentArtefact(gatewayConsentArtefactResponse);
+
+        StepVerifier.create(publisher).expectComplete().verify();
         verify(consentRepository).insertConsentArtefact(consentDetail, GRANTED, consentRequestId);
-        verify(dataFlowRequestPublisher).broadcastDataFlowRequest(consentId,dateRange,signature,dataPushUrl);
+        verify(dataFlowRequestPublisher).broadcastDataFlowRequest(consentId, dateRange, signature, dataPushUrl);
     }
-
 }
