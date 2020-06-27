@@ -27,7 +27,8 @@ public class GatewayServiceClient {
     private final Gateway gateway;
 
     public GatewayServiceClient(WebClient.Builder webClient,
-                                GatewayProperties gatewayProperties, Gateway gateway) {
+                                GatewayProperties gatewayProperties,
+                                Gateway gateway) {
         this.webClient = webClient.baseUrl(gatewayProperties.getBaseUrl()).build();
         this.gatewayProperties = gatewayProperties;
         this.gateway = gateway;

@@ -13,11 +13,6 @@ hiu:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}
     maxPageSize: ${MAX_PAGE_SIZE}
     localStoragePath: ${LOCAL_STORAGE_PATH}
-  centralregistry:
-    url: ${CENTRAL_REGISTRY_URL}
-    clientId: ${HIU_CLIENT_ID}
-    clientSecret: ${HIU_CLIENT_SECRET}
-    jwkUrl: ${CENTRAL_REGISTRY_JWK_URL}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}
@@ -35,6 +30,9 @@ hiu:
   gatewayservice:
     baseUrl: ${GATEWAY_BASE_URL}
     requestTimeout: ${GATEWAY_REQUEST_TIMEOUT}
+    clientId: ${HIU_CLIENT_ID}
+    clientSecret: ${HIU_CLIENT_SECRET}
+    jwkUrl: ${GATEWAY_JWK_URL}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}

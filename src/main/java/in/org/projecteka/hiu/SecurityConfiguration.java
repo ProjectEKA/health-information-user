@@ -90,7 +90,6 @@ public class SecurityConfiguration {
         return new AuthenticationManager();
     }
 
-
     @Bean
     public SecurityContextRepository contextRepository(ReactiveAuthenticationManager manager,
                                                        GatewayTokenVerifier gatewayTokenVerifier,
