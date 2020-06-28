@@ -172,7 +172,7 @@ public class ConsentService {
                        .take(1)
                        .next()
                        .map(map -> ConsentStatus.valueOf(map.get("status")))
-                       .switchIfEmpty(Mono.just(consentRequest.getStatus()))
+                       .switchIfEmpty(Mono.just(reqStatus))
                        .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 

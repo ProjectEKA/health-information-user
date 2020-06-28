@@ -6,10 +6,9 @@
 
 ## :muscle: Motivation
 
-> The customer may designate an HIU as the recipient of the Health Information when
-> requesting consent artifact creation to consent manager. The HIU needs to maintain the
-> customer’s health information provided to it securely in compliance with terms of the
-> consent granted by the Customer.
+> HIU Service acts as requester of patient's health information. When consent is granted, it needs to manage and maintain the
+> health information provided  in secure and safe manner andd in compliance with terms of the
+> consent granted by the patient.
 
 ## Build Status
 
@@ -63,15 +62,70 @@ To run the tests
 ./gradlew test
 ```
 
-## Features
+## Dev setup
 
-1.  Consent Management
-2.  Aggregate Health Information
+Before you run the docker-compose command below, check your running containers, and modify the docker-compose-infra-lite.yml accordingly.  
+The docker compose assumes that that you want to run a standalone HIU service.   
+```
+docker-compose -f docker-compose-infra-lite.yml up -d
+CLIENTREGISTRY_CLIENTSECRET=${CLIENTREGISTRY_CLIENTSECRET} ./gradlew bootRun --args='--spring.profiles.active=local'
+```
+
+#### setup users
+Create an admin user for HIU first. You need to create an admin account for HIU first. 
+This is done manually by creating an entry in the “user” table. 
+
+To do this, you need to hash the password for admin first. You can go to this [website](https://bcryptgenerator.com/), and encrypt a string (e.g. password) and with the generated hash string, create a user from postgres for database health_information_user
+
+```
+docker exec -it $(docker ps -aqf "name=^postgres$") /bin/bash
+psql -U postgres
+\c health_information_user
+insert into "user" (username, password, role, verified) values ('admin', '$2a$04$WW.a3wKaiL2/7xWJc4jUmu4/55aJnwBJscZ.o18X.zLZcOdpwQGQa', 'ADMIN', true);
+``` 
+
+Now with the above admin user, you can create HIU users via API. 
+To do that, you need to first authenticate the admin user and get a token.
+
+```
+curl --location --request POST 'http://localhost:8003/sessions' \
+--header 'Content-Type: application/json' \
+--header 'Content-Type: text/plain' \
+--data-raw '{
+    "username" : "admin", 
+    "password" : "password"
+}
+'
+``` 
+
+Copy the bearer token from above and then you can make further API calls to create users. 
+
+```
+curl --location --request POST 'http://localhost:8003/users' \
+--header 'Authorization: Bearer token-from-above-step' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+	"username" : "lakshmi",
+	"password" : "password", 
+	"role" : "DOCTOR",
+	"verified": true
+}'
+
+```
+
+Do check in the database, whether the user created in the above step is verified or not, and if not, set as verified.
+```
+docker exec -it $(docker ps -aqf "name=^postgres$") /bin/bash
+psql -U postgres
+\c health_information_user
+select * from "user" where username = 'lakshmi';
+update "user" set verified=true where username='lakshmi';
+``` 
 
 ## API Contract
 
-Once ran the application, navigate to
+Once ran the application, navigate to below URL see the API doc. The service is now running
 
 ```alpha
-{HOST}/index.html
+http://localhost:8003/index.html
 ```
