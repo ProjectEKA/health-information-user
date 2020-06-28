@@ -6,7 +6,7 @@ hiu:
   dataPushUrl: http://localhost:8003/data/notification
   valueSets: classpath:/static/ValueSet/valuesets.json
   consentmanager:
-    suffix: ncg
+    suffix: '@ncg'
     url: http://localhost:9000
   dataflowservice:
     defaultPageSize: 20
