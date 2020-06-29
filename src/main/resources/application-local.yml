@@ -17,7 +17,7 @@ hiu:
     clientId: 10000005
     clientSecret: ${CLIENTREGISTRY_CLIENTSECRET}
     jwkUrl: http://localhost:8080/certs
-  keycloak:
+  userservice:
     jwkUrl: http://localhost:9001/auth/realms/consent-manager/protocol/openid-connect/certs
   database:
     host: localhost

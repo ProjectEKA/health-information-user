@@ -27,7 +27,7 @@ hiu:
     url: ${ORTHANC_SERVER_URL}
     user: ${ORTHANC_USERNAME}
     password: ${ORTHANC_PASSWORD}
-  keycloak:
+  userservice:
     jwkUrl: ${IDENTITY_JWK_URL}
   gatewayservice:
     baseUrl: ${GATEWAY_BASE_URL}
