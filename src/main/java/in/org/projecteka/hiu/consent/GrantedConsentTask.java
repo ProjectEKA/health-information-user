@@ -15,9 +15,9 @@ import java.util.UUID;
 
 
 public class GrantedConsentTask extends ConsentTask {
-    private GatewayServiceClient gatewayClient;
-    private Gateway gateway;
-    private Cache<String, String> gatewayResponseCache;
+    private final GatewayServiceClient gatewayClient;
+    private final Gateway gateway;
+    private final Cache<String, String> gatewayResponseCache;
 
     public GrantedConsentTask(ConsentRepository consentRepository,
                               GatewayServiceClient gatewayClient,

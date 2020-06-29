@@ -7,12 +7,18 @@ import org.springframework.http.HttpStatus;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_ARTEFACT_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_REQUEST_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.FAILED_TO_NOTIFY_CM;
+import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
 import static in.org.projecteka.hiu.ErrorCode.QUEUE_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
 import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
-import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.GATEWAY_TIMEOUT;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @Getter
 @ToString

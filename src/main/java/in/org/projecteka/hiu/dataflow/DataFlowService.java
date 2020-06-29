@@ -34,7 +34,7 @@ public class DataFlowService {
 
     private static final Logger logger = LoggerFactory.getLogger(DataFlowService.class);
 
-    public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String senderId) {
+    public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest) {
         List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry ->
                 !(hasLink(entry) || hasContent(entry))).collect(Collectors.toList());
 
@@ -43,7 +43,7 @@ public class DataFlowService {
         }
 
         int dataFlowPartNo = 1;
-        return validateAndRetrieveRequestedConsent(dataNotificationRequest.getTransactionId(), senderId)
+        return validateAndRetrieveRequestedConsent(dataNotificationRequest.getTransactionId())
                 .flatMap(consentRequestId -> serializeDataTransferred(dataNotificationRequest, consentRequestId,
                         dataFlowPartNo))
                 .flatMap(contentReference -> saveDataAvailability(contentReference, dataFlowPartNo))
@@ -112,15 +112,12 @@ public class DataFlowService {
         return String.format("%s", TokenUtils.encode(consentRequestId));
     }
 
-    private Mono<String> validateAndRetrieveRequestedConsent(String transactionId, String senderId) {
-        //TODO: possibly validate the senderId
+    private Mono<String> validateAndRetrieveRequestedConsent(String transactionId) {
         return dataFlowRepository.retrieveDataFlowRequest(transactionId)
                 .filter(dataMap -> !hasConsentArtefactExpired((LocalDateTime) dataMap.get("consentExpiryDate")))
                 .switchIfEmpty(Mono.error(ClientError.consentArtefactGone()))
                 .map(dataMap -> (String) dataMap.get("consentRequestId"))
-                .doOnError(throwable -> {
-                    logger.error(throwable.getMessage(), throwable);
-                });
+                .doOnError(throwable -> logger.error(throwable.getMessage(), throwable));
     }
 
     private boolean hasConsentArtefactExpired(LocalDateTime dataEraseAt) {

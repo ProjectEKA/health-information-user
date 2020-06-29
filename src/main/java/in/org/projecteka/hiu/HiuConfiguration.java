@@ -12,13 +12,11 @@ import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
-import in.org.projecteka.hiu.clients.PatientServiceClient;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.UserAuthenticator;
 import in.org.projecteka.hiu.consent.ConceptValidator;
-import in.org.projecteka.hiu.consent.ConsentManagerClient;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
@@ -88,13 +86,6 @@ public class HiuConfiguration {
     public static final String EXCHANGE = "exchange";
 
     @Bean
-    public PatientServiceClient patientServiceClient(
-            WebClient.Builder builder,
-            ConsentManagerServiceProperties consentManagerServiceProperties) {
-        return new PatientServiceClient(builder, consentManagerServiceProperties);
-    }
-
-    @Bean
     public PgPool dbConnectionPool(DatabaseProperties dbProps) {
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setPort(dbProps.getPort())
@@ -129,8 +120,6 @@ public class HiuConfiguration {
 
     @Bean
     public ConsentService consentService(
-            WebClient.Builder builder,
-            ConsentManagerServiceProperties consentManagerServiceProperties,
             HiuProperties hiuProperties,
             ConsentRepository consentRepository,
             DataFlowRequestPublisher dataFlowRequestPublisher,
@@ -139,10 +128,8 @@ public class HiuConfiguration {
             Gateway gateway,
             HealthInformationPublisher healthInformationPublisher,
             ConceptValidator validator,
-            GatewayServiceClient gatewayServiceClient,
-            GatewayProperties gatewayProperties) {
+            GatewayServiceClient gatewayServiceClient) {
         return new ConsentService(
-                new ConsentManagerClient(builder, consentManagerServiceProperties),
                 hiuProperties,
                 consentRepository,
                 dataFlowRequestPublisher,
@@ -151,22 +138,18 @@ public class HiuConfiguration {
                 gateway,
                 healthInformationPublisher,
                 validator,
-                gatewayProperties,
                 gatewayServiceClient);
     }
 
     @Bean
-    public PatientService patientService(PatientServiceClient patientServiceClient,
-                                         GatewayServiceClient gatewayServiceClient,
+    public PatientService patientService(GatewayServiceClient gatewayServiceClient,
                                          Cache<String, Optional<Patient>> cache,
-                                         Gateway gateway,
                                          HiuProperties hiuProperties,
                                          GatewayProperties gatewayProperties,
                                          Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache) {
-        return new PatientService(patientServiceClient,
+        return new PatientService(
                 gatewayServiceClient,
                 cache,
-                gateway,
                 hiuProperties,
                 gatewayProperties,
                 patientSearchCache);
@@ -287,10 +270,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowClient dataFlowClient(WebClient.Builder builder,
-                                         GatewayProperties gatewayProperties,
-                                         ConsentManagerServiceProperties consentManagerServiceProperties) {
-        return new DataFlowClient(builder, gatewayProperties, consentManagerServiceProperties);
+    public DataFlowClient dataFlowClient(WebClient.Builder builder, GatewayProperties gatewayProperties) {
+        return new DataFlowClient(builder, gatewayProperties);
     }
 
     @Bean

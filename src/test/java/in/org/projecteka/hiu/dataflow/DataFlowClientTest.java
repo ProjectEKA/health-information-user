@@ -1,12 +1,9 @@
 package in.org.projecteka.hiu.dataflow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.GatewayProperties;
-import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
 import in.org.projecteka.hiu.dataflow.model.DateRange;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import okhttp3.mockwebserver.MockResponse;
@@ -56,42 +53,7 @@ public class DataFlowClientTest {
 
                 }).build();
         WebClient.Builder webClientBuilder = WebClient.builder().exchangeStrategies(strategies);
-        ConsentManagerServiceProperties consentManagerServiceProperties =
-                new ConsentManagerServiceProperties(mockWebServer.url("").toString(), "@ncg");
-        dataFlowClient = new DataFlowClient(webClientBuilder, gatewayProperties, consentManagerServiceProperties);
-    }
-
-    @Test
-    void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException {
-        String transactionId = "transactionId";
-        var dataFlowRequestResponse =
-                DataFlowRequestResponse.builder().transactionId(transactionId).build();
-        ObjectMapper objectMapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        var dataFlowRequestResponseJson = objectMapper.writeValueAsString(dataFlowRequestResponse);
-        var dataFlowRequest = dataFlowRequest()
-                .dateRange(DateRange.builder()
-                        .from(toDate("2020-01-14T08:47:48"))
-                        .to(toDate("2020-01-20T08:47:48")).build())
-                .build();
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(dataFlowRequestResponseJson));
-
-        StepVerifier.create(dataFlowClient.initiateDataFlowRequest(dataFlowRequest, string()))
-                .assertNext(
-                        response -> {
-                            assertThat(response.getTransactionId()).isEqualTo(transactionId);
-                        })
-                .verifyComplete();
-
-        RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        assertThat(Objects.requireNonNull(recordedRequest.getRequestUrl()).toString())
-                .isEqualTo(mockWebServer.url("") + "health-information/request");
-        assertThat(recordedRequest.getBody().readUtf8())
-                .isEqualTo(objectMapper.writeValueAsString(dataFlowRequest));
+        dataFlowClient = new DataFlowClient(webClientBuilder, gatewayProperties);
     }
 
     @Test
@@ -113,5 +75,4 @@ public class DataFlowClientTest {
         assertThat(Objects.requireNonNull(recordedRequest.getRequestUrl()).toString())
                 .isEqualTo(mockWebServer.url("") + "health-information/cm/request");
     }
-
 }

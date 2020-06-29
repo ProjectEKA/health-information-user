@@ -29,7 +29,7 @@ public class Consent {
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
                                                                          String hiuName,
-                                                                         String consentNotificationUrl, ConceptLookup conceptLookup) {
+                                                                         ConceptLookup conceptLookup) {
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
                         conceptLookup.getPurposeDescription(getPurpose().getCode()),
@@ -42,24 +42,8 @@ public class Consent {
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
-                        ONE_HOUR),
-                consentNotificationUrl);
+                        ONE_HOUR));
     }
-
-    @Deprecated
-    public ConsentRequest toConsentRequest(String id, String requesterId, String consentNotificationUrl) {
-        return new ConsentRequest(
-                id,
-                requesterId,
-                getPatient(),
-                getPurpose(),
-                getHiTypes(),
-                getPermission(),
-                ConsentStatus.REQUESTED,
-                LocalDateTime.now(),
-                consentNotificationUrl);
-    }
-
 
     public ConsentRequest toConsentRequest(String id, String requesterId) {
         return ConsentRequest.builder()

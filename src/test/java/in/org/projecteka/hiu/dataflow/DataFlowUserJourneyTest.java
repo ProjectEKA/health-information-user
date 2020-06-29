@@ -120,14 +120,8 @@ public class DataFlowUserJourneyTest {
                         .keyMaterial(keyMaterial)
                         .build();
         Map<String, Object> flowRequestMap = new HashMap<>();
-        var token = randomString();
         flowRequestMap.put("consentRequestId", "consentRequestId");
         flowRequestMap.put("consentExpiryDate", LocalDateTime.parse("9999-04-15T16:55:00"));
-        var caller = ServiceCaller.builder()
-                .clientId("abc@ncg")
-                .roles(List.of(GATEWAY))
-                .build();
-        when(gatewayTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(flowRequestMap));
@@ -137,7 +131,6 @@ public class DataFlowUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/data/notification")
-                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -162,7 +155,6 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("status", "GRANTED");
         consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48");
         consentDetails.add(consentDetailsMap);
-
         var token = randomString();
         var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
         when(authenticator.verify(token)).thenReturn(Mono.just(caller));
@@ -268,19 +260,9 @@ public class DataFlowUserJourneyTest {
 
     @Test
     public void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
-        Entry entry = new Entry();
-        entry.setLink(null);
-        List<Entry> entries = new ArrayList<>();
-        entries.add(entry);
         String transactionId = "transactionId";
-        DataNotificationRequest dataNotificationRequest =
-                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
-        var token = randomString();
-        var caller = ServiceCaller.builder()
-                .clientId("abc@ncg")
-                .roles(List.of(GATEWAY))
-                .build();
-        when(gatewayTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        var dataNotificationRequest =
+                DataNotificationRequest.builder().transactionId(transactionId).entries(List.of(new Entry())).build();
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         var errorResponse = new ErrorRepresentation(new Error(
@@ -291,12 +273,12 @@ public class DataFlowUserJourneyTest {
         webTestClient
                 .post()
                 .uri("/data/notification")
-                .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
-                .expectStatus().isBadRequest()
+                .expectStatus()
+                .isBadRequest()
                 .expectBody()
                 .json(errorResponseJson);
     }

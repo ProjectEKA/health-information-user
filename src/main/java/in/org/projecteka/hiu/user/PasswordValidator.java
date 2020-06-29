@@ -2,7 +2,15 @@ package in.org.projecteka.hiu.user;
 
 import com.google.common.base.Strings;
 import io.vavr.control.Validation;
-import org.passay.*;
+import org.passay.CharacterRule;
+import org.passay.CharacterSequence;
+import org.passay.EnglishCharacterData;
+import org.passay.IllegalSequenceRule;
+import org.passay.LengthRule;
+import org.passay.PasswordData;
+import org.passay.RuleResult;
+import org.passay.SequenceData;
+
 import java.util.Arrays;
 
 public class PasswordValidator {

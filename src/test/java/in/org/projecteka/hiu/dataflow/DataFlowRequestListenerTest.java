@@ -112,7 +112,6 @@ class DataFlowRequestListenerTest {
         MessageListener messageListener = messageListenerCaptor.getValue();
         messageListener.onMessage(mockMessage);
         verify(dataFlowClient,times(1)).initiateDataFlowRequest(any(),any(),any());
-        verify(dataFlowClient,times(0)).initiateDataFlowRequest(any(),any());
         verify(dataFlowRepository,times(1)).addDataFlowRequest(anyString(),anyString(),any());
     }
 }

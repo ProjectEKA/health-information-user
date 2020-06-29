@@ -1,13 +1,11 @@
 package in.org.projecteka.hiu.dataprocessor.model;
 
-import org.hl7.fhir.r4.model.Resource;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessedResource {
     private final List<String> errors = new ArrayList<>();
-    private Resource resource;
+    private String encodedResource;
 
     public List<String> getErrors() {
         return errors;
@@ -17,15 +15,15 @@ public class ProcessedResource {
         errors.add(errorMessage);
     }
 
-    public void addResource(Resource resource) {
-        this.resource = resource;
+    public void setEncoded(String resource) {
+        encodedResource = resource;
     }
 
     public boolean hasErrors() {
         return !errors.isEmpty();
     }
 
-    public Resource getResource() {
-        return this.resource;
+    public String getResource() {
+        return encodedResource;
     }
 }

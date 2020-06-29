@@ -11,6 +11,6 @@ import java.util.List;
 @Getter
 @Builder
 public class ServiceCaller {
-    private String clientId;
+    private final String clientId;
     List<Role> roles;
 }

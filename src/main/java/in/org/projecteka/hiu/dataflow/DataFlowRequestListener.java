@@ -30,7 +30,6 @@ import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 
-
 @AllArgsConstructor
 public class DataFlowRequestListener {
     private static final Logger logger = Logger.getLogger(DataFlowRequestListener.class);
@@ -70,33 +69,21 @@ public class DataFlowRequestListener {
                 logger.info("Initiating data flow request to consent manager");
                 gateway.token()
                         .flatMap(token -> {
-                            if (dataFlowProperties.isUsingGateway()) {
-                                var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);
-                                return consentRepository.getPatientId(consentId)
-                                        .flatMap(patientId -> dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest, token, getCmSuffix(patientId)))
-                                        .then(Mono.defer(() -> dataFlowRepository.addDataFlowRequest(
+                            var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);
+                            return consentRepository.getPatientId(consentId)
+                                    .flatMap(patientId -> dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest,
+                                            token,
+                                            getCmSuffix(patientId)))
+                                    .then(Mono.defer(() -> dataFlowRepository.addDataFlowRequest(
+                                            gatewayDataFlowRequest.getRequestId().toString(),
+                                            consentId,
+                                            dataFlowRequest)))
+                                    .then(Mono.defer(() -> {
+                                        dataFlowCache.put(
                                                 gatewayDataFlowRequest.getRequestId().toString(),
-                                                consentId,
-                                                dataFlowRequest)))
-                                        .then(Mono.defer(() -> {
-                                            dataFlowCache.put(
-                                                    gatewayDataFlowRequest.getRequestId().toString(),
-                                                    dataRequestKeyMaterial);
-                                            return Mono.empty();
-                                        }));
-                            }
-                            return dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
-                                    .flatMap(dataFlowRequestResponse -> {
-                                        var requestId =  UUID.randomUUID().toString();
-                                        return dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                                consentId,
-                                                dataFlowRequest,
-                                                requestId)
-                                                .then(dataFlowRepository.addKeys(
-                                                        dataFlowRequestResponse.getTransactionId(),
-                                                        dataRequestKeyMaterial));
-                                    });
-
+                                                dataRequestKeyMaterial);
+                                        return Mono.empty();
+                                    }));
                         }).block();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
@@ -154,7 +141,7 @@ public class DataFlowRequestListener {
     private DataFlowRequest convertToDataFlowRequest(byte[] message) {
         var objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
-              .configure(WRITE_DATES_AS_TIMESTAMPS, false)
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return objectMapper.readValue(message, DataFlowRequest.class);
     }
