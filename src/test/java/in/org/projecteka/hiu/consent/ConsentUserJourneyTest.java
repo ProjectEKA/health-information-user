@@ -61,7 +61,7 @@ import static reactor.core.publisher.Mono.just;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
-public class ConsentUserJourneyTest {
+class ConsentUserJourneyTest {
     private static final MockWebServer consentManagerServer = new MockWebServer();
     private static final MockWebServer gatewayServer = new MockWebServer();
 
@@ -113,17 +113,17 @@ public class ConsentUserJourneyTest {
     private ConceptValidator conceptValidator;
 
     @AfterAll
-    public static void tearDown() throws IOException {
+    static void tearDown() throws IOException {
         consentManagerServer.shutdown();
         gatewayServer.shutdown();
     }
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.initMocks(this);
     }
 
-    public static class ContextInitializer
+    static class ContextInitializer
             implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         @Override
         public void initialize(@NotNull ConfigurableApplicationContext applicationContext) {
@@ -136,7 +136,7 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldMakeConsentRequestToGateway() {
+    void shouldMakeConsentRequestToGateway() {
         when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
         when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
         when(gateway.token()).thenReturn(just(randomString()));
@@ -164,7 +164,7 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldUpdateConsentRequestWithRequestId() {
+    void shouldUpdateConsentRequestWithRequestId() {
         String responseFromCM = "{\n" +
                 "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
                 "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
@@ -198,7 +198,7 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldUpdateConsentRequestStatusAsErrored() {
+    void shouldUpdateConsentRequestStatusAsErrored() {
         String responseFromCM = "{\n" +
                 "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
                 "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
@@ -232,7 +232,7 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldThrowConsentRequestNotFound() {
+    void shouldThrowConsentRequestNotFound() {
         String responseFromCM = "{\n" +
                 "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
                 "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
@@ -273,7 +273,7 @@ public class ConsentUserJourneyTest {
     }
 
     @Test
-    public void shouldNotifyConsentGranted() throws InterruptedException {
+    void shouldNotifyConsentGranted() throws InterruptedException {
         String consentRequestId = "46ac0879-7f6d-4a5b-bc03-3f36782937a5";
         String consentId = "ae00bb0c-8e29-4fe3-a09b-4c976757d933";
         String notificationFromCM = "{\n" +
