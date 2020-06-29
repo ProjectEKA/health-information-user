@@ -1,7 +1,7 @@
 package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.common.Authenticator;
-import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
+import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +25,11 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 
-import static in.org.projecteka.hiu.common.Constants.*;
+import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_HIU_NOTIFY;
+import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_ON_FETCH;
+import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_ON_FIND;
+import static in.org.projecteka.hiu.common.Constants.V_1_CONSENT_REQUESTS_ON_INIT;
+import static in.org.projecteka.hiu.common.Constants.V_1_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -34,7 +38,7 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
 
-    public static final String[] GATEWAY_APIS = new String[]{
+    protected static final String[] GATEWAY_APIS = new String[]{
             V_1_CONSENT_REQUESTS_ON_INIT,
             V_1_CONSENTS_HIU_NOTIFY,
             V_1_CONSENTS_ON_FETCH,
@@ -42,40 +46,34 @@ public class SecurityConfiguration {
             V_1_HEALTH_INFORMATION_HIU_ON_REQUEST
     };
 
-    private static final List<String> SERVICE_ONLY_URLS = new ArrayList<>() {
-        {
-            add("/consent/notification");
-            add("/data/notification");
-            add(V_1_CONSENT_REQUESTS_ON_INIT);
-            add(V_1_CONSENTS_HIU_NOTIFY);
-            add(V_1_CONSENTS_ON_FETCH);
-            add(V_1_CONSENTS_ON_FIND);
-            add(V_1_HEALTH_INFORMATION_HIU_ON_REQUEST);
-        }
-    };
+    private static final List<String> SERVICE_ONLY_URLS = List.of("/consent/notification",
+            "/data/notification",
+            V_1_CONSENT_REQUESTS_ON_INIT,
+            V_1_CONSENTS_HIU_NOTIFY,
+            V_1_CONSENTS_ON_FETCH,
+            V_1_CONSENTS_ON_FIND,
+            V_1_HEALTH_INFORMATION_HIU_ON_REQUEST);
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity httpSecurity,
             ReactiveAuthenticationManager authenticationManager,
             ServerSecurityContextRepository securityContextRepository) {
-        final String[] WHITELISTED_URLS = {"/**.json",
-                                           "/ValueSet/**.json",
-                                           "/**.html",
-                                           "/**.js",
-                                           "/**.yaml",
-                                           "/**.css",
-                                           "/**.png",
-                                           "/health-information/fetch/**/attachments/**",
-                                           "/sessions",
-                                           "/config"};
-        httpSecurity.authorizeExchange().pathMatchers(WHITELISTED_URLS).permitAll();
+        final String[] allowedLists = {"/**.json",
+                                       "/ValueSet/**.json",
+                                       "/**.html",
+                                       "/**.js",
+                                       "/**.yaml",
+                                       "/**.css",
+                                       "/**.png",
+                                       "/health-information/fetch/**/attachments/**",
+                                       "/sessions",
+                                       "/config"};
+        httpSecurity.authorizeExchange().pathMatchers(allowedLists).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
-        SERVICE_ONLY_URLS.forEach(entry -> {
-            httpSecurity.authorizeExchange().pathMatchers(entry).authenticated();
-        });
+        SERVICE_ONLY_URLS.forEach(entry -> httpSecurity.authorizeExchange().pathMatchers(entry).authenticated());
         httpSecurity.authorizeExchange()
                 .pathMatchers(GATEWAY_APIS)
                 .hasAnyRole(GATEWAY.toString())
@@ -92,18 +90,17 @@ public class SecurityConfiguration {
         return new AuthenticationManager();
     }
 
-
     @Bean
     public SecurityContextRepository contextRepository(ReactiveAuthenticationManager manager,
-                                                       CentralRegistryTokenVerifier centralRegistryTokenVerifier,
+                                                       GatewayTokenVerifier gatewayTokenVerifier,
                                                        Authenticator authenticator) {
-        return new SecurityContextRepository(manager, centralRegistryTokenVerifier, authenticator);
+        return new SecurityContextRepository(manager, gatewayTokenVerifier, authenticator);
     }
 
     @AllArgsConstructor
     private static class SecurityContextRepository implements ServerSecurityContextRepository {
         private final ReactiveAuthenticationManager manager;
-        private final CentralRegistryTokenVerifier centralRegistryTokenVerifier;
+        private final GatewayTokenVerifier gatewayTokenVerifier;
         private final Authenticator authenticator;
 
         @Override
@@ -133,14 +130,15 @@ public class SecurityConfiguration {
                         if (caller.isVerified()) {
                             grantedAuthority.add(new SimpleGrantedAuthority("ROLE_VERIFIED"));
                         }
-                        caller.getRole().map(role -> grantedAuthority.add(new SimpleGrantedAuthority("ROLE_".concat(role))));
+                        caller.getRole().ifPresent(role ->
+                                grantedAuthority.add(new SimpleGrantedAuthority("ROLE_".concat(role))));
                         return new UsernamePasswordAuthenticationToken(caller, token, grantedAuthority);
                     })
                     .map(SecurityContextImpl::new);
         }
 
         private Mono<SecurityContext> checkCentralRegistry(String token) {
-            return centralRegistryTokenVerifier.verify(token)
+            return gatewayTokenVerifier.verify(token)
                     .map(serviceCaller -> {
                         var authorities = serviceCaller.getRoles()
                                 .stream()
@@ -154,8 +152,7 @@ public class SecurityConfiguration {
         private boolean isCentralRegistryAuthenticatedOnlyRequest(String url) {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return SERVICE_ONLY_URLS.stream()
-                    .anyMatch(pattern ->
-                            antPathMatcher.matchStart(pattern,url));
+                    .anyMatch(pattern -> antPathMatcher.matchStart(pattern, url));
         }
     }
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
@@ -53,7 +53,7 @@ class HealthDataProcessorTest {
     private HealthInformationClient healthInformationClient;
 
     @Mock
-    private CentralRegistry centralRegistry;
+    private Gateway gateway;
 
     @Mock
     private HiuProperties hiuProperties;
@@ -97,7 +97,7 @@ class HealthDataProcessorTest {
         List<HITypeResourceProcessor> resourceProcessors = Collections.singletonList(
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())));
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor,
-                resourceProcessors, healthInformationClient, centralRegistry, hiuProperties, consentRepository);
+                resourceProcessors, healthInformationClient, gateway, hiuProperties, consentRepository);
         String transactionId = "123456";
         String partNumber = "1";
         DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
@@ -115,7 +115,7 @@ class HealthDataProcessorTest {
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(gateway.token()).thenReturn(Mono.just(token));
         when(hiuProperties.getId()).thenReturn(string());
         when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
         when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
@@ -149,7 +149,7 @@ class HealthDataProcessorTest {
                 decryptor,
                 resourceProcessors,
                 healthInformationClient,
-                centralRegistry,
+                gateway,
                 hiuProperties,
                 consentRepository);
         String transactionId = "123456";
@@ -169,7 +169,7 @@ class HealthDataProcessorTest {
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(gateway.token()).thenReturn(Mono.just(token));
         when(hiuProperties.getId()).thenReturn(string());
         when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
         when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
@@ -203,7 +203,7 @@ class HealthDataProcessorTest {
                 decryptor,
                 resourceProcessors,
                 healthInformationClient,
-                centralRegistry,
+                gateway,
                 hiuProperties,
                 consentRepository);
         String transactionId = "123456";
@@ -223,7 +223,7 @@ class HealthDataProcessorTest {
         when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(gateway.token()).thenReturn(Mono.just(token));
         when(hiuProperties.getId()).thenReturn(string());
         when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
         when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));

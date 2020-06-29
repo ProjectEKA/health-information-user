@@ -30,11 +30,11 @@ import java.util.Objects;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
-public class CentralRegistryTokenVerifier {
+public class GatewayTokenVerifier {
     private final ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
-    private final Logger logger = Logger.getLogger(CentralRegistryTokenVerifier.class);
+    private final Logger logger = Logger.getLogger(GatewayTokenVerifier.class);
 
-    public CentralRegistryTokenVerifier(JWKSet jwkSet) {
+    public GatewayTokenVerifier(JWKSet jwkSet) {
         var immutableJWKSet = new ImmutableJWKSet<>(jwkSet);
         jwtProcessor = new DefaultJWTProcessor<>();
         jwtProcessor.setJWSTypeVerifier(new DefaultJOSEObjectTypeVerifier<>(JOSEObjectType.JWT));
@@ -56,7 +56,7 @@ public class CentralRegistryTokenVerifier {
                         .flatMap(jwtClaimsSet -> {
                             try {
                                 var clientId = jwtClaimsSet.getStringClaim("clientId");
-                                return Mono.just(new ServiceCaller(clientId,  getRoles(jwtClaimsSet)));
+                                return Mono.just(new ServiceCaller(clientId, getRoles(jwtClaimsSet)));
                             } catch (ParseException e) {
                                 logger.error(e);
                                 return Mono.empty();
@@ -80,5 +80,4 @@ public class CentralRegistryTokenVerifier {
                 .filter(Objects::nonNull)
                 .collect(toList());
     }
-
 }

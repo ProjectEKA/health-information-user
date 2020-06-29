@@ -7,6 +7,8 @@ public class Constants {
     public static final String V_1_CONSENTS_ON_FETCH = "/v1/consents/on-fetch";
     public static final String V_1_CONSENTS_ON_FIND = "/v1/patients/on-find";
     public static final String V_1_HEALTH_INFORMATION_HIU_ON_REQUEST = "/v1/health-information/hiu/on-request";
+    public static final String X_CM_ID = "X-CM-ID";
 
-    private Constants() { }
+    private Constants() {
+    }
 }

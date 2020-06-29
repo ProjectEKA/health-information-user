@@ -6,10 +6,10 @@ import com.google.common.cache.CacheLoader;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
-import in.org.projecteka.hiu.GatewayServiceProperties;
+import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.model.Consent;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
@@ -59,11 +59,11 @@ public class ConsentService {
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
     private final DataFlowDeletePublisher dataFlowDeletePublisher;
     private final PatientService patientService;
-    private final CentralRegistry centralRegistry;
+    private final Gateway gateway;
     private final HealthInformationPublisher healthInformationPublisher;
     private final ConceptValidator conceptValidator;
     private final GatewayServiceClient gatewayServiceClient;
-    private final GatewayServiceProperties gatewayServiceProperties;
+    private final GatewayProperties gatewayProperties;
     private Cache<String, String> gatewayResponseCache;
     private Map<ConsentStatus, ConsentTask> consentTasks = new HashMap<>();
 
@@ -73,10 +73,10 @@ public class ConsentService {
                           DataFlowRequestPublisher dataFlowRequestPublisher,
                           DataFlowDeletePublisher dataFlowDeletePublisher,
                           PatientService patientService,
-                          CentralRegistry centralRegistry,
+                          Gateway gateway,
                           HealthInformationPublisher healthInformationPublisher,
                           ConceptValidator conceptValidator,
-                          GatewayServiceProperties gatewayServiceProperties,
+                          GatewayProperties gatewayProperties,
                           GatewayServiceClient gatewayServiceClient) {
         this.consentManagerClient = consentManagerClient;
         this.hiuProperties = hiuProperties;
@@ -84,11 +84,11 @@ public class ConsentService {
         this.dataFlowRequestPublisher = dataFlowRequestPublisher;
         this.dataFlowDeletePublisher = dataFlowDeletePublisher;
         this.patientService = patientService;
-        this.centralRegistry = centralRegistry;
+        this.gateway = gateway;
         this.healthInformationPublisher = healthInformationPublisher;
         this.conceptValidator = conceptValidator;
         this.gatewayServiceClient = gatewayServiceClient;
-        this.gatewayServiceProperties = gatewayServiceProperties;
+        this.gatewayProperties = gatewayProperties;
     }
 
     /**
@@ -120,7 +120,7 @@ public class ConsentService {
                 hiuProperties.getName(),
                 hiuProperties.getConsentNotificationUrl(),
                 conceptValidator);
-        return centralRegistry.token()
+        return gateway.token()
                 .flatMap(token -> consentManagerClient.createConsentRequest(
                         ConsentRequest.builder()
                                 .requestId(UUID.randomUUID())
@@ -254,7 +254,7 @@ public class ConsentService {
 
     private Mono<Void> processGrantedConsent(ConsentArtefactReference consentArtefactReference,
                                              String consentRequestId) {
-        return centralRegistry.token()
+        return gateway.token()
                 .flatMap(token -> consentManagerClient.getConsentArtefact(consentArtefactReference.getId(), token))
                 .flatMap(consentArtefactResponse -> consentRepository.insertConsentArtefact(
                         consentArtefactResponse.getConsentDetail(),
@@ -289,7 +289,7 @@ public class ConsentService {
             ConsentRequestData hiRequest) {
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
         var gatewayRequestId = UUID.randomUUID();
-        return centralRegistry.token()
+        return gateway.token()
                 .flatMap(token -> gatewayServiceClient.sendConsentRequest(
                         token, getCmSuffix(hiRequest.getConsent()),
                         ConsentRequest.builder()
@@ -413,7 +413,7 @@ public class ConsentService {
                     }
                 });
         consentTasks.put(GRANTED, new GrantedConsentTask(
-                consentRepository, gatewayServiceClient, centralRegistry,
+                consentRepository, gatewayServiceClient, gateway,
                 gatewayResponseCache));
         consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
         consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));

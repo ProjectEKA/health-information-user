@@ -8,7 +8,7 @@ import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -51,7 +51,7 @@ class DataFlowRequestListenerTest {
     private DataFlowProperties dataFlowProperties;
 
     @Mock
-    private CentralRegistry centralRegistry;
+    private Gateway gateway;
 
     @Mock
     private Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
@@ -71,7 +71,7 @@ class DataFlowRequestListenerTest {
                 dataFlowRepository,
                 decryptor,
                 dataFlowProperties,
-                centralRegistry,
+                gateway,
                 dataFlowCache,
                 consentRepository);
     }
@@ -98,7 +98,7 @@ class DataFlowRequestListenerTest {
         when(mockMessage.getBody()).thenReturn(dataFlowRequestBytes);
         when(dataFlowProperties.isUsingGateway()).thenReturn(true);
         when(mockMessage.getBody()).thenReturn(dataFlowRequestBytes);
-        when(centralRegistry.token()).thenReturn(Mono.just("temp"));
+        when(gateway.token()).thenReturn(Mono.just("temp"));
         when(dataFlowClient.initiateDataFlowRequest(any(GatewayDataFlowRequest.class),anyString(),anyString()))
                 .thenReturn(Mono.empty());
         when(consentRepository.getPatientId(anyString())).thenReturn(Mono.just("temp@ncg"));

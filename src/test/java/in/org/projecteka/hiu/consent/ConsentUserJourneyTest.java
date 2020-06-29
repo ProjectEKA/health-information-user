@@ -7,9 +7,15 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.common.Authenticator;
-import in.org.projecteka.hiu.common.CentralRegistry;
-import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
-import in.org.projecteka.hiu.consent.model.*;
+import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.GatewayTokenVerifier;
+import in.org.projecteka.hiu.consent.model.ConsentArtefact;
+import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
+import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.ConsentRequest;
+import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.DateRange;
+import in.org.projecteka.hiu.consent.model.Patient;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
@@ -17,6 +23,7 @@ import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.user.Role;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,6 +71,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static reactor.core.publisher.Mono.empty;
+import static reactor.core.publisher.Mono.just;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -102,10 +111,10 @@ public class ConsentUserJourneyTest {
     private DataAvailabilityListener dataAvailabilityListener;
 
     @MockBean
-    private CentralRegistry centralRegistry;
+    private Gateway gateway;
 
     @MockBean
-    private CentralRegistryTokenVerifier centralRegistryTokenVerifier;
+    private GatewayTokenVerifier gatewayTokenVerifier;
 
     @MockBean
     private Authenticator authenticator;
@@ -137,15 +146,15 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldCreateConsentRequest() throws JsonProcessingException {
         var consentRequestId = "consent-request-id";
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        when(gateway.token()).thenReturn(just(randomString()));
         var consentCreationResponse = consentCreationResponse().id(consentRequestId).build();
         var consentCreationResponseJson = new ObjectMapper().writeValueAsString(consentCreationResponse);
-        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
         when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
 
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
-        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(just(caller));
 
         consentManagerServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
@@ -189,14 +198,14 @@ public class ConsentUserJourneyTest {
                 new MockResponse().setHeader("Content-Type", "application/json").setBody(consentCreationResponseJson));
         var consentRequestDetails = consentRequestDetails().build();
 
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        when(gateway.token()).thenReturn(just(randomString()));
         when(consentRepository.insert(consentRequestDetails.getConsent().toConsentRequest(consentRequestId,
                 "requesterId", "localhost:8080"))).
                 thenReturn(Mono.error(new Exception("Failed to insert to consent request")));
 
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
-        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(just(caller));
 
         webTestClient
                 .post()
@@ -238,15 +247,15 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",  null)));
-        when(centralRegistry.token()).thenReturn(Mono.just("asafs"));
-        when(consentRepository.get(eq(consentRequestId))).thenReturn(Mono.just(consentRequest));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(new ServiceCaller("", null)));
+        when(gateway.token()).thenReturn(just("asafs"));
+        when(consentRepository.get(eq(consentRequestId))).thenReturn(just(consentRequest));
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), eq(consentArtefactResponse.getConsentDetail().getPermission().getDateRange()),
-                anyString(), anyString())).thenReturn(Mono.empty());
+                anyString(), anyString())).thenReturn(empty());
         when(consentRepository.insertConsentArtefact(
                 eq(consentArtefactResponse.getConsentDetail()),
                 eq(consentArtefactResponse.getStatus()),
-                eq(consentRequestId))).thenReturn(Mono.empty());
+                eq(consentRequestId))).thenReturn(empty());
 
         webTestClient
                 .post()
@@ -274,7 +283,7 @@ public class ConsentUserJourneyTest {
                 .roles(List.of(Role.values()))
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(null)));
 
@@ -300,7 +309,7 @@ public class ConsentUserJourneyTest {
                 .build();
         var token = randomString();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",null)));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(new ServiceCaller("", null)));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.error(new Exception("Failed to fetch consent request")));
 
@@ -338,8 +347,8 @@ public class ConsentUserJourneyTest {
                 .patient(consentArtefactPatient().id("5@ncg").build())
                 .build();
 
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",null)));
-        when(centralRegistry.token()).thenReturn(Mono.just(token));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(new ServiceCaller("", null)));
+        when(gateway.token()).thenReturn(just(token));
         when(consentRepository.get(eq(consentRequestId)))
                 .thenReturn(Mono.create(consentRequestMonoSink -> consentRequestMonoSink.success(consentRequest)));
         when(consentRepository.insertConsentArtefact(
@@ -372,24 +381,21 @@ public class ConsentUserJourneyTest {
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference))
                 .build();
-
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
-        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
-
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(just(caller));
         var serviceToken = randomString();
         var serviceCaller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(serviceToken))
-                .thenReturn(Mono.just(serviceCaller));
+        when(gatewayTokenVerifier.verify(serviceToken)).thenReturn(just(serviceCaller));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
-                .thenReturn(Mono.just(consentArtefact));
+                .thenReturn(just(consentArtefact));
         when(healthInformationPublisher.publish(consentArtefactReference))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
 
         webTestClient
                 .post()
@@ -405,34 +411,31 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldReturn500OnNotificationWhenConsentUpdateFails() {
-        String consentRequestId = "consent-request-id-1";
-        LocalDateTime date = LocalDateTime.now();
-        ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
-        ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
-        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+        var consentRequestId = "consent-request-id-1";
+        var date = LocalDateTime.now();
+        var consentArtefactReference = consentArtefactReference().build();
+        var consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
+        var consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.REVOKED)
                 .timestamp(date)
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference))
                 .build();
-
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
-        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
-
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(just(caller));
         var serviceToken = randomString();
         var serviceCaller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(serviceToken))
-                .thenReturn(Mono.just(serviceCaller));
+        when(gatewayTokenVerifier.verify(serviceToken)).thenReturn(just(serviceCaller));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.REVOKED, date))
                 .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
-                .thenReturn(Mono.just(consentArtefact));
+                .thenReturn(just(consentArtefact));
         when(healthInformationPublisher.publish(consentArtefactReference))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
 
         webTestClient
                 .post()
@@ -449,30 +452,28 @@ public class ConsentUserJourneyTest {
     @Test
     public void shouldUpdateConsentStatusAndBroadcastConsentDeleteOnExpiry() {
         String consentRequestId = "consent-request-id-1";
-        ConsentArtefactReference consentArtefactReference = consentArtefactReference().build();
-        LocalDateTime date = LocalDateTime.now();
-        ConsentArtefact consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
-        ConsentNotificationRequest consentNotificationRequest = consentNotificationRequest()
+        var consentArtefactReference = consentArtefactReference().build();
+        var date = LocalDateTime.now();
+        var consentArtefact = consentArtefact().consentId(consentArtefactReference.getId()).build();
+        var consentNotificationRequest = consentNotificationRequest()
                 .status(ConsentStatus.EXPIRED)
                 .timestamp(date)
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference))
                 .build();
-
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
-        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
-
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(just(caller));
         var serviceToken = randomString();
-        when(centralRegistryTokenVerifier.verify(serviceToken))
-                .thenReturn(Mono.just(new ServiceCaller("", (List.of(Role.values())))));
+        when(gatewayTokenVerifier.verify(serviceToken))
+                .thenReturn(just(new ServiceCaller("", (List.of(Role.values())))));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
         when(consentRepository.getConsent(consentArtefactReference.getId(), ConsentStatus.GRANTED))
-                .thenReturn(Mono.just(consentArtefact));
-        when(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(), consentRequestId)).thenReturn(Mono.empty());
-        when(healthInformationPublisher.publish(consentArtefactReference))
-                .thenReturn(Mono.empty());
+                .thenReturn(just(consentArtefact));
+        when(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(), consentRequestId))
+                .thenReturn(empty());
+        when(healthInformationPublisher.publish(consentArtefactReference)).thenReturn(empty());
 
         webTestClient
                 .post()
@@ -498,23 +499,20 @@ public class ConsentUserJourneyTest {
                 .consentRequestId(consentRequestId)
                 .consentArtefacts(singletonList(consentArtefactReference))
                 .build();
-
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
-        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
-
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(just(caller));
         var serviceToken = randomString();
         var serviceCaller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(serviceToken))
-                .thenReturn(Mono.just(serviceCaller));
+        when(gatewayTokenVerifier.verify(serviceToken)).thenReturn(just(serviceCaller));
         when(consentRepository.updateStatus(consentArtefactReference, ConsentStatus.EXPIRED, date))
                 .thenReturn(Mono.error(new Exception("Failed to update consent artefact status")));
-        when(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(), consentRequestId)).thenReturn(Mono.empty());
+        when(dataFlowDeletePublisher.broadcastConsentExpiry(consentArtefactReference.getId(), consentRequestId)).thenReturn(empty());
         when(healthInformationPublisher.publish(consentArtefactReference))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
 
         webTestClient
                 .post()
@@ -531,7 +529,7 @@ public class ConsentUserJourneyTest {
     public static class ContextInitializer
             implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         @Override
-        public void initialize(ConfigurableApplicationContext applicationContext) {
+        public void initialize(@NotNull ConfigurableApplicationContext applicationContext) {
             TestPropertyValues values =
                     TestPropertyValues.of(
                             Stream.of("hiu.consentmanager.url=" + consentManagerServer.url(""),
@@ -543,22 +541,20 @@ public class ConsentUserJourneyTest {
 
     @Test
     public void shouldMakeConsentRequestToGateway() throws JsonProcessingException {
-        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
         when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
+        when(gateway.token()).thenReturn(just(randomString()));
         gatewayServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
         var consentRequestDetails = consentRequestDetails().build();
         consentRequestDetails.getConsent().getPatient().setId("hinapatel79@ncg");
-
         var token = randomString();
-        var caller = new Caller("testUser",false, Role.ADMIN.toString(), true);
-        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
-
-
-        LocalDateTime dateEraseAt = LocalDateTime.of(LocalDate.of(2050, 01, 01), LocalTime.of(10, 30));
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        var dateEraseAt = LocalDateTime.of(LocalDate.of(2050, 1, 1), LocalTime.of(10, 30));
         consentRequestDetails.getConsent().getPermission().setDataEraseAt(dateEraseAt);
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
+
         webTestClient
                 .post()
                 .uri("/v1/hiu/consent-requests")
@@ -583,15 +579,16 @@ public class ConsentUserJourneyTest {
                 "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
                 "  }\n" +
                 "}";
-        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.just(ConsentStatus.POSTED));
-        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
-                .thenReturn(Mono.empty());
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(just(ConsentStatus.POSTED));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6", ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
+
         webTestClient
                 .post()
                 .uri("/v1/consent-requests/on-init")
@@ -617,14 +614,15 @@ public class ConsentUserJourneyTest {
                 "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
                 "  }\n" +
                 "}";
-        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.ERRORED, ""))
-                .thenReturn(Mono.empty());
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6", ConsentStatus.ERRORED, ""))
+                .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller.builder()
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
+
         webTestClient
                 .post()
                 .uri("/v1/consent-requests/on-init")
@@ -649,17 +647,21 @@ public class ConsentUserJourneyTest {
                 "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
                 "  }\n" +
                 "}";
-        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(Mono.create(MonoSink::success));
-        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
-                .thenReturn(Mono.empty());
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
+                .thenReturn(Mono.create(MonoSink::success));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                ConsentStatus.REQUESTED,
+                "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller
                 .builder()
                 .clientId("cliendId")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
         var errorJson = "{\"error\":{\"code\":1003,\"message\":\"Cannot find the consent request\"}}";
+
         webTestClient
                 .post()
                 .uri("/v1/consent-requests/on-init")
@@ -696,30 +698,28 @@ public class ConsentUserJourneyTest {
                 .clientId("abc@ncg")
                 .roles(List.of(Role.values()))
                 .build();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(caller));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
         var patient = Patient.builder()
                 .id("heenapatel@ncg")
                 .build();
         ConsentRequest consentRequest = ConsentRequest.builder().patient(patient).status(ConsentStatus.REQUESTED).build();
-        when(consentRepository.get(consentRequestId)).thenReturn(Mono.just(consentRequest));
-        when(centralRegistry.token()).thenReturn(Mono.just(randomString()));
-
+        when(consentRepository.get(consentRequestId)).thenReturn(just(consentRequest));
+        when(gateway.token()).thenReturn(just(randomString()));
         var consent = consentArtefactResponse()
                 .status(ConsentStatus.GRANTED)
-                .consentDetail(
-                        ConsentArtefact.builder()
-                                .consentId(consentId)
-                                .permission(Permission.builder().build())
-                                .build())
+                .consentDetail(ConsentArtefact.builder()
+                        .consentId(consentId)
+                        .permission(Permission.builder().build())
+                        .build())
                 .build();
-        gatewayServer.enqueue(
-                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        gatewayServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
         when(consentRepository.insertConsentArtefact(
                 eq(consent.getConsentDetail()),
                 eq(consent.getStatus()),
-                eq(consentRequestId))).thenReturn(Mono.empty());
+                eq(consentRequestId))).thenReturn(empty());
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(anyString(), any(),
-                anyString(), anyString())).thenReturn(Mono.empty());
+                anyString(), anyString())).thenReturn(empty());
+
         webTestClient
                 .post()
                 .uri("/v1/consents/hiu/notify")
@@ -735,7 +735,6 @@ public class ConsentUserJourneyTest {
 
     @Ignore
     void shouldInsertConsentArtefact() {
-
         String gatewayConsentArtefactResponse = "{\n" +
                 "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
                 "  \"timestamp\": \"2020-06-08T05:19:24.739Z\",\n" +
@@ -800,7 +799,7 @@ public class ConsentUserJourneyTest {
                 "  }\n" +
                 "}";
         var token = randomString();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new ServiceCaller("",null)));
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(new ServiceCaller("", null)));
 
         webTestClient
                 .post()

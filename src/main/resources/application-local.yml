@@ -1,10 +1,9 @@
 server:
   port: 8003
 hiu:
-  id: 10000005
+  id: 10000002
   name: Max Health Care
   dataPushUrl: http://localhost:8003/data/notification
-  consentNotificationUrl: http://localhost:8003/consent/notification
   valueSets: classpath:/static/ValueSet/valuesets.json
   consentmanager:
     suffix: ncg
@@ -35,6 +34,9 @@ hiu:
   gatewayservice:
     baseUrl: http://localhost:8000/v1
     requestTimeout: 2000
+    clientId: 10000002
+    clientSecret: ${CLIENT_SECRET}
+    jwkUrl: http://localhost:8000/v1/certs
 spring:
   rabbitmq:
     host: localhost
