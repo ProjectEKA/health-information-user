@@ -270,8 +270,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowClient dataFlowClient(WebClient.Builder builder,
-                                         GatewayProperties gatewayProperties) {
+    public DataFlowClient dataFlowClient(WebClient.Builder builder, GatewayProperties gatewayProperties) {
         return new DataFlowClient(builder, gatewayProperties);
     }
 
