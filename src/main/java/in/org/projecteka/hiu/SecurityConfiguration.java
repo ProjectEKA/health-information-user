@@ -91,15 +91,15 @@ public class SecurityConfiguration {
     @Bean
     public SecurityContextRepository contextRepository(GatewayTokenVerifier gatewayTokenVerifier,
                                                        @Qualifier("hiuUserAuthenticator") Authenticator authenticator,
-                                                       @Qualifier("cmUserAuthenticator") Authenticator cmUserAuthenticator) {
-        return new SecurityContextRepository(gatewayTokenVerifier, authenticator, cmUserAuthenticator);
+                                                       @Qualifier("userAuthenticator") Authenticator userAuthenticator) {
+        return new SecurityContextRepository(gatewayTokenVerifier, authenticator, userAuthenticator);
     }
 
     @AllArgsConstructor
     private static class SecurityContextRepository implements ServerSecurityContextRepository {
         private final GatewayTokenVerifier gatewayTokenVerifier;
         private final Authenticator authenticator;
-        private final Authenticator cmUserAuthenticator;
+        private final Authenticator userAuthenticator;
 
         @Override
         public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {
@@ -124,7 +124,7 @@ public class SecurityConfiguration {
         }
 
         private Mono<SecurityContext> checkUserToken(String token) {
-            return cmUserAuthenticator.verify(token)
+            return userAuthenticator.verify(token)
                     .map(caller -> new UsernamePasswordAuthenticationToken(caller, token, new ArrayList<SimpleGrantedAuthority>()))
                     .map(SecurityContextImpl::new);
         }
