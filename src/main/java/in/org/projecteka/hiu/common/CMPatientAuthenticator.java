@@ -5,7 +5,11 @@ import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.proc.*;
+import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
+import com.nimbusds.jose.proc.JWSKeySelector;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
@@ -20,7 +24,7 @@ import java.util.HashSet;
 
 public class CMPatientAuthenticator implements Authenticator {
     private final ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
-    private final Logger logger = LoggerFactory.getLogger(Authenticator.class);
+    private final Logger logger = LoggerFactory.getLogger(CMPatientAuthenticator.class);
 
 
     public CMPatientAuthenticator(JWKSet jwkSet, ConfigurableJWTProcessor<SecurityContext> jwtProcessor) {

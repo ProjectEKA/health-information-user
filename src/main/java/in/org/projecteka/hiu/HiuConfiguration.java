@@ -435,8 +435,8 @@ public class HiuConfiguration {
         return new DefaultJWTProcessor<>();
     }
 
-    @Bean("cmUserAuthenticator")
-    public Authenticator cmUserAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
+    @Bean("userAuthenticator")
+    public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                              ConfigurableJWTProcessor<SecurityContext> jwtProcessor){
         return new CMPatientAuthenticator(jwkSet, jwtProcessor);
     }
