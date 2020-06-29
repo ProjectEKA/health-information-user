@@ -125,7 +125,7 @@ public class SecurityConfiguration {
 
         private Mono<SecurityContext> checkUserToken(String token) {
             return userAuthenticator.verify(token)
-                    .map(caller -> new UsernamePasswordAuthenticationToken(caller, token, new ArrayList<SimpleGrantedAuthority>()))
+                    .map(caller -> new UsernamePasswordAuthenticationToken(caller, token, new ArrayList<>()))
                     .map(SecurityContextImpl::new);
         }
 
