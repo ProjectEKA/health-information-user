@@ -117,13 +117,13 @@ public class SecurityConfiguration {
             }
 
             if (isCMPatientRequest(exchange.getRequest().getPath().toString(), exchange.getRequest().getMethod())) {
-                return checkCMPatientToken(token);
+                return checkUserToken(token);
             }
 
             return check(token);
         }
 
-        private Mono<SecurityContext> checkCMPatientToken(String token) {
+        private Mono<SecurityContext> checkUserToken(String token) {
             return cmUserAuthenticator.verify(token)
                     .map(caller -> new UsernamePasswordAuthenticationToken(caller, token, new ArrayList<SimpleGrantedAuthority>()))
                     .map(SecurityContextImpl::new);
