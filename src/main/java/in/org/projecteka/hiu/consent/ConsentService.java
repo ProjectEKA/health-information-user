@@ -146,7 +146,7 @@ public class ConsentService {
 
     public Flux<ConsentRequestRepresentation> requestsOf(String requesterId) {
         return consentRepository.requestsOf(requesterId)
-                .flatMap(result -> {
+                .concatMap(result -> {
                     var consentRequest =
                             (in.org.projecteka.hiu.consent.model.ConsentRequest) result.get("consentRequest");
                     var consentRequestId = (String) result.get("consentRequestId");
