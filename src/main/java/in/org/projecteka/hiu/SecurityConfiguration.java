@@ -4,6 +4,7 @@ import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +25,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_HIU_NOTIFY;
 import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_ON_FETCH;
@@ -46,6 +48,8 @@ public class SecurityConfiguration {
             V_1_HEALTH_INFORMATION_HIU_ON_REQUEST
     };
 
+    private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(Map.entry(HttpMethod.GET, "/cm/hello"));
+
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity httpSecurity,
@@ -67,6 +71,7 @@ public class SecurityConfiguration {
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
+        CM_PATIENT_APIS.forEach(entry -> httpSecurity.authorizeExchange().pathMatchers(entry.getValue()).authenticated());
         httpSecurity.authorizeExchange()
                 .pathMatchers(GATEWAY_APIS)
                 .hasAnyRole(GATEWAY.toString())
@@ -85,14 +90,16 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityContextRepository contextRepository(GatewayTokenVerifier gatewayTokenVerifier,
-                                                       Authenticator authenticator) {
-        return new SecurityContextRepository(gatewayTokenVerifier, authenticator);
+                                                       @Qualifier("hiuUserAuthenticator") Authenticator authenticator,
+                                                       @Qualifier("cmUserAuthenticator") Authenticator cmUserAuthenticator) {
+        return new SecurityContextRepository(gatewayTokenVerifier, authenticator, cmUserAuthenticator);
     }
 
     @AllArgsConstructor
     private static class SecurityContextRepository implements ServerSecurityContextRepository {
         private final GatewayTokenVerifier gatewayTokenVerifier;
         private final Authenticator authenticator;
+        private final Authenticator cmUserAuthenticator;
 
         @Override
         public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {
@@ -108,7 +115,18 @@ public class SecurityConfiguration {
             if (isGatewayOnlyRequest(exchange.getRequest().getPath().toString())) {
                 return checkGateway(token);
             }
+
+            if (isCMPatientRequest(exchange.getRequest().getPath().toString(), exchange.getRequest().getMethod())) {
+                return checkCMPatientToken(token);
+            }
+
             return check(token);
+        }
+
+        private Mono<SecurityContext> checkCMPatientToken(String token) {
+            return cmUserAuthenticator.verify(token)
+                    .map(caller -> new UsernamePasswordAuthenticationToken(caller, token, new ArrayList<SimpleGrantedAuthority>()))
+                    .map(SecurityContextImpl::new);
         }
 
         private Mono<SecurityContext> check(String token) {
@@ -143,6 +161,13 @@ public class SecurityConfiguration {
             return List.of(GATEWAY_APIS)
                     .stream()
                     .anyMatch(pattern -> antPathMatcher.matchStart(pattern, url));
+        }
+
+        private boolean isCMPatientRequest(String path, HttpMethod method) {
+            AntPathMatcher antPathMatcher = new AntPathMatcher();
+            return CM_PATIENT_APIS.stream()
+                    .anyMatch(pattern ->
+                            antPathMatcher.matchStart(pattern.getValue(), path) && method == pattern.getKey());
         }
     }
 
