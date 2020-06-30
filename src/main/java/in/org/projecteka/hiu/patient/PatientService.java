@@ -12,7 +12,7 @@ import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.patient.model.Requester;
 import lombok.AllArgsConstructor;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
@@ -29,8 +29,7 @@ import static reactor.core.publisher.Mono.just;
 
 @AllArgsConstructor
 public class PatientService {
-    private static final Logger logger = Logger.getLogger(PatientService.class);
-    private static final org.slf4j.Logger factoryLogger = LoggerFactory.getLogger(PatientService.class);
+    private static final Logger logger = LoggerFactory.getLogger(PatientService.class);
     private final GatewayServiceClient gatewayServiceClient;
     private final Cache<String, Optional<Patient>> cache;
     private final HiuProperties hiuProperties;
@@ -50,7 +49,7 @@ public class PatientService {
     public Mono<Patient> findPatientWith(String id) {
         return getFromCache(id, () ->
         {
-            factoryLogger.info("patient details for: {}", id);
+            logger.info("patient details for: {}", id);
             var cmSuffix = getCmSuffix(id);
             var request = getFindPatientRequest(id);
             return scheduleThis(gatewayServiceClient.findPatientWith(request, cmSuffix))
