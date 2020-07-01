@@ -60,6 +60,7 @@ public class SecurityConfiguration {
                                        "/**.png",
                                        "/health-information/fetch/**/attachments/**",
                                        "/data/notification",
+                                       "/v1/heartbeat",
                                        "/sessions",
                                        "/config"};
         httpSecurity.authorizeExchange().pathMatchers(allowedLists).permitAll();

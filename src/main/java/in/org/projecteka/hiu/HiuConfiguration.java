@@ -16,6 +16,8 @@ import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.UserAuthenticator;
+import in.org.projecteka.hiu.common.heartbeat.Heartbeat;
+import in.org.projecteka.hiu.common.heartbeat.RabbitMQOptions;
 import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
@@ -456,5 +458,10 @@ public class HiuConfiguration {
                                                      GatewayProperties serviceProperties,
                                                      Gateway gateway) {
         return new GatewayServiceClient(builder, serviceProperties, gateway);
+    }
+
+    @Bean
+    public Heartbeat heartbeat(RabbitMQOptions rabbitMQOptions, DatabaseProperties databaseProperties) {
+        return new Heartbeat(rabbitMQOptions, databaseProperties);
     }
 }
