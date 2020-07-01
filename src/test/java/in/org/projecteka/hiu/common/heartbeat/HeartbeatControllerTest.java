@@ -2,11 +2,19 @@ package in.org.projecteka.hiu.common.heartbeat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.jwk.JWKSet;
+import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
+import in.org.projecteka.hiu.common.TestBuilders;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;
 import in.org.projecteka.hiu.common.heartbeat.model.Status;
 import in.org.projecteka.hiu.consent.ConceptValidator;
+import in.org.projecteka.hiu.consent.ConsentController;
+import in.org.projecteka.hiu.consent.ConsentService;
+import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
+import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,15 +43,32 @@ class HeartbeatControllerTest {
     @MockBean(name = "centralRegistryJWKSet")
     private JWKSet centralRegistryJWKSet;
 
-    @SuppressWarnings("unused")
-    @MockBean(name = "identityServiceJWKSet")
-    private JWKSet identityServiceJWKSet;
-
-    @MockBean
-    private ConceptValidator conceptValidator;
-
     @MockBean
     private Heartbeat heartbeat;
+
+    @MockBean
+    DestinationsConfig destinationsConfig;
+
+    @MockBean
+    DataFlowRequestPublisher dataFlowRequestPublisher;
+
+    @MockBean
+    DataFlowRequestListener dataFlowRequestListener;
+
+    @MockBean
+    DataFlowDeleteListener dataFlowDeleteListener;
+
+    @MockBean
+    DataAvailabilityListener dataAvailabilityListener;
+
+    @MockBean
+    ConsentService consentService;
+
+    @MockBean
+    ConsentController consentController;
+
+    @MockBean
+    ConceptValidator conceptValidator;
 
     @BeforeEach
     public void setUp() {

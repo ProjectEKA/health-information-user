@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.common.heartbeat;
+package in.org.projecteka.hiu.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
