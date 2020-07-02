@@ -9,6 +9,9 @@ import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
@@ -17,8 +20,8 @@ import static in.org.projecteka.hiu.Error.serviceDownError;
 
 @AllArgsConstructor
 public class Heartbeat {
-    private RabbitMQOptions rabbitMQOptions;
-    private DatabaseProperties databaseProperties;
+    private final RabbitMQOptions rabbitMQOptions;
+    private final DatabaseProperties databaseProperties;
 
     public Mono<HeartbeatResponse> getStatus() {
         try {
@@ -32,11 +35,11 @@ public class Heartbeat {
                     .status(Status.DOWN)
                     .error(serviceDownError("Service Down"))
                     .build());
-        } catch (IOException | TimeoutException | InterruptedException e) {
+        } catch (IOException | TimeoutException e) {
             return Mono.just(HeartbeatResponse.builder()
                     .timeStamp(Instant.now().toString())
                     .status(Status.DOWN)
-                    .error(serviceDownError(e.getMessage()))
+                    .error(serviceDownError("Service Down"))
                     .build());
         }
 
@@ -50,11 +53,21 @@ public class Heartbeat {
         return connection.isOpen();
     }
 
-    private boolean isPostgresUp() throws IOException, InterruptedException {
-        String cmd = String.format("pg_isready -h %s -p %s", databaseProperties.getHost(), databaseProperties.getPort());
-        Runtime run = Runtime.getRuntime();
-        Process pr = run.exec(cmd);
-        int exitValue = pr.waitFor();
-        return exitValue == 0;
+    private boolean isPostgresUp() throws IOException {
+        return checkConnection(databaseProperties.getHost(),databaseProperties.getPort());
+    }
+
+    private boolean checkConnection(String host, int port) throws IOException {
+        boolean isAlive;
+        SocketAddress socketAddress = new InetSocketAddress(host, port);
+        Socket socket = new Socket();
+        try {
+            socket.connect(socketAddress);
+            socket.close();
+            isAlive = true;
+        } catch (IOException exception) {
+            throw exception;
+        }
+        return isAlive;
     }
 }
