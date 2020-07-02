@@ -9,8 +9,6 @@ import in.org.projecteka.hiu.common.TestBuilders;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;
 import in.org.projecteka.hiu.common.heartbeat.model.Status;
 import in.org.projecteka.hiu.consent.ConceptValidator;
-import in.org.projecteka.hiu.consent.ConsentController;
-import in.org.projecteka.hiu.consent.ConsentService;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
@@ -60,12 +58,6 @@ class HeartbeatControllerTest {
 
     @MockBean
     DataAvailabilityListener dataAvailabilityListener;
-
-    @MockBean
-    ConsentService consentService;
-
-    @MockBean
-    ConsentController consentController;
 
     @MockBean
     ConceptValidator conceptValidator;
