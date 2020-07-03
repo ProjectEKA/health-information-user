@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hiu-ui
+  namespace: nha-app
+  labels:
+    app: hiu-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hiu-ui
+  template:
+    metadata:
+      labels:
+        app: hiu-ui
+    spec:
+      initcontainers:
+      - name: hiu-db-migrator
+        image: projecteka/hiu-db-initializer:latest
+        env:
+          - name: JAVA_TOOL_OPTIONS
+            value: "-Djdbc.url=jdbc:postgresql://nhadcl-postges-1.nhadclmgm.tatacommunications.com:5633/health_information_user -Djdbc.username=postgres -Djdbc.password=TAta12#$"
+      containers:
+      - name: hiu-ui
+        image: projecteka/hiu-ui:sandbox
+        imagePullPolicy: Always
+        ports:
+          - name: http
+            containerPort: 5000
+            protocol: TCP

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: nha-app
+  name: hiu
+  labels:
+    app: hiu
+    service: hiu
+spec:
+  selector:
+   app: hiu
+  ports:
+  - name: http
+    port: 8003
+    targetPort: 8003

@@ -1,0 +1,68 @@
+# Default values for hiu.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: "ganesan92/health-information-user"
+  tag: "64b1fb5"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+
+
+service:
+  type: ClusterIP
+  port: 8003
+
+ingress:
+  enabled: false
+  hosts:
+    - hiu.dev.pmjay.gov.in
+  uriPrefix: "/"
+
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+environmentVariables:
+  CENTRAL_REGISTRY_JWK_URL: http://client-registry:8080/certs
+  CENTRAL_REGISTRY_URL: http://client-registry:8080
+  CONSENT_MANAGEMENT_SUFFIX: '@ncg'
+  CONSENT_MANAGEMENT_URL: http://consent-manager:8000
+  CONSENT_NOTIFICATION_URL: http://hiu:8003/consent/notification
+  DATA_PUSH_URL: http://hiu:8003/data/notification
+  DB_CONNECTION_POOL_SIZE: "5"
+  DEFAULT_PAGE_SIZE: "20"
+  GATEWAY_BASE_URL: http://gateway:8000/v1
+  GATEWAY_REQUEST_TIMEOUT: "8000"
+  HIU_NAME: Max Health Care
+  LOCAL_STORAGE_PATH: /tmp/
+  MAX_IN_MEMORY_SIZE: 500MB
+  MAX_PAGE_SIZE: "100"
+  OFFSET_IN_DAYS: "2"
+  USING_GATEWAY: "true"
+  GATEWAY_JWK_URL: http://gateway:8000/v1/certs
+
+
+secrets: {}
+

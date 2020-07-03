@@ -1,0 +1,47 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: hiu
+  namespace: nha-app
+spec:
+  gateways:
+  - nha-gateway
+  hosts:
+  - hiu.dev.pmjay.gov.in
+  http:
+  - match:
+    - uri:
+        prefix: /api/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: hiu
+        port:
+          number: 8003
+  - match:
+    - uri:
+        prefix: /swagger.yaml
+    route:
+    - destination:
+        host: hiu
+        port:
+          number: 8003
+  - match:
+    - uri:
+        prefix: /dicom-web/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: orthanc
+        port:
+          number: 8042
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: hiu-ui
+        port:
+          number: 5000
