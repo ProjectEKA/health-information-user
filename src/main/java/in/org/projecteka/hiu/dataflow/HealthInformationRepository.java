@@ -32,6 +32,7 @@ public class HealthInformationRepository {
                 .execute(Tuple.of(transactionId),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 fluxSink.error(
                                         dbOperationFailure("Failed to get health information from transaction Id"));
                                 return;
@@ -54,7 +55,7 @@ public class HealthInformationRepository {
                         .execute(Tuple.of(transactionId),
                                 handler -> {
                                     if (handler.failed()) {
-                                        logger.error(handler.cause().getMessage());
+                                        logger.error(handler.cause().getMessage(), handler.cause());
                                         monoSink.error(new Exception("Failed to delete health information"));
                                         return;
                                     }

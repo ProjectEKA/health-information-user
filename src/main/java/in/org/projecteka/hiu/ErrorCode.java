@@ -21,7 +21,8 @@ public enum ErrorCode {
     INVALID_PURPOSE_OF_USE(1012),
     INVALID_DATA_FROM_GATEWAY(1013),
     NO_RESULT_FROM_GATEWAY(1014),
-    PATIENT_NOT_FOUND(1015);
+    PATIENT_NOT_FOUND(1015),
+    SERVICE_DOWN(4222);
 
     private final int value;
 

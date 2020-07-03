@@ -32,6 +32,9 @@ bin/
 ### VS Code ###
 .vscode/
 
+### Mac files ###
+.DS_Store
+
 ### Others ###
 src/test/resources/*.pdf
 src/test/resources/*.dcm
