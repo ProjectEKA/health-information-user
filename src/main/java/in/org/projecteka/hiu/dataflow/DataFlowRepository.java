@@ -73,6 +73,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(requestId, consentId, from(dataFlowRequest)),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to insert to data flow request"));
                                 return;
                             }
@@ -85,6 +86,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of( transactionId, status.toString(), requestId),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to update data flow request"));
                                 return;
                             }
@@ -97,6 +99,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(transactionId, from(dataFlowRequestKeyMaterial)),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to insert to data flow request"));
                                 return;
                             }
@@ -109,6 +112,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(transactionId),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to fetch encryption keys"));
                                 return;
                             }
@@ -129,6 +133,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(consentArtefactId, REQUESTED.toString()),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to get transaction Id from consent Id"));
                                 return;
                             }
@@ -148,6 +153,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(transactionId),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to get consent Id from transaction Id"));
                                 return;
                             }
@@ -167,6 +173,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(transactionId),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(
                                         dbOperationFailure("Failed to identify data flow request for transaction Id"));
                                 return;
@@ -193,6 +200,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(transactionId, String.valueOf(partNumber), status.toString()),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to insert health data availability"));
                                 return;
                             }
@@ -206,6 +214,7 @@ public class DataFlowRepository {
                 .execute(Tuple.of(status.toString(), allErrors, transactionId, dataPartNumber),
                         handler -> {
                             if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to update health data availability"));
                                 return;
                             }
