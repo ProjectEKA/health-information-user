@@ -25,7 +25,7 @@ public class UserRepository {
                         .execute(Tuple.of(username),
                                 handler -> {
                                     if (handler.failed()) {
-                                        logger.error(handler.cause());
+                                        logger.error(handler.cause().getMessage(), handler.cause());
                                         monoSink.error(dbOperationFailure("Failed to fetch user."));
                                         return;
                                     }
@@ -45,7 +45,7 @@ public class UserRepository {
                         Tuple.of(user.getUsername(), user.getPassword(), user.getRole().toString(), user.isVerified()),
                         handler -> {
                             if (handler.failed()) {
-                                logger.error(handler.cause());
+                                logger.error(handler.cause().getMessage(), handler.cause());
                                 monoSink.error(dbOperationFailure("Failed to save user."));
                                 return;
                             }
@@ -60,7 +60,7 @@ public class UserRepository {
                                 Tuple.of(username, password),
                                 handler -> {
                                     if (handler.failed()) {
-                                        logger.error(handler.cause());
+                                        logger.error(handler.cause().getMessage(), handler.cause());
                                         monoSink.error(dbOperationFailure("Failed to change password."));
                                         return;
                                     }
