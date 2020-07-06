@@ -64,9 +64,16 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.client.reactive.ClientHttpConnector;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.ServerCodecConfigurer;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
 
 import java.io.IOException;
 import java.net.URL;
@@ -272,7 +279,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowClient dataFlowClient(WebClient.Builder builder, GatewayProperties gatewayProperties) {
+    public DataFlowClient dataFlowClient(@Qualifier("customBuilder") WebClient.Builder builder,
+                                         GatewayProperties gatewayProperties) {
         return new DataFlowClient(builder, gatewayProperties);
     }
 
@@ -391,13 +399,13 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public GatewayAuthenticationClient centralRegistryClient(WebClient.Builder builder,
+    public GatewayAuthenticationClient centralRegistryClient(@Qualifier("customBuilder") WebClient.Builder builder,
                                                              GatewayProperties gatewayProperties) {
         return new GatewayAuthenticationClient(builder.baseUrl(gatewayProperties.getBaseUrl()));
     }
 
     @Bean
-    public HealthInformationClient healthInformationClient(WebClient.Builder builder,
+    public HealthInformationClient healthInformationClient(@Qualifier("customBuilder") WebClient.Builder builder,
                                                            GatewayProperties gatewayProperties) {
         return new HealthInformationClient(builder, gatewayProperties);
     }
@@ -454,7 +462,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public GatewayServiceClient gatewayServiceClient(WebClient.Builder builder,
+    public GatewayServiceClient gatewayServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
                                                      GatewayProperties serviceProperties,
                                                      Gateway gateway) {
         return new GatewayServiceClient(builder, serviceProperties, gateway);
@@ -463,5 +471,30 @@ public class HiuConfiguration {
     @Bean
     public Heartbeat heartbeat(RabbitMQOptions rabbitMQOptions, DatabaseProperties databaseProperties) {
         return new Heartbeat(rabbitMQOptions, databaseProperties);
+    }
+
+    @Bean
+    public ClientHttpConnector clientHttpConnector() {
+        return new ReactorClientHttpConnector(HttpClient.create(ConnectionProvider.newConnection()));
+    }
+
+    @Bean("customBuilder")
+    public WebClient.Builder webClient(final ClientHttpConnector clientHttpConnector, ObjectMapper objectMapper) {
+        // Temp fix for TCL infra
+        return WebClient
+                .builder()
+                .exchangeStrategies(exchangeStrategies(objectMapper))
+                .clientConnector(clientHttpConnector);
+    }
+
+    private ExchangeStrategies exchangeStrategies(ObjectMapper objectMapper) {
+        var encoder = new Jackson2JsonEncoder(objectMapper);
+        var decoder = new Jackson2JsonDecoder(objectMapper);
+        return ExchangeStrategies
+                .builder()
+                .codecs(configurer -> {
+                    configurer.defaultCodecs().jackson2JsonEncoder(encoder);
+                    configurer.defaultCodecs().jackson2JsonDecoder(decoder);
+                }).build();
     }
 }
