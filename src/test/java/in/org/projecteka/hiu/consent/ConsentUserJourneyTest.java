@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -100,11 +101,18 @@ class ConsentUserJourneyTest {
     private GatewayTokenVerifier gatewayTokenVerifier;
 
     @MockBean
+    @Qualifier("hiuUserAuthenticator")
     private Authenticator authenticator;
 
     @SuppressWarnings("unused")
     @MockBean
+    @Qualifier("centralRegistryJWKSet")
     private JWKSet centralRegistryJWKSet;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    @Qualifier("identityServiceJWKSet")
+    private JWKSet identityServiceJWKSet;
 
     @MockBean
     private HealthInformationPublisher healthInformationPublisher;

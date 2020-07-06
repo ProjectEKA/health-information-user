@@ -12,6 +12,13 @@ hiu:
     defaultPageSize: 20
     maxPageSize: 100
     localStoragePath: /tmp/
+  centralregistry:
+    url: http://localhost:8080
+    clientId: 10000005
+    clientSecret: ${CLIENTREGISTRY_CLIENTSECRET}
+    jwkUrl: http://localhost:8080/certs
+  userservice:
+    jwkUrl: http://localhost:9001/auth/realms/consent-manager/protocol/openid-connect/certs
   database:
     host: localhost
     port: 5432
