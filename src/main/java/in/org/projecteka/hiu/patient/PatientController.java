@@ -29,9 +29,4 @@ public class PatientController {
     public Mono<Void> onFindUser(@RequestBody PatientSearchGatewayResponse patientSearchGatewayResponse) {
         return patientService.onFindPatient(patientSearchGatewayResponse);
     }
-
-    @GetMapping("/cm/hello")
-    public Mono<String> helloWorld(){
-        return Mono.just("Hello World");
-    }
 }
