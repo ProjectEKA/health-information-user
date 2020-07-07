@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 
@@ -37,7 +38,7 @@ public class GrantedConsentTask extends ConsentTask {
                     var consentArtefactRequest = ConsentArtefactRequest
                             .builder()
                             .consentId(reference.getId())
-                            .timestamp(LocalDateTime.now())
+                            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
                             .requestId(requestId)
                             .build();
                     return gatewayClient.requestConsentArtefact(consentArtefactRequest, cmSuffix, token);

@@ -26,6 +26,7 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -100,7 +101,7 @@ public class ConsentService {
                         token, getCmSuffix(hiRequest.getConsent()),
                         ConsentRequest.builder()
                                 .requestId(gatewayRequestId)
-                                .timestamp(java.time.Instant.now().toString())
+                                .timestamp(LocalDateTime.now(ZoneOffset.UTC))
                                 .consent(reqInfo)
                                 .build()))
                 .then(consentRepository.insertConsentRequestToGateway(
