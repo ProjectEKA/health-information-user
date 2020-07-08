@@ -377,10 +377,11 @@ components:
             $ref: '#/components/schemas/HIPIds'
     PatientConsentResponse:
       type: object
-      properties:
-        hipId:
-          type: string
-          example: '<consent-request-id>'
+      additionalProperties:
+        type: string
+      example:
+        "100001": req-id-for-hip-100001
+        "100002": req-id-for-hip-100002
     ConsentRequest:
       type: object
       properties:
