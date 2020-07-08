@@ -8,11 +8,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.UserAuthenticator;
@@ -417,8 +421,13 @@ public class HiuConfiguration {
     }
 
     @Bean("centralRegistryJWKSet")
-    public JWKSet jwkSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
+    public JWKSet centralRegistryJWKSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
         return JWKSet.load(new URL(gatewayProperties.getJwkUrl()));
+    }
+
+    @Bean("identityServiceJWKSet")
+    public JWKSet identityServiceJWKSet(IdentityServiceProperties identityServiceProperties) throws IOException, ParseException {
+        return JWKSet.load(new URL(identityServiceProperties.getJwkUrl()));
     }
 
     @Bean
@@ -426,9 +435,20 @@ public class HiuConfiguration {
         return new GatewayTokenVerifier(jwkSet);
     }
 
-    @Bean
-    public Authenticator userAuthenticator(byte[] sharedSecret) throws JOSEException {
+    @Bean("hiuUserAuthenticator")
+    public Authenticator hiuUserAuthenticator(byte[] sharedSecret) throws JOSEException {
         return new UserAuthenticator(sharedSecret);
+    }
+
+    @Bean({"jwtProcessor"})
+    public ConfigurableJWTProcessor<SecurityContext> getJWTProcessor() {
+        return new DefaultJWTProcessor<>();
+    }
+
+    @Bean("userAuthenticator")
+    public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
+                                             ConfigurableJWTProcessor<SecurityContext> jwtProcessor){
+        return new CMPatientAuthenticator(jwkSet, jwtProcessor);
     }
 
     @Bean
