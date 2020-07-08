@@ -421,7 +421,7 @@ public class HiuConfiguration {
     }
 
     @Bean("centralRegistryJWKSet")
-    public JWKSet jwkSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
+    public JWKSet centralRegistryJWKSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
         return JWKSet.load(new URL(gatewayProperties.getJwkUrl()));
     }
 
@@ -436,7 +436,7 @@ public class HiuConfiguration {
     }
 
     @Bean("hiuUserAuthenticator")
-    public Authenticator userAuthenticator(byte[] sharedSecret) throws JOSEException {
+    public Authenticator hiuUserAuthenticator(byte[] sharedSecret) throws JOSEException {
         return new UserAuthenticator(sharedSecret);
     }
 
