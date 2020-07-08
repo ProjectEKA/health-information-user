@@ -43,6 +43,33 @@ paths:
                   id:
                     type: string
                     format: uuid
+  /patient/consent-request:
+    post:
+      tags:
+        - frontend
+      summary: Create patient consent request
+      description: Creates a consent request to get data about a patient by patient.
+      operationId: createPatientConsentRequest
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientConsentRequest'
+      responses:
+        '202':
+          description: Request created in the consent manager
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientConsentResponse'
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
   /sessions:
     post:
       tags:
@@ -338,6 +365,23 @@ components:
         - HIType4
         - HIType5
       example: "DiagnosticReport"
+    HIPIds:
+      type: string
+      example: "100001"
+    PatientConsentRequest:
+      type: object
+      properties:
+        hipIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/HIPIds'
+    PatientConsentResponse:
+      type: object
+      additionalProperties:
+        type: string
+      example:
+        "100001": req-id-for-hip-100001
+        "100002": req-id-for-hip-100002
     ConsentRequest:
       type: object
       properties:
