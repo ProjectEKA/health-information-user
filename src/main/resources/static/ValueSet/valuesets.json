@@ -67,6 +67,10 @@
             {
               "code": "MedicationRequest",
               "display": "Prescribed Medications"
+            },
+            {
+              "code": "DocumentReference",
+              "display": "Clinical Documents"
             }
           ]
         }

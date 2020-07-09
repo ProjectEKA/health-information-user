@@ -15,6 +15,7 @@ tags:
   - name: frontend
   - name: consent notification
   - name: data notification
+  - name: cm app
 
 paths:
   /consent-requests:
@@ -38,6 +39,33 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+  /patient/consent-request:
+    post:
+      tags:
+        - frontend
+      summary: Create patient consent request
+      description: Creates a consent request to get data about a patient by patient.
+      operationId: createPatientConsentRequest
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientConsentRequest'
+      responses:
+        '202':
+          description: Request created in the consent manager
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientConsentResponse'
                 type: object
                 properties:
                   id:
@@ -221,6 +249,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthInformation'
+  /patient/health-information/fetch/:
+    post:
+      tags:
+        - cm app
+      summary: Get health information.
+      description: This API can be used to fetch the health information for a set of consent requests when CM app request for data.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientHealthDataFetchRequest'
+      responses:
+        '200':
+          description: Health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientHealthDataResponse'
   /data/notification:
     post:
       tags:
@@ -338,6 +389,23 @@ components:
         - HIType4
         - HIType5
       example: "DiagnosticReport"
+    HIPIds:
+      type: string
+      example: "100001"
+    PatientConsentRequest:
+      type: object
+      properties:
+        hipIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/HIPIds'
+    PatientConsentResponse:
+      type: object
+      additionalProperties:
+        type: string
+      example:
+        "100001": req-id-for-hip-100001
+        "100002": req-id-for-hip-100002
     ConsentRequest:
       type: object
       properties:
@@ -582,3 +650,47 @@ components:
           type: string
           enum: [DOCTOR, ADMIN]
           default: DOCTOR
+    PatientHealthDataFetchRequest:
+      type: object
+      required:
+        - requestIds
+      properties:
+        requestIds:
+          type: array
+          items:
+            type: string
+            example: consentRequestId
+    PatientHealthDataEntry:
+      type: object
+      required:
+        - hipId
+        - consentRequestId
+        - consentArtefactId
+        - status
+        - data
+      properties:
+        hipId:
+          type: string
+        consentRequestId:
+          type: string
+        consentArtefactId:
+          type: string
+        status:
+          type: string
+          enum: [SUCCEEDED, ERRORED, PROCESSING, TRANS_ERRORED]
+        data:
+          type: object
+          description: data is a FHIR bundle. https://www.hl7.org/fhir/bundle.html
+    PatientHealthDataResponse:
+      type: object
+      properties:
+        limit:
+          type: integer
+        size:
+          type: integer
+        offset:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientHealthDataEntry'

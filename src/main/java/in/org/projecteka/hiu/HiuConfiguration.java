@@ -8,11 +8,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.UserAuthenticator;
@@ -58,6 +62,7 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.context.ApplicationContext;
@@ -417,8 +422,13 @@ public class HiuConfiguration {
     }
 
     @Bean("centralRegistryJWKSet")
-    public JWKSet jwkSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
+    public JWKSet centralRegistryJWKSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
         return JWKSet.load(new URL(gatewayProperties.getJwkUrl()));
+    }
+
+    @Bean("identityServiceJWKSet")
+    public JWKSet identityServiceJWKSet(IdentityServiceProperties identityServiceProperties) throws IOException, ParseException {
+        return JWKSet.load(new URL(identityServiceProperties.getJwkUrl()));
     }
 
     @Bean
@@ -426,9 +436,20 @@ public class HiuConfiguration {
         return new GatewayTokenVerifier(jwkSet);
     }
 
-    @Bean
-    public Authenticator userAuthenticator(byte[] sharedSecret) throws JOSEException {
+    @Bean("hiuUserAuthenticator")
+    public Authenticator hiuUserAuthenticator(byte[] sharedSecret) throws JOSEException {
         return new UserAuthenticator(sharedSecret);
+    }
+
+    @Bean({"jwtProcessor"})
+    public ConfigurableJWTProcessor<SecurityContext> getJWTProcessor() {
+        return new DefaultJWTProcessor<>();
+    }
+
+    @Bean("userAuthenticator")
+    public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
+                                             ConfigurableJWTProcessor<SecurityContext> jwtProcessor){
+        return new CMPatientAuthenticator(jwkSet, jwtProcessor);
     }
 
     @Bean
@@ -474,13 +495,13 @@ public class HiuConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "webclient.keepalive", havingValue = "false")
     public ClientHttpConnector clientHttpConnector() {
         return new ReactorClientHttpConnector(HttpClient.create(ConnectionProvider.newConnection()));
     }
 
     @Bean("customBuilder")
     public WebClient.Builder webClient(final ClientHttpConnector clientHttpConnector, ObjectMapper objectMapper) {
-        // Temp fix for TCL infra
         return WebClient
                 .builder()
                 .exchangeStrategies(exchangeStrategies(objectMapper))
