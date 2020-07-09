@@ -264,7 +264,7 @@ class ConsentUserJourneyTest {
                 .roles(List.of(Role.values()))
                 .build();
         when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
-        var errorJson = "{\"error\":{\"code\":1003,\"message\":\"Cannot find the consent request\"}}";
+        var errorJson = "{\"error\":{\"code\":4404,\"message\":\"Cannot find the consent request\"}}";
 
         webTestClient
                 .post()
