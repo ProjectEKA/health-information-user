@@ -40,6 +40,7 @@ import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 public class ConsentService {
     private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
@@ -79,7 +80,7 @@ public class ConsentService {
     private Mono<Void> validateConsentRequest(ConsentRequestData consentRequestData) {
         return conceptValidator.validatePurpose(consentRequestData.getConsent().getPurpose().getCode())
                 .filter(result -> result)
-                .switchIfEmpty(Mono.error(new ClientError(BAD_REQUEST,
+                .switchIfEmpty(Mono.error(new ClientError(INTERNAL_SERVER_ERROR,
                         new ErrorRepresentation(new Error(INVALID_PURPOSE_OF_USE,
                                 "Invalid Purpose Of Use")))))
                 .then();
