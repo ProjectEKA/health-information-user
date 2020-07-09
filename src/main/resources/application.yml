@@ -43,3 +43,5 @@ spring:
     password: ${RABBITMQ_PASSWORD:guest}
   codec:
     max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
+webclient:
+  keepAlive: ${HIU_KEEP_ALIVE:true}
