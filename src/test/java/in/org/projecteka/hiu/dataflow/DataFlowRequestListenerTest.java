@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -25,7 +26,6 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import reactor.core.publisher.Mono;
 
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 import static org.mockito.Mockito.*;
 
 class DataFlowRequestListenerTest {
@@ -60,11 +60,13 @@ class DataFlowRequestListenerTest {
     private ConsentRepository consentRepository;
 
     private DataFlowRequestListener dataFlowRequestListener;
+    private RabbitQueueNames queueNames;
 
     @BeforeEach
     void init() {
         MockitoAnnotations.initMocks(this);
         var decryptor = new Decryptor();
+        queueNames = new RabbitQueueNames("");
         dataFlowRequestListener = new DataFlowRequestListener(messageListenerContainerFactory,
                 destinationsConfig,
                 dataFlowClient,
@@ -73,7 +75,8 @@ class DataFlowRequestListenerTest {
                 dataFlowProperties,
                 gateway,
                 dataFlowCache,
-                consentRepository);
+                consentRepository,
+                queueNames);
     }
 
     private byte[] convertToByteArray(DataFlowRequest dataFlowRequest) throws JsonProcessingException {
@@ -91,7 +94,7 @@ class DataFlowRequestListenerTest {
         var messageListenerCaptor = ArgumentCaptor.forClass(MessageListener.class);
         var mockMessage = Mockito.mock(Message.class);
 
-        when(destinationsConfig.getQueues().get(DATA_FLOW_REQUEST_QUEUE)).thenReturn(destinationInfo);
+        when(destinationsConfig.getQueues().get(queueNames.getDataFlowRequestQueue())).thenReturn(destinationInfo);
         when(messageListenerContainerFactory
                 .createMessageListenerContainer(destinationInfo.getRoutingKey())).thenReturn(messageListenerContainer);
         doNothing().when(messageListenerContainer).setupMessageListener(messageListenerCaptor.capture());
