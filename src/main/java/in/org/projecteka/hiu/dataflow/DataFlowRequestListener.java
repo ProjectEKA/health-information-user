@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
@@ -100,7 +101,7 @@ public class DataFlowRequestListener {
 
     private GatewayDataFlowRequest getDataFlowRequest(DataFlowRequest dataFlowRequest) {
         var requestId = UUID.randomUUID();
-        var timestamp = java.time.Instant.now().toString();
+        var timestamp = LocalDateTime.now(ZoneOffset.UTC);
         return new GatewayDataFlowRequest(requestId, timestamp, dataFlowRequest);
     }
 
