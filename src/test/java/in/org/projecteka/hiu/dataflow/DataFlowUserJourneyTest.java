@@ -218,7 +218,7 @@ public class DataFlowUserJourneyTest {
                         .queryParam("limit", "20").build())
                 .header("Authorization", token)
                 .exchange()
-                .expectStatus().is4xxClientError()
+                .expectStatus().is5xxServerError()
                 .expectBody()
                 .json(errorResponseJson);
     }
