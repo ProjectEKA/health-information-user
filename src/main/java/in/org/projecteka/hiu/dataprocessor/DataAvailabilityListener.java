@@ -23,6 +23,7 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -83,7 +84,9 @@ public class DataAvailabilityListener {
     }
 
     private List<HITypeResourceProcessor> allResourceProcessors() {
-        return Collections.singletonList(new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)));
+        return Arrays.asList(
+                new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)),
+                new DocumentReferenceResourceProcessor());
     }
 
     @SneakyThrows
