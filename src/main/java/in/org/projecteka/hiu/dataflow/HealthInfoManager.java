@@ -2,12 +2,17 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.Patient;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
+import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
+import in.org.projecteka.hiu.dataflow.model.PatientDataEntry;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 
+import javax.naming.ldap.HasControls;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,8 +41,43 @@ public class HealthInfoManager {
                                 consentDetail.get("hipName"))));
     }
 
-    public Flux<DataEntry> fetchHealthInformation(List<String> consentRequestIds, String requesterId) {
-        return Flux.empty();
+    public Flux<PatientDataEntry> fetchHealthInformation(List<String> consentRequestIds, String requesterId) {
+        return dataFlowRepository.fetchDataPartDetails(consentRequestIds)
+                .filter(details -> details.getString("requester").equals(requesterId))
+                .switchIfEmpty(Flux.error(unauthorizedRequester()))
+                .collectList()
+                .flatMapMany(dataParts -> Flux.create(fluxSink -> {
+                    HashMap<String, List<String>> dataPartStatuses = new HashMap<>();
+                    HashMap<String, PatientDataEntry.PatientDataEntryBuilder> dataEntries = new HashMap<>();
+                    dataParts.forEach(dataPart -> {
+                        var transactionId = dataPart.getString("transaction_id");
+                        var dataPartStatus = dataPart.getString("status");
+                        var statuses = dataPartStatuses.get(transactionId);
+                        if (statuses == null) {
+                            dataPartStatuses.put(transactionId, List.of(dataPartStatus));
+                            return;
+                        }
+                        statuses.add(dataPartStatus);
+                        dataPartStatuses.put(transactionId, statuses);
+                        dataEntries.put(transactionId, PatientDataEntry.builder()
+                                .consentRequestId(dataPart.getString("consent_request_id"))
+                                .hipId(dataPart.getString("hipId"))
+                                .consentArtefactId(dataPart.getString("consent_artefact_id")));
+                    });
+                    dataPartStatuses.forEach((transactionId, statuses) -> {
+                        var isProcessing = statuses.stream().anyMatch(status -> status.equals(HealthInfoStatus.PROCESSING.toString()) || status.equals(HealthInfoStatus.RECEIVED.toString()));
+                        var patientDataEntry = dataEntries.get(transactionId);
+                        if (isProcessing) {
+                            fluxSink.next(patientDataEntry.status(EntryStatus.PROCESSING).build());
+                            return;
+                        }
+                        healthInformationRepository.getHealthInformation(transactionId).collectList().block().forEach(healthInfo -> {
+                            fluxSink.next(patientDataEntry
+                                    .status(toStatus((String) healthInfo.get("status")))
+                                    .data(healthInfo.get("data")).build());
+                        });
+                    });
+                }));
     }
 
     public String getTransactionIdForConsentRequest(String consentRequestId) {
