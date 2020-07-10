@@ -4,10 +4,12 @@ import in.org.projecteka.hiu.Error;
 import lombok.Builder;
 import lombok.Value;
 
+import java.time.LocalDateTime;
+
 @Builder
 @Value
 public class HeartbeatResponse {
-    private String timeStamp;
+    private LocalDateTime timeStamp;
     private Status status;
     private Error error;
 }
