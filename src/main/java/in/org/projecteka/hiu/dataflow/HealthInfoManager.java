@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactGone;
@@ -33,6 +34,10 @@ public class HealthInfoManager {
                                 transactionId,
                                 consentDetail.get("hipId"),
                                 consentDetail.get("hipName"))));
+    }
+
+    public Flux<DataEntry> fetchHealthInformation(List<String> consentRequestIds, String requesterId) {
+        return Flux.empty();
     }
 
     public String getTransactionIdForConsentRequest(String consentRequestId) {

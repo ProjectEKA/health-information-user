@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
+import in.org.projecteka.hiu.dataflow.model.HealthInformationFetchRequest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.core.io.FileSystemResource;
@@ -12,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -41,6 +44,14 @@ public class HealthInfoController {
                         .limit(Math.min(limit, serviceProperties.getMaxPageSize()))
                         .offset(offset)
                         .entries(dataEntries).build());
+    }
+
+    @PostMapping("/patient/health-information/fetch/")
+    public Mono<String> fetchHealthInformation(@RequestBody HealthInformationFetchRequest informationFetchRequest) {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
+                .map(Caller::getUsername)
+                .map(username -> informationFetchRequest.toString());
     }
 
     @GetMapping("/health-information/fetch/{consent-request-id}/attachments/{file-name}")
