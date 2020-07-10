@@ -28,10 +28,6 @@
             {
               "code": "DSRCH",
               "display": "Disease Specific Healthcare Research"
-            },
-            {
-              "code": "COVID19-IMMUNOPASS",
-              "display": "Covid19 Immunity Pass"
             }
           ]
         }
