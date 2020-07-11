@@ -246,6 +246,7 @@ public class DataFlowRepository {
                             for (Row row : handler.result()) {
                                 fluxSink.next(row);
                             }
+                            fluxSink.complete();
                         }));
     }
 

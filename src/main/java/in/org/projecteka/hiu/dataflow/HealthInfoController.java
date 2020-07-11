@@ -4,6 +4,7 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataflow.model.HealthInformationFetchRequest;
+import in.org.projecteka.hiu.dataflow.model.PatientHealthInformation;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.core.io.FileSystemResource;
@@ -47,11 +48,17 @@ public class HealthInfoController {
     }
 
     @PostMapping("/patient/health-information/fetch/")
-    public Mono<String> fetchHealthInformation(@RequestBody HealthInformationFetchRequest informationFetchRequest) {
+    public Mono<PatientHealthInformation> fetchHealthInformation(@RequestBody HealthInformationFetchRequest informationFetchRequest) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
-                .map(username -> informationFetchRequest.toString());
+                .flatMapMany(username -> healthInfoManager.fetchHealthInformation(informationFetchRequest.getRequestIds(), username))
+                .collectList()
+                .map(patientDataEntries -> PatientHealthInformation.builder()
+                        .size(patientDataEntries.size())
+                        .limit(10)
+                        .offset(0)
+                        .entries(patientDataEntries).build());
     }
 
     @GetMapping("/health-information/fetch/{consent-request-id}/attachments/{file-name}")

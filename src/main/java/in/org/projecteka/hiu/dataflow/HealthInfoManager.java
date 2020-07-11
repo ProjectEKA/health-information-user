@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.dataflow.model.PatientDataEntry;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.naming.ldap.HasControls;
 import java.time.LocalDateTime;
@@ -43,9 +44,9 @@ public class HealthInfoManager {
 
     public Flux<PatientDataEntry> fetchHealthInformation(List<String> consentRequestIds, String requesterId) {
         return dataFlowRepository.fetchDataPartDetails(consentRequestIds)
-                .filter(details -> details.getString("requester").equals(requesterId))
-                .switchIfEmpty(Flux.error(unauthorizedRequester()))
                 .collectList()
+                .filter(dataParts -> dataParts.stream().allMatch(dataPart -> dataPart.getString("requester").equals(requesterId)))
+                .switchIfEmpty(Mono.error(unauthorizedRequester()))
                 .flatMapMany(dataParts -> Flux.create(fluxSink -> {
                     HashMap<String, List<String>> dataPartStatuses = new HashMap<>();
                     HashMap<String, PatientDataEntry.PatientDataEntryBuilder> dataEntries = new HashMap<>();
@@ -77,6 +78,7 @@ public class HealthInfoManager {
                                     .data(healthInfo.get("data")).build());
                         });
                     });
+                    fluxSink.complete();
                 }));
     }
 
