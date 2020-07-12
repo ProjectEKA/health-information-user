@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.dataprocessor;
 
+import in.org.projecteka.hiu.dataprocessor.model.BundleContext;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dicomweb.DicomStudy;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
@@ -33,13 +34,13 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
     }
 
     @Override
-    public void process(Resource resource, DataContext context) {
+    public void process(Resource resource, DataContext dataContext, BundleContext bundleContext) {
         DiagnosticReport diagnosticReport = (DiagnosticReport) resource;
-        processPresentedForm(diagnosticReport, context.getLocalStoragePath());
-        processMedia(diagnosticReport, context.getLocalStoragePath());
+        processPresentedForm(diagnosticReport, dataContext.getLocalStoragePath());
+        processMedia(diagnosticReport, dataContext.getLocalStoragePath(), bundleContext);
     }
 
-    private void processMedia(DiagnosticReport diagnosticReport, Path localStoragePath) {
+    private void processMedia(DiagnosticReport diagnosticReport, Path localStoragePath, BundleContext bundleContext) {
         List<DiagnosticReport.DiagnosticReportMediaComponent> mediaList = diagnosticReport.getMedia();
         if (mediaList.isEmpty()) {
             return;
@@ -49,12 +50,16 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
 
         for (DiagnosticReport.DiagnosticReportMediaComponent media : mediaList) {
             if (media.hasLink()) {
-                Media linkTarget = (Media) media.getLink().getResource();
-                Path savedAttachmentPath = new AttachmentDataTypeProcessor().process(linkTarget.getContent(), localStoragePath);
-                if (radiologyCategory && isRadiologyFile(linkTarget.getContent())) {
-                    uploadToLocalDicomServer(linkTarget.getContent(), savedAttachmentPath);
-                }
+                processDiagnosticReportMedia(localStoragePath, radiologyCategory, media);
             }
+        }
+    }
+
+    private void processDiagnosticReportMedia(Path localStoragePath, boolean radiologyCategory, DiagnosticReport.DiagnosticReportMediaComponent media) {
+        Media linkTarget = (Media) media.getLink().getResource();
+        Path savedAttachmentPath = new AttachmentDataTypeProcessor().process(linkTarget.getContent(), localStoragePath);
+        if (radiologyCategory && isRadiologyFile(linkTarget.getContent())) {
+            uploadToLocalDicomServer(linkTarget.getContent(), savedAttachmentPath);
         }
     }
 

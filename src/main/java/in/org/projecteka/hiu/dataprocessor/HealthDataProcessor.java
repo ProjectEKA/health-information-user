@@ -14,6 +14,7 @@ import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
+import in.org.projecteka.hiu.dataprocessor.model.BundleContext;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
@@ -236,13 +237,14 @@ public class HealthDataProcessor {
                         "Entry content is not a FHIR Bundle type COLLECTION or DOCUMENT");
                 return result;
             }
+            BundleContext bundleContext = new BundleContext(bundle);
             try {
                 bundle.getEntry().forEach(bundleEntry -> {
                     ResourceType resourceType = bundleEntry.getResource().getResourceType();
                     logger.info("bundle entry resource type:  {}", resourceType);
                     HITypeResourceProcessor processor = identifyResourceProcessor(resourceType);
                     if (processor != null) {
-                        processor.process(bundleEntry.getResource(), context);
+                        processor.process(bundleEntry.getResource(), context, bundleContext);
                     }
                 });
                 result.setEncoded(parser.encodeResourceToString(bundle));

@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.dataprocessor;
 
+import in.org.projecteka.hiu.dataprocessor.model.BundleContext;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import org.hl7.fhir.r4.model.DocumentReference;
 import org.hl7.fhir.r4.model.Resource;
@@ -18,12 +19,12 @@ public class DocumentReferenceResourceProcessor implements HITypeResourceProcess
     }
 
     @Override
-    public void process(Resource resource, DataContext context) {
+    public void process(Resource resource, DataContext dataContext, BundleContext bundleContext) {
         DocumentReference docRef = (DocumentReference) resource;
         List<DocumentReference.DocumentReferenceContentComponent> contents = docRef.getContent();
         for (DocumentReference.DocumentReferenceContentComponent content : contents) {
             if (content.hasAttachment()) {
-                new AttachmentDataTypeProcessor().process(content.getAttachment(), context.getLocalStoragePath());
+                new AttachmentDataTypeProcessor().process(content.getAttachment(), dataContext.getLocalStoragePath());
             }
         }
     }
