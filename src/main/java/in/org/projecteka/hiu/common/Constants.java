@@ -2,7 +2,7 @@ package in.org.projecteka.hiu.common;
 
 public class Constants {
     // APIs
-    private static final String CURRENT_VERSION = "/v1";
+    private static final String CURRENT_VERSION = "/v0.5";
     public static final String PATH_CONSENT_REQUESTS_ON_INIT = CURRENT_VERSION + "/consent-requests/on-init";
     public static final String PATH_CONSENTS_HIU_NOTIFY = CURRENT_VERSION + "/consents/hiu/notify";
     public static final String PATH_CONSENTS_ON_FETCH = CURRENT_VERSION + "/consents/on-fetch";
