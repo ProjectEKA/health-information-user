@@ -33,6 +33,12 @@ public class DocumentReferenceResourceProcessor implements HITypeResourceProcess
             }
         }
         bundleContext.doneProcessing(docRef);
+        if (processContext != null) {
+            //if processed as part of composition or other parent resource context, we do not need to track individual docReference
+            //complication is - if its part of a composition (say snomed prescription record code), then it makes sense to be
+            //displayed independently as well
+            return;
+        }
         String title = String.format("Clinical Document : %s", FHIRUtils.getDisplay(docRef.getType()));
         //NOTE: We are tracking clinical documents by date as well, even if referenced from DischargeSummary
         bundleContext.trackResource(ResourceType.DocumentReference, docRef.getId(), docRef.getDate(), title);

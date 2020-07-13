@@ -297,6 +297,56 @@ class HealthDataProcessorTest {
                 .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
     }
 
+    @Test
+    public void shouldProcessCompositionForPrescriptionAndSaveAttachment() throws Exception {
+        Path filePath = Paths.get("src", "test", "resources", "TransactionComposition102.json");
+        String absolutePath = filePath.toFile().getAbsolutePath();
+        List<HITypeResourceProcessor> resourceProcessors = Arrays.asList(
+                new CompositionResourceProcessor(),
+                new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())),
+                new DocumentReferenceResourceProcessor(),
+                new MedicationRequestResourceProcessor());
+        HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor,
+                resourceProcessors, healthInformationClient, gateway, hiuProperties, consentRepository);
+        String transactionId = "102";
+        String partNumber = "1";
+        DataAvailableMessage message = new DataAvailableMessage(transactionId, absolutePath, partNumber);
+        var content = getFHIRResource(message).getNotifiedData().getEntries().get(0).getContent();
+        var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
+        String consentId = "consentId";
+        String cmId = "ncg";
+        String token = string();
+
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any()))
+                .thenReturn(Mono.empty());
+        when(dataFlowRepository.getKeys("102")).thenReturn(Mono.just(savedKeyMaterial));
+        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+                .thenReturn(Mono.empty());
+        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
+                .thenReturn(Mono.empty());
+        when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
+        when(gateway.token()).thenReturn(Mono.just(token));
+        when(hiuProperties.getId()).thenReturn(string());
+        when(dataFlowRepository.getConsentId(transactionId)).thenReturn(Mono.just(consentId));
+        when(consentRepository.getHipId(consentId)).thenReturn(Mono.just("10000005"));
+        when(consentRepository.getConsentMangerId(consentId)).thenReturn(Mono.just(cmId));
+        when(healthInformationClient.notifyHealthInfo(any(), eq(token),eq(cmId))).thenReturn(Mono.empty());
+
+        processor.process(message);
+
+        verify(healthInformationClient,times(1))
+                .notifyHealthInfo(any(),eq(token),eq(cmId));
+        verify(consentRepository,times(1))
+                .getHipId(eq(consentId));
+        verify(consentRepository,times(1))
+                .getConsentMangerId(eq(consentId));
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
+        verify(dataFlowRepository, times(1))
+                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+        verify(dataFlowRepository, times(1))
+                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+    }
+
     private DataContext getFHIRResource(DataAvailableMessage message) {
         Path dataFilePath = Paths.get(message.getPathToFile());
         try (InputStream inputStream = Files.newInputStream(dataFilePath)) {
