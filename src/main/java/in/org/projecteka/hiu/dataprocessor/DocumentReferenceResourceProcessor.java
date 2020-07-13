@@ -33,7 +33,8 @@ public class DocumentReferenceResourceProcessor implements HITypeResourceProcess
             }
         }
         bundleContext.doneProcessing(docRef);
+        String title = String.format("Clinical Document : %s", FHIRUtils.getDisplay(docRef.getType()));
         //NOTE: We are tracking clinical documents by date as well, even if referenced from DischargeSummary
-        bundleContext.trackResource(ResourceType.DocumentReference, docRef.getId(), docRef.getDate());
+        bundleContext.trackResource(ResourceType.DocumentReference, docRef.getId(), docRef.getDate(), title);
     }
 }

@@ -1,8 +1,11 @@
 package in.org.projecteka.hiu.dataprocessor;
 
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.dataprocessor.model.BundleContext;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dataprocessor.model.ProcessContext;
+import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.Medication;
 import org.hl7.fhir.r4.model.MedicationRequest;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
@@ -27,7 +30,20 @@ public class MedicationRequestResourceProcessor implements HITypeResourceProcess
         }
         MedicationRequest medicationRequest = (MedicationRequest) resource;
         Date date = getPrescribedDate(medicationRequest, bundleContext, processContext);
-        bundleContext.trackResource(ResourceType.MedicationRequest, medicationRequest.getId(), date);
+        String title = String.format("Prescribed Medication : %s", getMedicationDisplay(medicationRequest));
+        bundleContext.trackResource(ResourceType.MedicationRequest, medicationRequest.getId(), date, title);
+    }
+
+    private String getMedicationDisplay(MedicationRequest medicationRequest) {
+        if (medicationRequest.hasMedicationCodeableConcept()) {
+            return FHIRUtils.getDisplay(medicationRequest.getMedicationCodeableConcept());
+        } else if (medicationRequest.hasMedicationReference()) {
+            IBaseResource resource = medicationRequest.getMedicationReference().getResource();
+            if (resource != null && resource instanceof Medication) {
+                return FHIRUtils.getDisplay(((Medication) resource).getCode());
+            }
+        }
+        return Constants.EMPTY_STRING;
     }
 
     /**

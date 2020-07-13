@@ -62,7 +62,8 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         processMedia(diagnosticReport, dataContext.getLocalStoragePath(), bundleContext);
         bundleContext.doneProcessing(diagnosticReport);
         Date reportDate = getReportDate(diagnosticReport, bundleContext, processContext);
-        bundleContext.trackResource(ResourceType.DiagnosticReport, diagnosticReport.getId(), reportDate);
+        String title = String.format("Diagnostic Report : %s", FHIRUtils.getDisplay(diagnosticReport.getCode()));
+        bundleContext.trackResource(ResourceType.DiagnosticReport, diagnosticReport.getId(), reportDate, title);
     }
 
     private Date getReportDate(DiagnosticReport diagnosticReport, BundleContext bundleContext, ProcessContext processContext) {

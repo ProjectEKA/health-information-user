@@ -30,8 +30,10 @@ public class CompositionResourceProcessor implements HITypeResourceProcessor {
                 processCompositionEntry(entry, dataContext, bundleContext, compositionContext);
             });
         }
-        bundleContext.trackResource(ResourceType.Composition, resource.getId(), ((Composition) resource).getDate());
+        String title = String.format("%s : %s", composition.getTitle(), FHIRUtils.getDisplay(composition.getType()));
+        bundleContext.trackResource(ResourceType.Composition, resource.getId(), ((Composition) resource).getDate(), title);
     }
+
 
     private void processCompositionEntry(Reference entry, DataContext dataContext, BundleContext bundleContext, ProcessContext compositionContext) {
         IBaseResource entryResource = entry.getResource();

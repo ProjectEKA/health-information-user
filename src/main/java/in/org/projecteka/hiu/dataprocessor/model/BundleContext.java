@@ -26,11 +26,13 @@ public class BundleContext {
         private ResourceType resourceType;
         private final String resourceId;
         private final LocalDateTime localDateTime;
+        private String title;
 
-        public ResourceReference(ResourceType resourceType, String resourceId, LocalDateTime localDateTime) {
+        public ResourceReference(ResourceType resourceType, String resourceId, LocalDateTime localDateTime, String title) {
             this.resourceType = resourceType;
             this.resourceId = resourceId;
             this.localDateTime = localDateTime;
+            this.title = title;
         }
     }
 
@@ -59,11 +61,11 @@ public class BundleContext {
         processedResList.add(resource);
     }
 
-    public void trackResource(ResourceType resourceType, String resourceId, Date date) {
+    public void trackResource(ResourceType resourceType, String resourceId, Date date, String title) {
         LocalDateTime localDateTime = (date != null) ?
                 date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
                 : null;
-        trackedResources.add(new ResourceReference(resourceType, resourceId, localDateTime));
+        trackedResources.add(new ResourceReference(resourceType, resourceId, localDateTime, title));
     }
 
     public HITypeResourceProcessor findResourceProcessor(ResourceType resourceType) {
