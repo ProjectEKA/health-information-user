@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.model.dataflow.Consent;
 import in.org.projecteka.hiu.consent.model.dataflow.DataFlowRequest;
 import in.org.projecteka.hiu.consent.model.dataflow.DateRange;
@@ -11,21 +12,21 @@ import org.springframework.amqp.core.AmqpTemplate;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 
 @AllArgsConstructor
 public class DataFlowRequestPublisher {
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
     private final AmqpTemplate amqpTemplate;
     private final DestinationsConfig destinationsConfig;
+    private final RabbitQueueNames queueNames;
 
     @SneakyThrows
     public Mono<Void> broadcastDataFlowRequest(String consentArtefactId, in.org.projecteka.hiu.consent.model.DateRange dateRange, String signature, String dataPushUrl) {
         DestinationsConfig.DestinationInfo destinationInfo =
-                destinationsConfig.getQueues().get(DATA_FLOW_REQUEST_QUEUE);
+                destinationsConfig.getQueues().get(queueNames.getDataFlowRequestQueue());
 
         if (destinationInfo == null) {
-            logger.info(DATA_FLOW_REQUEST_QUEUE + " not found");
+            logger.info(queueNames.getDataFlowRequestQueue() + " not found");
             throw queueNotFound();
         }
 
