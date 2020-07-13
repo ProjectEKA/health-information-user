@@ -24,7 +24,6 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
@@ -85,8 +84,10 @@ public class DataAvailabilityListener {
 
     private List<HITypeResourceProcessor> allResourceProcessors() {
         return Arrays.asList(
+                new CompositionResourceProcessor(),
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)),
-                new DocumentReferenceResourceProcessor());
+                new DocumentReferenceResourceProcessor(),
+                new MedicationRequestResourceProcessor());
     }
 
     @SneakyThrows

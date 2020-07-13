@@ -96,8 +96,10 @@ class HealthDataProcessorTest {
         String absolutePath = filePath.toFile().getAbsolutePath();
         //TODO
         List<HITypeResourceProcessor> resourceProcessors = Arrays.asList(
+                new CompositionResourceProcessor(),
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())),
-                new DocumentReferenceResourceProcessor());
+                new DocumentReferenceResourceProcessor(),
+                new MedicationRequestResourceProcessor());
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository, dataFlowRepository, decryptor,
                 resourceProcessors, healthInformationClient, gateway, hiuProperties, consentRepository);
         String transactionId = "123456";
@@ -144,8 +146,10 @@ class HealthDataProcessorTest {
         Path filePath = Paths.get("src", "test", "resources", "Transaction789.json");
         String absolutePath = filePath.toFile().getAbsolutePath();
         List<HITypeResourceProcessor> resourceProcessors = Arrays.asList(
+                new CompositionResourceProcessor(),
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())),
-                new DocumentReferenceResourceProcessor());
+                new DocumentReferenceResourceProcessor(),
+                new MedicationRequestResourceProcessor());
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository,
                 dataFlowRepository,
                 decryptor,
@@ -197,8 +201,10 @@ class HealthDataProcessorTest {
         Path filePath = Paths.get("src", "test", "resources", "Transaction567.json");
         String absolutePath = filePath.toFile().getAbsolutePath();
         List<HITypeResourceProcessor> resourceProcessors = Arrays.asList(
+                new CompositionResourceProcessor(),
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(new LocalDicomServerProperties())),
-                new DocumentReferenceResourceProcessor());
+                new DocumentReferenceResourceProcessor(),
+                new MedicationRequestResourceProcessor());
         HealthDataProcessor processor = new HealthDataProcessor(healthDataRepository,
                 dataFlowRepository,
                 decryptor,

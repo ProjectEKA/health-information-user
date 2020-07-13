@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
@@ -232,19 +233,21 @@ public class HealthDataProcessor {
                 return result;
             }
             Bundle bundle = (Bundle) parser.parseResource(decryptedContent);
-            if (!isValidBundleType(bundle.getType())) {
-                result.addError("Can not process entry content." +
-                        "Entry content is not a FHIR Bundle type COLLECTION or DOCUMENT");
+            if (!isValidBundleType(bundle)) {
+                result.addError("Can not process entry content, invalid envelope." +
+                        "Entry content is either not a FHIR Bundle type COLLECTION or DOCUMENT. " +
+                        "For Document bundle type (e.g Discharge Summary), the first entry must be composition.");
                 return result;
             }
-            BundleContext bundleContext = new BundleContext(bundle);
+            Function<ResourceType, HITypeResourceProcessor> resourceProcessor = this::identifyResourceProcessor;
+            BundleContext bundleContext = new BundleContext(bundle, resourceProcessor);
             try {
                 bundle.getEntry().forEach(bundleEntry -> {
                     ResourceType resourceType = bundleEntry.getResource().getResourceType();
                     logger.info("bundle entry resource type:  {}", resourceType);
                     HITypeResourceProcessor processor = identifyResourceProcessor(resourceType);
                     if (processor != null) {
-                        processor.process(bundleEntry.getResource(), context, bundleContext);
+                        processor.process(bundleEntry.getResource(), context, bundleContext, null);
                     }
                 });
                 result.setEncoded(parser.encodeResourceToString(bundle));
@@ -265,8 +268,22 @@ public class HealthDataProcessor {
         return resourceProcessors.stream().filter(p -> p.supports(resourceType)).findAny().orElse(null);
     }
 
-    private boolean isValidBundleType(Bundle.BundleType type) {
-        return type.equals(Bundle.BundleType.COLLECTION) || type.equals(Bundle.BundleType.DOCUMENT);
+    private boolean isValidBundleType(Bundle bundle) {
+        Bundle.BundleType bundleType = bundle.getType();
+        if (bundleType.equals(Bundle.BundleType.COLLECTION)) {
+            return true;
+        }
+        if (!bundleType.equals(Bundle.BundleType.DOCUMENT)) {
+            return false;
+        }
+        if (bundle.getEntry().isEmpty()) {
+            return false;
+        }
+        Bundle.BundleEntryComponent firstEntry = bundle.getEntry().get(0);
+        if (!firstEntry.getResource().getResourceType().equals(ResourceType.Composition)) {
+            return false;
+        }
+        return true;
     }
 
     private Optional<IParser> getEntryParser(String media) {
