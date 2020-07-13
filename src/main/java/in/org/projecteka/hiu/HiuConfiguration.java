@@ -16,6 +16,7 @@ import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
@@ -90,11 +91,6 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class HiuConfiguration {
-    public static final String DATA_FLOW_REQUEST_QUEUE = "data-flow-request-queue";
-    public static final String DATA_FLOW_PROCESS_QUEUE = "data-flow-process-queue";
-    public static final String DATA_FLOW_DELETE_QUEUE = "data-flow-delete-queue";
-    public static final String HEALTH_INFO_QUEUE = "health-info-queue";
-    public static final String HIU_DEAD_LETTER_QUEUE = "hiu-dead-letter-queue";
     private static final String HIU_DEAD_LETTER_EXCHANGE = "hiu-dead-letter-exchange";
     public static final String HIU_DEAD_LETTER_ROUTING_KEY = "deadLetter";
     public static final String EXCHANGE = "exchange";
@@ -116,20 +112,23 @@ public class HiuConfiguration {
 
     @Bean
     public DataFlowRequestPublisher dataFlowRequestPublisher(AmqpTemplate amqpTemplate,
-                                                             DestinationsConfig destinationsConfig) {
-        return new DataFlowRequestPublisher(amqpTemplate, destinationsConfig);
+                                                             DestinationsConfig destinationsConfig,
+                                                             RabbitQueueNames queueNames) {
+        return new DataFlowRequestPublisher(amqpTemplate, destinationsConfig, queueNames);
     }
 
     @Bean
     public DataFlowDeletePublisher dataFlowDeletePublisher(AmqpTemplate amqpTemplate,
-                                                           DestinationsConfig destinationsConfig) {
-        return new DataFlowDeletePublisher(amqpTemplate, destinationsConfig);
+                                                           DestinationsConfig destinationsConfig,
+                                                           RabbitQueueNames queueNames) {
+        return new DataFlowDeletePublisher(amqpTemplate, destinationsConfig, queueNames);
     }
 
     @Bean
     public HealthInformationPublisher healthInformationDeletionPublisher(AmqpTemplate amqpTemplate,
-                                                                         DestinationsConfig destinationsConfig) {
-        return new HealthInformationPublisher(amqpTemplate, destinationsConfig);
+                                                                         DestinationsConfig destinationsConfig,
+                                                                         RabbitQueueNames queueNames) {
+        return new HealthInformationPublisher(amqpTemplate, destinationsConfig, queueNames);
     }
 
     @Bean
@@ -229,15 +228,20 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DestinationsConfig destinationsConfig(AmqpAdmin amqpAdmin) {
+    public RabbitQueueNames queueNames(RabbitMQOptions rabbitMQOptions){
+        return new RabbitQueueNames(rabbitMQOptions.getQueuePrefix());
+    }
+
+    @Bean
+    public DestinationsConfig destinationsConfig(AmqpAdmin amqpAdmin, RabbitQueueNames queueNames) {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
-        queues.put(DATA_FLOW_REQUEST_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_REQUEST_QUEUE));
-        queues.put(DATA_FLOW_PROCESS_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_PROCESS_QUEUE));
-        queues.put(DATA_FLOW_DELETE_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, DATA_FLOW_DELETE_QUEUE));
-        queues.put(HEALTH_INFO_QUEUE, new DestinationsConfig.DestinationInfo(EXCHANGE, HEALTH_INFO_QUEUE));
+        queues.put(queueNames.getDataFlowRequestQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowRequestQueue()));
+        queues.put(queueNames.getDataFlowProcessQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowProcessQueue()));
+        queues.put(queueNames.getDataFlowDeleteQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowDeleteQueue()));
+        queues.put(queueNames.getHealthInfoQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getHealthInfoQueue()));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
-        Queue deadLetterQueue = QueueBuilder.durable(HIU_DEAD_LETTER_QUEUE).build();
+        Queue deadLetterQueue = QueueBuilder.durable(queueNames.getHIUDeadLetterQueue()).build();
         Binding with = BindingBuilder
                 .bind(deadLetterQueue)
                 .to(new DirectExchange(HIU_DEAD_LETTER_EXCHANGE))
@@ -314,7 +318,8 @@ public class HiuConfiguration {
             DataFlowProperties dataFlowProperties,
             Gateway gateway,
             Cache<String, DataFlowRequestKeyMaterial> dataFlowCache,
-            ConsentRepository consentRepository) {
+            ConsentRepository consentRepository,
+            RabbitQueueNames queueNames) {
         return new DataFlowRequestListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
@@ -324,7 +329,8 @@ public class HiuConfiguration {
                 dataFlowProperties,
                 gateway,
                 dataFlowCache,
-                consentRepository);
+                consentRepository,
+                queueNames);
     }
 
     @Bean
@@ -334,14 +340,16 @@ public class HiuConfiguration {
             DataFlowRepository dataFlowRepository,
             HealthInformationRepository healthInformationRepository,
             DataFlowServiceProperties dataFlowServiceProperties,
-            LocalDataStore localDataStore) {
+            LocalDataStore localDataStore,
+            RabbitQueueNames queueNames) {
         return new DataFlowDeleteListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
                 dataFlowRepository,
                 healthInformationRepository,
                 dataFlowServiceProperties,
-                localDataStore);
+                localDataStore,
+                queueNames);
     }
 
     @Bean
@@ -377,8 +385,9 @@ public class HiuConfiguration {
 
     @Bean
     public DataAvailabilityPublisher dataAvailabilityPublisher(AmqpTemplate amqpTemplate,
-                                                               DestinationsConfig destinationsConfig) {
-        return new DataAvailabilityPublisher(amqpTemplate, destinationsConfig);
+                                                               DestinationsConfig destinationsConfig,
+                                                               RabbitQueueNames queueNames) {
+        return new DataAvailabilityPublisher(amqpTemplate, destinationsConfig, queueNames);
     }
 
     @Bean
@@ -390,7 +399,8 @@ public class HiuConfiguration {
                                                              HealthInformationClient healthInformationClient,
                                                              Gateway gateway,
                                                              HiuProperties hiuProperties,
-                                                             ConsentRepository consentRepository) {
+                                                             ConsentRepository consentRepository,
+                                                             RabbitQueueNames queueNames) {
         return new DataAvailabilityListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
@@ -400,7 +410,8 @@ public class HiuConfiguration {
                 healthInformationClient,
                 gateway,
                 hiuProperties,
-                consentRepository);
+                consentRepository,
+                queueNames);
     }
 
     @Bean

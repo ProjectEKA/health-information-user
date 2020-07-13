@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -11,22 +12,21 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
-
 @AllArgsConstructor
 public class DataAvailabilityPublisher {
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
     private final AmqpTemplate amqpTemplate;
     private final DestinationsConfig destinationsConfig;
+    private final RabbitQueueNames queueNames;
 
     @SneakyThrows
     public Mono<Void> broadcastDataAvailability(Map<String, String> contentRef) {
         DestinationsConfig.DestinationInfo destinationInfo =
-                destinationsConfig.getQueues().get(DATA_FLOW_PROCESS_QUEUE);
+                destinationsConfig.getQueues().get(queueNames.getDataFlowProcessQueue());
 
         if (destinationInfo == null) {
-            logger.info(String.format("Queue %s not found",DATA_FLOW_PROCESS_QUEUE));
+            logger.info(String.format("Queue %s not found",queueNames.getDataFlowProcessQueue()));
             throw ClientError.queueNotFound();
         }
 

@@ -12,4 +12,5 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 public class RabbitMQOptions {
     private final String host;
     private final int port;
+    private final String queuePrefix;
 }
