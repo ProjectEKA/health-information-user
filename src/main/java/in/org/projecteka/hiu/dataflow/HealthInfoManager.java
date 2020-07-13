@@ -45,7 +45,7 @@ public class HealthInfoManager {
                                 consentDetail.get("hipName"))));
     }
 
-    public Flux<PatientDataEntry> fetchHealthInformation(List<String> consentRequestIds, String requesterId) {
+    public Flux<PatientDataEntry> fetchHealthInformation(List<String> consentRequestIds, String requesterId, int limit, int offset) {
         return dataFlowRepository.fetchDataPartDetails(consentRequestIds)
                 .collectList()
                 .filter(dataParts -> dataParts.stream().allMatch(dataPart -> dataPart.getString("requester").equals(requesterId)))
@@ -68,7 +68,7 @@ public class HealthInfoManager {
                         statuses.add(dataPartStatus);
                         dataPartStatuses.put(transactionId, statuses);
                     });
-                    List<String> transactions = new ArrayList<>();
+                    List<String> transactionIds = new ArrayList<>();
                     List<PatientDataEntry> processingTransactions = new ArrayList<>();
                     dataPartStatuses.forEach((transactionId, statuses) -> {
                         var isProcessing = statuses.stream().anyMatch(status -> status.equals(HealthInfoStatus.PROCESSING.toString()) || status.equals(HealthInfoStatus.RECEIVED.toString()));
@@ -76,13 +76,12 @@ public class HealthInfoManager {
                             processingTransactions.add(dataEntries.get(transactionId).status(EntryStatus.PROCESSING).build());
                             return;
                         }
-                        transactions.add(transactionId);
+                        transactionIds.add(transactionId);
                     });
-                    return Flux.fromIterable(transactions)
-                            .flatMap(trans -> healthInformationRepository.getHealthInformation(trans)
-                                    .map(healthInfo -> dataEntries.get(trans)
-                                            .status(toStatus((String) healthInfo.get("status")))
-                                            .data(healthInfo.get("data")).build()))
+                    return healthInformationRepository.getHealthInformation(transactionIds, limit, offset)
+                            .map(healthInfo -> dataEntries.get(healthInfo.get("transaction_id").toString())
+                                    .status(toStatus((String) healthInfo.get("status")))
+                                    .data(healthInfo.get("data")).build())
                             .mergeWith(Flux.fromIterable(processingTransactions));
                 });
     }

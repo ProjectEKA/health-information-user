@@ -48,16 +48,19 @@ public class HealthInfoController {
     }
 
     @PostMapping("/patient/health-information/fetch/")
-    public Mono<PatientHealthInformation> fetchHealthInformation(@RequestBody HealthInformationFetchRequest informationFetchRequest) {
+    public Mono<PatientHealthInformation> fetchHealthInformation(@RequestBody HealthInformationFetchRequest dataRequest) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
-                .flatMapMany(username -> healthInfoManager.fetchHealthInformation(informationFetchRequest.getRequestIds(), username))
+                .flatMapMany(username -> healthInfoManager.fetchHealthInformation(
+                        dataRequest.getRequestIds(),
+                        username, dataRequest.getLimit(serviceProperties.getDefaultPageSize()),
+                        dataRequest.getOffset()))
                 .collectList()
                 .map(patientDataEntries -> PatientHealthInformation.builder()
                         .size(patientDataEntries.size())
-                        .limit(10)
-                        .offset(0)
+                        .limit(Math.min(dataRequest.getLimit(serviceProperties.getDefaultPageSize()), serviceProperties.getMaxPageSize()))
+                        .offset(dataRequest.getOffset())
                         .entries(patientDataEntries).build());
     }
 

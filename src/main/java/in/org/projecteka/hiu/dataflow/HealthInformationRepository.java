@@ -13,7 +13,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
@@ -22,6 +24,9 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 public class HealthInformationRepository {
     private static final String SELECT_HEALTH_INFORMATION = "SELECT data, status FROM health_information WHERE " +
             "transaction_id=$1";
+    private static final String SELECT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS = "SELECT data, status, transaction_id " +
+            "FROM health_information WHERE transaction_id in (%s) " +
+            "ORDER BY date_created DESC LIMIT $1 OFFSET $2";
     private static final String DELETE_HEALTH_INFO_FOR_EXPIRED_CONSENT = "DELETE FROM health_information WHERE transaction_id=$1";
 
     private final PgPool dbClient;
@@ -63,6 +68,29 @@ public class HealthInformationRepository {
                                 }));
     }
 
+    public Flux<Map<String, Object>> getHealthInformation(List<String> transactionIds, int limit, int offset) {
+        var generatedQuery = String.format(SELECT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS, joinByComma(transactionIds));
+        return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
+                .execute(Tuple.of(limit, offset),
+                        handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                fluxSink.error(
+                                        dbOperationFailure("Failed to get health information for given transaction ids"));
+                                return;
+                            }
+                            for (Row row : handler.result()) {
+                                try {
+                                    fluxSink.next(toHealthInfo(row));
+                                } catch (JsonProcessingException e) {
+                                    logger.error(e.getMessage(), e);
+                                    fluxSink.error(dbOperationFailure(e.getOriginalMessage()));
+                                }
+                            }
+                            fluxSink.complete();
+                        }));
+    }
+
     private Map<String, Object> toHealthInfo(Row row) throws JsonProcessingException {
         String data = row.getString("data");
         Map<String, Object> healthInfo = new HashMap<>();
@@ -71,6 +99,11 @@ public class HealthInformationRepository {
                 .configure(WRITE_DATES_AS_TIMESTAMPS, false);
         healthInfo.put("data", objectMapper.readTree(data != null ? data : ""));
         healthInfo.put("status", row.getString("status"));
+        healthInfo.put("transaction_id", row.getString("transaction_id"));
         return healthInfo;
+    }
+
+    private String joinByComma(List<String> list) {
+        return String.join(", ", list.stream().map(e -> String.format("'%s'", e)).collect(Collectors.toList()));
     }
 }

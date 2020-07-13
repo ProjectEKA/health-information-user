@@ -13,4 +13,12 @@ public class HealthInformationFetchRequest {
     private List<String> requestIds;
     private Integer limit;
     private Integer offset;
+
+    public Integer getLimit(int defaultLimit){
+        return limit == null ? defaultLimit : limit;
+    }
+
+    public Integer getOffset(){
+        return offset == null ? 0 : offset;
+    }
 }
