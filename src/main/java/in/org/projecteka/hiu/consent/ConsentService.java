@@ -115,7 +115,7 @@ public class ConsentService {
                     var gatewayRequestId = UUID.randomUUID();
                     return validateConsentRequest(consentRequestData)
                             .then(sendConsentRequestToGateway(requesterId, consentRequestData, gatewayRequestId))
-                            .then(patientConsentRepository.insertConsentRequestToGateway(consentRequest, patientRequestId)
+                            .then(patientConsentRepository.insertConsentRequestToGateway(consentRequest, patientRequestId, hipId)
                                     .doOnSuccess(discard -> response.put(hipId, patientRequestId.toString()))
                                     .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(), patientRequestId.toString())));
                 })).then(Mono.just(response));

@@ -20,7 +20,7 @@ public class PatientConsentRepository {
     private static final Logger logger = LoggerFactory.getLogger(PatientConsentRepository.class);
 
     private static final String INSERT_PATIENT_CONSENT_REQUEST = "INSERT INTO " +
-            "patient_consent_request (patient_consent_request, patient_consent_request_id) VALUES ($1, $2)";
+            "patient_consent_request (patient_consent_request, patient_consent_request_id, hip_id) VALUES ($1, $2, $3)";
 
 
     private static final String INSERT_PATIENT_CONSENT_REQUEST_MAPPING = "INSERT INTO " +
@@ -28,9 +28,9 @@ public class PatientConsentRepository {
 
     private final PgPool dbClient;
 
-    public Mono<Void> insertConsentRequestToGateway(PatientConsentRequest consentRequest, UUID requestId) {
+    public Mono<Void> insertConsentRequestToGateway(PatientConsentRequest consentRequest, UUID requestId, String hipId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_PATIENT_CONSENT_REQUEST)
-                .execute(Tuple.of(new JsonObject(from(consentRequest)), requestId),
+                .execute(Tuple.of(new JsonObject(from(consentRequest)), requestId, hipId),
                         handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
