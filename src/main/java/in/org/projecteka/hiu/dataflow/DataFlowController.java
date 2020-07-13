@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.dataflow;
 
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResult;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import lombok.AllArgsConstructor;
@@ -18,13 +19,13 @@ public class DataFlowController {
     private final DataFlowService dataFlowService;
 
     @ResponseStatus(HttpStatus.ACCEPTED)
-    @PostMapping("/data/notification")
+    @PostMapping(Constants.PATH_DATA_TRANSFER)
     public Mono<Void> dataNotification(@RequestBody DataNotificationRequest dataNotificationRequest) {
         return dataFlowService.handleNotification(dataNotificationRequest);
     }
 
     @ResponseStatus(HttpStatus.ACCEPTED)
-    @PostMapping("/v1/health-information/hiu/on-request")
+    @PostMapping(Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
     public Mono<Void> onInitDataFlowRequest(@Valid @RequestBody DataFlowRequestResult dataFlowRequestResult) {
         return dataFlowService.updateDataFlowRequest(dataFlowRequestResult);
     }

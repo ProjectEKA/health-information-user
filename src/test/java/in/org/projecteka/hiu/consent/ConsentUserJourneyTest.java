@@ -5,6 +5,7 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
@@ -161,7 +162,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/hiu/consent-requests")
+                .uri(ConsentController.APP_PATH_HIU_CONSENT_REQUESTS)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentRequestDetails)
@@ -195,7 +196,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/consent-requests/on-init")
+                .uri(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
@@ -229,7 +230,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/consent-requests/on-init")
+                .uri(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
@@ -264,11 +265,11 @@ class ConsentUserJourneyTest {
                 .roles(List.of(Role.values()))
                 .build();
         when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
-        var errorJson = "{\"error\":{\"code\":1003,\"message\":\"Cannot find the consent request\"}}";
+        var errorJson = "{\"error\":{\"code\":4404,\"message\":\"Cannot find the consent request\"}}";
 
         webTestClient
                 .post()
-                .uri("/v1/consent-requests/on-init")
+                .uri(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
@@ -326,7 +327,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/consents/hiu/notify")
+                .uri(Constants.PATH_CONSENTS_HIU_NOTIFY)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(notificationFromCM)
@@ -407,7 +408,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/consents/on-fetch")
+                .uri(Constants.PATH_CONSENTS_ON_FETCH)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(gatewayConsentArtefactResponse)
