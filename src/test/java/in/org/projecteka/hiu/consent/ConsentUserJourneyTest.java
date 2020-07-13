@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
+import com.google.common.cache.Cache;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
@@ -45,6 +46,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
@@ -70,8 +72,11 @@ class ConsentUserJourneyTest {
     private WebTestClient webTestClient;
 
     @MockBean
+    private Cache<String, String> patientRequestCache;
+    @MockBean
     private ConsentRepository consentRepository;
-
+    @MockBean
+    private PatientConsentRepository patientConsentRepository;
     @SuppressWarnings("unused")
     @MockBean
     private DataFlowRequestListener dataFlowRequestListener;
@@ -183,8 +188,13 @@ class ConsentUserJourneyTest {
                 "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
                 "  }\n" +
                 "}";
+        var cacheMap = new ConcurrentHashMap<String, String>();
+        cacheMap.put("3fa85f64-5717-4562-b3fc-2c963f66afa6", "3fa85f64-5717-4562-b3fc-2c963f66afa7");
+        when(patientRequestCache.asMap()).thenReturn(cacheMap);
         when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(just(ConsentStatus.POSTED));
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6", ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(empty());
+        when(patientConsentRepository.insertPatientConsentRequestMapping(any(), any()))
                 .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller.builder()
@@ -241,6 +251,9 @@ class ConsentUserJourneyTest {
 
     @Test
     void shouldThrowConsentRequestNotFound() {
+        var cacheMap = new ConcurrentHashMap<String, String>();
+        cacheMap.put("3fa85f64-5717-4562-b3fc-2c963f66afa6", "3fa85f64-5717-4562-b3fc-2c963f66afa7");
+        when(patientRequestCache.asMap()).thenReturn(cacheMap);
         String responseFromCM = "{\n" +
                 "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
                 "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
@@ -256,6 +269,8 @@ class ConsentUserJourneyTest {
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",
                 ConsentStatus.REQUESTED,
                 "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+                .thenReturn(empty());
+        when(patientConsentRepository.insertPatientConsentRequestMapping(any(), any()))
                 .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller

@@ -64,7 +64,7 @@ public class ConsentService {
     private Cache<String, String> gatewayResponseCache;
     private final Map<ConsentStatus, ConsentTask> consentTasks;
     private final PatientConsentRepository patientConsentRepository;
-    private Cache<String, String> patientRequestCache;
+    private final Cache<String, String> patientRequestCache;
     private final ConsentServiceProperties consentServiceProperties;
 
     public ConsentService(HiuProperties hiuProperties,
@@ -77,7 +77,8 @@ public class ConsentService {
                           ConceptValidator conceptValidator,
                           GatewayServiceClient gatewayServiceClient,
                           PatientConsentRepository patientConsentRepository,
-                          ConsentServiceProperties consentServiceProperties) {
+                          ConsentServiceProperties consentServiceProperties,
+                          Cache<String, String> patientRequestCache) {
         this.hiuProperties = hiuProperties;
         this.consentRepository = consentRepository;
         this.dataFlowRequestPublisher = dataFlowRequestPublisher;
@@ -90,6 +91,7 @@ public class ConsentService {
         this.patientConsentRepository = patientConsentRepository;
         this.consentServiceProperties = consentServiceProperties;
         consentTasks = new HashMap<>();
+        this.patientRequestCache = patientRequestCache;
     }
 
     private Mono<Void> validateConsentRequest(ConsentRequestData consentRequestData) {
@@ -284,15 +286,15 @@ public class ConsentService {
                         return "";
                     }
                 });
-        this.patientRequestCache = CacheBuilder
-                .newBuilder()
-                .maximumSize(50)
-                .expireAfterWrite(10, TimeUnit.MINUTES)
-                .build(new CacheLoader<>() {
-                    public String load(String key) {
-                        return "";
-                    }
-                });
+//        this.patientRequestCache = CacheBuilder
+//                .newBuilder()
+//                .maximumSize(50)
+//                .expireAfterWrite(10, TimeUnit.MINUTES)
+//                .build(new CacheLoader<>() {
+//                    public String load(String key) {
+//                        return "";
+//                    }
+//                });
         consentTasks.put(GRANTED, new GrantedConsentTask(
                 consentRepository, gatewayServiceClient, gateway,
                 gatewayResponseCache));

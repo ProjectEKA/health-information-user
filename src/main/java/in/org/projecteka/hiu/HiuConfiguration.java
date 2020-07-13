@@ -146,7 +146,8 @@ public class HiuConfiguration {
             ConceptValidator validator,
             GatewayServiceClient gatewayServiceClient,
             PatientConsentRepository patientConsentRepository,
-            ConsentServiceProperties consentServiceProperties) {
+            ConsentServiceProperties consentServiceProperties,
+            Cache<String, String> patientRequestCache) {
         return new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -158,7 +159,8 @@ public class HiuConfiguration {
                 validator,
                 gatewayServiceClient,
                 patientConsentRepository,
-                consentServiceProperties);
+                consentServiceProperties,
+                patientRequestCache);
     }
 
     @Bean
@@ -197,6 +199,19 @@ public class HiuConfiguration {
                 .build(new CacheLoader<>() {
                     public DataFlowRequestKeyMaterial load(String key) {
                         return DataFlowRequestKeyMaterial.builder().build();
+                    }
+                });
+    }
+
+    @Bean
+    public Cache<String, String> patientRequestCache() {
+        return CacheBuilder
+                .newBuilder()
+                .maximumSize(50)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build(new CacheLoader<>() {
+                    public String load(String key) {
+                        return "";
                     }
                 });
     }
