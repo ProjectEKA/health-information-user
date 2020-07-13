@@ -56,6 +56,10 @@ public class SecurityConfiguration {
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST));
 
 
+    private static final List<Map.Entry<HttpMethod, String>> DOCTOR_AND_PATIENT_COMMON_APIS = List.of(
+            Map.entry(HttpMethod.GET, "/health-information/fetch/{consent-request-id}/attachments/{file-name}")
+    );
+
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity httpSecurity,
@@ -79,6 +83,7 @@ public class SecurityConfiguration {
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
         CM_PATIENT_APIS.forEach(entry -> httpSecurity.authorizeExchange().pathMatchers(entry.getValue()).authenticated());
+        DOCTOR_AND_PATIENT_COMMON_APIS.forEach(entry -> httpSecurity.authorizeExchange().pathMatchers(entry.getValue()).authenticated());
         httpSecurity.authorizeExchange()
                 .pathMatchers(GATEWAY_APIS)
                 .hasAnyRole(GATEWAY.toString())
@@ -116,14 +121,21 @@ public class SecurityConfiguration {
         @Override
         public Mono<SecurityContext> load(ServerWebExchange exchange) {
             var token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            var requestPath = exchange.getRequest().getPath().toString();
+            var requestMethod = exchange.getRequest().getMethod();
+
             if (isEmpty(token)) {
                 return Mono.empty();
             }
-            if (isGatewayOnlyRequest(exchange.getRequest().getPath().toString())) {
+            if (isGatewayOnlyRequest(requestPath)) {
                 return checkGateway(token);
             }
 
-            if (isCMPatientRequest(exchange.getRequest().getPath().toString(), exchange.getRequest().getMethod())) {
+            if(isDoctorOrPatientRequest(requestPath, requestMethod)){
+                return checkUserToken(token).switchIfEmpty(check(token));
+            }
+
+            if (isCMPatientRequest(requestPath, requestMethod)) {
                 return checkUserToken(token);
             }
 
@@ -173,6 +185,13 @@ public class SecurityConfiguration {
         private boolean isCMPatientRequest(String path, HttpMethod method) {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return CM_PATIENT_APIS.stream()
+                    .anyMatch(pattern ->
+                            antPathMatcher.matchStart(pattern.getValue(), path) && method == pattern.getKey());
+        }
+
+        private boolean isDoctorOrPatientRequest(String path, HttpMethod method) {
+            AntPathMatcher antPathMatcher = new AntPathMatcher();
+            return DOCTOR_AND_PATIENT_COMMON_APIS.stream()
                     .anyMatch(pattern ->
                             antPathMatcher.matchStart(pattern.getValue(), path) && method == pattern.getKey());
         }
