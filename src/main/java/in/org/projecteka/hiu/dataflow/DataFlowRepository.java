@@ -49,13 +49,13 @@ public class DataFlowRepository {
     private static final String SELECT_CONSENT_ID = "SELECT consent_artefact_id FROM data_flow_request WHERE " +
             "transaction_id = $1";
 
-    private static final String FETCH_DATA_PART_DETAILS = "select\n" +
-            "ca.consent_artefact -> 'hip' ->> 'id' as hipId,\n" +
-            "ca.consent_artefact -> 'requester' ->> 'name' as requester,\n" +
-            "dfp.transaction_id, dfp.status, ca.consent_request_id\n" +
-            "from data_flow_parts dfp\n" +
-            "join data_flow_request dfr on dfp.transaction_id = dfr.transaction_id\n" +
-            "join consent_artefact ca on dfr.consent_artefact_id = ca.consent_artefact_id\n" +
+    private static final String FETCH_DATA_PART_DETAILS = "select " +
+            "ca.consent_artefact -> 'hip' ->> 'id' as hipId, " +
+            "ca.consent_artefact -> 'requester' ->> 'name' as requester, " +
+            "dfp.transaction_id, dfp.status, ca.consent_request_id " +
+            "from data_flow_parts dfp " +
+            "join data_flow_request dfr on dfp.transaction_id = dfr.transaction_id " +
+            "join consent_artefact ca on dfr.consent_artefact_id = ca.consent_artefact_id " +
             "where ca.consent_request_id in ($1)";
 
     private static final Logger logger = Logger.getLogger(DataFlowRepository.class);
@@ -251,6 +251,6 @@ public class DataFlowRepository {
     }
 
     private String joinByComma(List<String> list){
-        return String.join(", ", list.stream().map(e -> String.format("'%s'", e)).collect(Collectors.toList()));
+        return String.join(", ", list.stream().map(e -> String.format("%s", e)).collect(Collectors.toList()));
     }
 }
