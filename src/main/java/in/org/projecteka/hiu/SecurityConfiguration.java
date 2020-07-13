@@ -48,7 +48,8 @@ public class SecurityConfiguration {
             V_1_HEALTH_INFORMATION_HIU_ON_REQUEST
     };
 
-    private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(Map.entry(HttpMethod.GET, "/cm/hello"));
+    private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(Map.entry(HttpMethod.GET, "/cm/hello")
+            , Map.entry(HttpMethod.POST, "/hiu/patient/consent-request"));
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(

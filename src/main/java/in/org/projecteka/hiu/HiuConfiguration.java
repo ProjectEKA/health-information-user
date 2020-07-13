@@ -25,9 +25,11 @@ import in.org.projecteka.hiu.common.heartbeat.RabbitMQOptions;
 import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.ConsentService;
+import in.org.projecteka.hiu.consent.ConsentServiceProperties;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
+import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
@@ -142,7 +144,9 @@ public class HiuConfiguration {
             Gateway gateway,
             HealthInformationPublisher healthInformationPublisher,
             ConceptValidator validator,
-            GatewayServiceClient gatewayServiceClient) {
+            GatewayServiceClient gatewayServiceClient,
+            PatientConsentRepository patientConsentRepository,
+            ConsentServiceProperties consentServiceProperties) {
         return new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -152,7 +156,9 @@ public class HiuConfiguration {
                 gateway,
                 healthInformationPublisher,
                 validator,
-                gatewayServiceClient);
+                gatewayServiceClient,
+                patientConsentRepository,
+                consentServiceProperties);
     }
 
     @Bean
@@ -211,6 +217,11 @@ public class HiuConfiguration {
     @Bean
     public ConsentRepository consentRepository(PgPool pgPool) {
         return new ConsentRepository(pgPool);
+    }
+
+    @Bean
+    public PatientConsentRepository patientConsentRequestRepository(PgPool pgPool) {
+        return new PatientConsentRepository(pgPool);
     }
 
     @Bean
@@ -448,7 +459,7 @@ public class HiuConfiguration {
 
     @Bean("userAuthenticator")
     public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
-                                             ConfigurableJWTProcessor<SecurityContext> jwtProcessor){
+                                           ConfigurableJWTProcessor<SecurityContext> jwtProcessor) {
         return new CMPatientAuthenticator(jwkSet, jwtProcessor);
     }
 

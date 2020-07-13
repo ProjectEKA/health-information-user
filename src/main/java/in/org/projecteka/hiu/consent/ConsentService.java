@@ -15,8 +15,14 @@ import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.DateRange;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
+import in.org.projecteka.hiu.consent.model.HIType;
 import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.Patient;
+import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
+import in.org.projecteka.hiu.consent.model.Permission;
+import in.org.projecteka.hiu.consent.model.Purpose;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
@@ -28,6 +34,7 @@ import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -41,6 +48,7 @@ import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static reactor.core.publisher.Mono.error;
 
 public class ConsentService {
     private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
@@ -55,6 +63,9 @@ public class ConsentService {
     private final GatewayServiceClient gatewayServiceClient;
     private Cache<String, String> gatewayResponseCache;
     private final Map<ConsentStatus, ConsentTask> consentTasks;
+    private final PatientConsentRepository patientConsentRepository;
+    private Cache<String, String> patientRequestCache;
+    private final ConsentServiceProperties consentServiceProperties;
 
     public ConsentService(HiuProperties hiuProperties,
                           ConsentRepository consentRepository,
@@ -64,7 +75,9 @@ public class ConsentService {
                           Gateway gateway,
                           HealthInformationPublisher healthInformationPublisher,
                           ConceptValidator conceptValidator,
-                          GatewayServiceClient gatewayServiceClient) {
+                          GatewayServiceClient gatewayServiceClient,
+                          PatientConsentRepository patientConsentRepository,
+                          ConsentServiceProperties consentServiceProperties) {
         this.hiuProperties = hiuProperties;
         this.consentRepository = consentRepository;
         this.dataFlowRequestPublisher = dataFlowRequestPublisher;
@@ -74,6 +87,8 @@ public class ConsentService {
         this.healthInformationPublisher = healthInformationPublisher;
         this.conceptValidator = conceptValidator;
         this.gatewayServiceClient = gatewayServiceClient;
+        this.patientConsentRepository = patientConsentRepository;
+        this.consentServiceProperties = consentServiceProperties;
         consentTasks = new HashMap<>();
     }
 
@@ -87,15 +102,44 @@ public class ConsentService {
     }
 
     public Mono<Void> createRequest(String requesterId, ConsentRequestData consentRequestData) {
+        var gatewayRequestId = UUID.randomUUID();
         return validateConsentRequest(consentRequestData)
-                .then(sendConsentRequestToGateway(requesterId, consentRequestData));
+                .then(sendConsentRequestToGateway(requesterId, consentRequestData, gatewayRequestId));
+    }
+
+    public Mono<Map<String, String>> handlePatientConsentRequest(String requesterId, PatientConsentRequest consentRequest) {
+        Map<String, String> response = new HashMap<>();
+        return Flux.fromIterable(consentRequest.getHipIds())
+                .flatMap(hipId -> buildConsentRequest(requesterId).flatMap(consentRequestData -> {
+                    var patientRequestId = UUID.randomUUID();
+                    var gatewayRequestId = UUID.randomUUID();
+                    return validateConsentRequest(consentRequestData)
+                            .then(sendConsentRequestToGateway(requesterId, consentRequestData, gatewayRequestId))
+                            .then(patientConsentRepository.insertConsentRequestToGateway(consentRequest, patientRequestId)
+                                    .doOnSuccess(discard -> response.put(hipId, patientRequestId.toString()))
+                                    .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(), patientRequestId.toString())));
+                })).then(Mono.just(response));
+    }
+
+    private Mono<ConsentRequestData> buildConsentRequest(String requesterId) {
+
+        return Mono.just(ConsentRequestData.builder().consent(Consent.builder()
+                .hiTypes(List.of(HIType.class.getEnumConstants()))
+                .patient(Patient.builder().id(requesterId).build())
+                .permission(Permission.builder().dataEraseAt(LocalDateTime.now(ZoneOffset.UTC).plusMonths(consentServiceProperties.getConsentExpiryInMonths()))
+                        .dateRange(DateRange.builder().from(LocalDateTime.now(ZoneOffset.UTC).minusYears(consentServiceProperties.getConsentRequestFromYears()))
+                                .to(LocalDateTime.now(ZoneOffset.UTC)).build()).build())
+                .purpose(new Purpose("PATRQT"))
+                .build())
+                .build());
     }
 
     private Mono<Void> sendConsentRequestToGateway(
             String requesterId,
-            ConsentRequestData hiRequest) {
+            ConsentRequestData hiRequest,
+            UUID gatewayRequestId) {
+
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
-        var gatewayRequestId = UUID.randomUUID();
         return gateway.token()
                 .flatMap(token -> gatewayServiceClient.sendConsentRequest(
                         token, getCmSuffix(hiRequest.getConsent()),
@@ -127,12 +171,16 @@ public class ConsentService {
         }
 
         if (response.getConsentRequest() != null) {
+            var patientRequestId = UUID.fromString(patientRequestCache.asMap().get(response.getResp().getRequestId()));
+            var consentRequestId = UUID.fromString(response.getConsentRequest().getId());
             return consentRepository.consentRequestStatus(response.getResp().getRequestId())
-                    .switchIfEmpty(Mono.error(consentRequestNotFound()))
-                    .flatMap(status -> updateConsentRequestStatus(response, status));
+                    .switchIfEmpty(error(consentRequestNotFound()))
+                    .flatMap(status -> updateConsentRequestStatus(response, status))
+                    .then(patientConsentRepository
+                            .insertPatientConsentRequestMapping(patientRequestId, consentRequestId));
         }
 
-        return Mono.error(ClientError.invalidDataFromGateway());
+        return error(ClientError.invalidDataFromGateway());
     }
 
     private Mono<Void> updateConsentRequestStatus(ConsentRequestInitResponse
@@ -220,7 +268,7 @@ public class ConsentService {
     private Mono<Void> processConsentNotification(ConsentNotification notification, LocalDateTime localDateTime) {
         var consentTask = consentTasks.get(notification.getStatus());
         if (consentTask == null) {
-            return Mono.error(ClientError.validationFailed());
+            return error(ClientError.validationFailed());
         }
         return consentTask.perform(notification, localDateTime);
     }
@@ -231,6 +279,15 @@ public class ConsentService {
                 .newBuilder()
                 .maximumSize(50)
                 .expireAfterWrite(1, TimeUnit.HOURS)
+                .build(new CacheLoader<>() {
+                    public String load(String key) {
+                        return "";
+                    }
+                });
+        this.patientRequestCache = CacheBuilder
+                .newBuilder()
+                .maximumSize(50)
+                .expireAfterWrite(10, TimeUnit.MINUTES)
                 .build(new CacheLoader<>() {
                     public String load(String key) {
                         return "";

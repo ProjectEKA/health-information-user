@@ -44,6 +44,10 @@ public class ConsentServiceTest {
     @Mock
     private ConsentRepository consentRepository;
     @Mock
+    private PatientConsentRepository patientConsentRepository;
+    @Mock
+    private ConsentServiceProperties consentServiceProperties;
+    @Mock
     private DataFlowRequestPublisher dataFlowRequestPublisher;
     @Mock
     private DataFlowDeletePublisher dataFlowDeletePublisher;
@@ -81,7 +85,9 @@ public class ConsentServiceTest {
                 gateway,
                 healthInformationPublisher,
                 conceptValidator,
-                gatewayServiceClient);
+                gatewayServiceClient,
+                patientConsentRepository,
+                consentServiceProperties);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
         when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
@@ -110,7 +116,9 @@ public class ConsentServiceTest {
                 gateway,
                 healthInformationPublisher,
                 conceptValidator,
-                gatewayServiceClient);
+                gatewayServiceClient,
+                patientConsentRepository,
+                consentServiceProperties);
         FieldSetter.setField(consentService,
                 consentService.getClass().getDeclaredField("gatewayResponseCache"), mockCache);
         var consentDetail = Mockito.mock(ConsentArtefact.class);
