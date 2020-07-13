@@ -22,6 +22,7 @@ import static in.org.projecteka.hiu.common.Serializer.from;
 import static in.org.projecteka.hiu.common.Serializer.to;
 import static in.org.projecteka.hiu.dataflow.model.RequestStatus.REQUESTED;
 import static java.lang.String.format;
+import static java.lang.String.join;
 
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
@@ -56,7 +57,7 @@ public class DataFlowRepository {
             "from data_flow_parts dfp " +
             "join data_flow_request dfr on dfp.transaction_id = dfr.transaction_id " +
             "join consent_artefact ca on dfr.consent_artefact_id = ca.consent_artefact_id " +
-            "where ca.consent_request_id in ($1)";
+            "where ca.consent_request_id in (%s)";
 
     private static final Logger logger = Logger.getLogger(DataFlowRepository.class);
     private final PgPool dbClient;
@@ -235,22 +236,22 @@ public class DataFlowRepository {
     }
 
     public Flux<Row> fetchDataPartDetails(List<String> consentRequestIds) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(FETCH_DATA_PART_DETAILS)
-                .execute(Tuple.of(joinByComma(consentRequestIds)),
-                        handler -> {
-                            if (handler.failed()) {
-                                logger.error(handler.cause().getMessage(), handler.cause());
-                                fluxSink.error(dbOperationFailure("Failed to fetch data part details"));
-                                return;
-                            }
-                            for (Row row : handler.result()) {
-                                fluxSink.next(row);
-                            }
-                            fluxSink.complete();
-                        }));
+        var generatedQuery = String.format(FETCH_DATA_PART_DETAILS, joinByComma(consentRequestIds));
+        return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
+                .execute(handler -> {
+                    if (handler.failed()) {
+                        logger.error(handler.cause().getMessage(), handler.cause());
+                        fluxSink.error(dbOperationFailure("Failed to fetch data part details"));
+                        return;
+                    }
+                    for (Row row : handler.result()) {
+                        fluxSink.next(row);
+                    }
+                    fluxSink.complete();
+                }));
     }
 
-    private String joinByComma(List<String> list){
-        return String.join(", ", list.stream().map(e -> String.format("%s", e)).collect(Collectors.toList()));
+    private String joinByComma(List<String> list) {
+        return String.join(", ", list.stream().map(e -> String.format("'%s'", e)).collect(Collectors.toList()));
     }
 }
