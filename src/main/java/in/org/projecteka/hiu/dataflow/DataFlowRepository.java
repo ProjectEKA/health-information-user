@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.DataPartDetail;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.RequestStatus;
 import io.vertx.pgclient.PgPool;
@@ -235,7 +236,7 @@ public class DataFlowRepository {
                         }));
     }
 
-    public Flux<Row> fetchDataPartDetails(List<String> consentRequestIds) {
+    public Flux<DataPartDetail> fetchDataPartDetails(List<String> consentRequestIds) {
         var generatedQuery = String.format(FETCH_DATA_PART_DETAILS, joinByComma(consentRequestIds));
         return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
                 .execute(handler -> {
@@ -245,7 +246,14 @@ public class DataFlowRepository {
                         return;
                     }
                     for (Row row : handler.result()) {
-                        fluxSink.next(row);
+                        fluxSink.next(DataPartDetail.builder()
+                                .transactionId(row.getString("transaction_id"))
+                                .hipId(row.getString("hipid"))
+                                .consentArtifactId(row.getString("consent_artefact_id"))
+                                .consentRequestId(row.getString("consent_request_id"))
+                                .status(row.getString("status"))
+                                .requester(row.getString("requester"))
+                                .build());
                     }
                     fluxSink.complete();
                 }));
