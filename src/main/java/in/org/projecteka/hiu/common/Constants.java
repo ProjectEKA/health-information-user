@@ -12,8 +12,6 @@ public class Constants {
     public static final String PATH_PATIENTS_ON_FIND = CURRENT_VERSION + "/patients/on-find";
     public static final String X_CM_ID = "X-CM-ID";
     public static final String PATH_DATA_TRANSFER = "/data/notification";
-
-
     public static final String EMPTY_STRING = "";
 
     private Constants() {
