@@ -10,6 +10,7 @@ import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
@@ -139,7 +140,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/data/notification")
+                .uri(Constants.PATH_DATA_TRANSFER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -281,7 +282,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/data/notification")
+                .uri(Constants.PATH_DATA_TRANSFER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -309,7 +310,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/health-information/hiu/on-request")
+                .uri(Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataFlowRequestResult)
@@ -329,7 +330,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/health-information/hiu/on-request")
+                .uri(Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataFlowRequestResult)
