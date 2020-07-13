@@ -15,6 +15,7 @@ tags:
   - name: frontend
   - name: consent notification
   - name: data notification
+  - name: cm app
 
 paths:
   /consent-requests:
@@ -248,6 +249,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthInformation'
+  /patient/health-information/fetch/:
+    post:
+      tags:
+        - cm app
+      summary: Get health information.
+      description: This API can be used to fetch the health information for a set of consent requests when CM app request for data.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientHealthDataFetchRequest'
+      responses:
+        '200':
+          description: Health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientHealthDataResponse'
   /data/notification:
     post:
       tags:
@@ -626,3 +650,47 @@ components:
           type: string
           enum: [DOCTOR, ADMIN]
           default: DOCTOR
+    PatientHealthDataFetchRequest:
+      type: object
+      required:
+        - requestIds
+      properties:
+        requestIds:
+          type: array
+          items:
+            type: string
+            example: consentRequestId
+    PatientHealthDataEntry:
+      type: object
+      required:
+        - hipId
+        - consentRequestId
+        - consentArtefactId
+        - status
+        - data
+      properties:
+        hipId:
+          type: string
+        consentRequestId:
+          type: string
+        consentArtefactId:
+          type: string
+        status:
+          type: string
+          enum: [SUCCEEDED, ERRORED, PROCESSING, TRANS_ERRORED]
+        data:
+          type: object
+          description: data is a FHIR bundle. https://www.hl7.org/fhir/bundle.html
+    PatientHealthDataResponse:
+      type: object
+      properties:
+        limit:
+          type: integer
+        size:
+          type: integer
+        offset:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientHealthDataEntry'
