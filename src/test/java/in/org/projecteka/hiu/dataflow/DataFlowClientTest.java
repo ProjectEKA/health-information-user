@@ -20,6 +20,8 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.test.StepVerifier;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -63,7 +65,9 @@ public class DataFlowClientTest {
                         .from(toDate("2020-01-14T08:47:48"))
                         .to(toDate("2020-01-20T08:47:48")).build())
                 .build();
-        var gatewayDataFlowRequest = new GatewayDataFlowRequest(UUID.randomUUID(),string(),dataFlowRequest);
+        var gatewayDataFlowRequest = new GatewayDataFlowRequest(UUID.randomUUID(),
+                LocalDateTime.now(ZoneOffset.UTC),
+                dataFlowRequest);
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(202));
         when(gatewayProperties.getBaseUrl()).thenReturn(mockWebServer.url("").toString());

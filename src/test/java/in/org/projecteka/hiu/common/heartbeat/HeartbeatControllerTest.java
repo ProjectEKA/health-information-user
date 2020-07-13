@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
+import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.TestBuilders;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;
 import in.org.projecteka.hiu.common.heartbeat.model.Status;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -38,8 +40,14 @@ class HeartbeatControllerTest {
     private WebTestClient webTestClient;
 
     @SuppressWarnings("unused")
-    @MockBean(name = "centralRegistryJWKSet")
+    @MockBean
+    @Qualifier("centralRegistryJWKSet")
     private JWKSet centralRegistryJWKSet;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    @Qualifier("identityServiceJWKSet")
+    private JWKSet identityServiceJWKSet;
 
     @MockBean
     private Heartbeat heartbeat;
