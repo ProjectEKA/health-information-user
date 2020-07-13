@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactGone;
-import static in.org.projecteka.hiu.ClientError.unauthorized;
+import static in.org.projecteka.hiu.ClientError.invalidHealthInformationRequest;
 import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
 
 @AllArgsConstructor
@@ -25,7 +25,7 @@ public class HealthInfoManager {
                 .filter(consentDetail -> isValidRequester(requesterId, consentDetail))
                 .switchIfEmpty(Flux.error(unauthorizedRequester()))
                 .filter(this::isGrantedConsent)
-                .switchIfEmpty(Flux.error(unauthorized()))
+                .switchIfEmpty(Flux.error(invalidHealthInformationRequest()))
                 .filter(this::isConsentNotExpired)
                 .switchIfEmpty(Flux.error(consentArtefactGone()))
                 .flatMap(consentDetail -> dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
