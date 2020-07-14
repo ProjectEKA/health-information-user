@@ -20,10 +20,11 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 
+import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
+
 @RestController
 @AllArgsConstructor
 public class ConsentController {
-    public static final String APP_PATH_HIU_CONSENT_REQUESTS = "/v1/hiu/consent-requests";
     private final ConsentService consentService;
 
     @PostMapping(APP_PATH_HIU_CONSENT_REQUESTS)

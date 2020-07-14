@@ -13,12 +13,14 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
+import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
+
+
 @RestController
 @AllArgsConstructor
 public class PatientConsentController {
     private final ConsentService consentService;
-    public static final String APP_PATH_HIU_CONSENT_REQUESTS = "v1/hiu/patient/consent-request";
-    @PostMapping("APP_PATH_HIU_CONSENT_REQUESTS")
+    @PostMapping(APP_PATH_PATIENT_CONSENT_REQUEST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Mono<Map<String, String>> postPatientConsentRequest(@RequestBody PatientConsentRequest consentRequest) {
         return ReactiveSecurityContextHolder.getContext()

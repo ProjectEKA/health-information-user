@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_HIU_NOTIFY;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FIND;
@@ -52,7 +53,7 @@ public class SecurityConfiguration {
 
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
-            Map.entry(HttpMethod.POST, "/hiu/patient/consent-request"));
+            Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST));
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
