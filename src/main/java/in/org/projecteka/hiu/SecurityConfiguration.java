@@ -55,7 +55,6 @@ public class SecurityConfiguration {
             Map.entry(HttpMethod.GET, "/cm/hello"),
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST));
 
-
     private static final List<Map.Entry<HttpMethod, String>> DOCTOR_AND_PATIENT_COMMON_APIS = List.of(
             Map.entry(HttpMethod.GET, "/health-information/fetch/{consent-request-id}/attachments/{file-name}")
     );

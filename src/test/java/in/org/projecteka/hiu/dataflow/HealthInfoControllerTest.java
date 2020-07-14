@@ -41,9 +41,6 @@ import static reactor.core.publisher.Mono.just;
 class HealthInfoControllerTest {
 
     @MockBean
-    private ConceptValidator conceptValidator;
-
-    @MockBean
     @Qualifier("userAuthenticator")
     private Authenticator authenticator;
 
@@ -71,6 +68,9 @@ class HealthInfoControllerTest {
 
     @MockBean
     private HealthInformationRepository healthInformationRepository;
+
+    @MockBean
+    private ConceptValidator conceptValidator;
 
     @BeforeEach
     void setUp() {
