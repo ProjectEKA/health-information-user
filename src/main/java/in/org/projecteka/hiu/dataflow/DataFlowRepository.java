@@ -54,7 +54,7 @@ public class DataFlowRepository {
     private static final String FETCH_DATA_PART_DETAILS = "select " +
             "ca.consent_artefact -> 'hip' ->> 'id' as hipId, " +
             "ca.consent_artefact -> 'requester' ->> 'name' as requester, " +
-            "dfp.transaction_id, dfp.status, ca.consent_request_id " +
+            "dfp.transaction_id, dfp.status, ca.consent_request_id, ca.consent_artefact_id " +
             "from data_flow_parts dfp " +
             "join data_flow_request dfr on dfp.transaction_id = dfr.transaction_id " +
             "join consent_artefact ca on dfr.consent_artefact_id = ca.consent_artefact_id " +
