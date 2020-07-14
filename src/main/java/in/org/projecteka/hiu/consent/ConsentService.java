@@ -113,13 +113,13 @@ public class ConsentService {
         Map<String, String> response = new HashMap<>();
         return Flux.fromIterable(consentRequest.getHipIds())
                 .flatMap(hipId -> buildConsentRequest(requesterId).flatMap(consentRequestData -> {
-                    var patientRequestId = UUID.randomUUID();
+                    var dataRequestId = UUID.randomUUID();
                     var gatewayRequestId = UUID.randomUUID();
                     return validateConsentRequest(consentRequestData)
                             .then(sendConsentRequestToGateway(requesterId, consentRequestData, gatewayRequestId))
-                            .then(patientConsentRepository.insertConsentRequestToGateway(consentRequest, patientRequestId, hipId)
-                                    .doOnSuccess(discard -> response.put(hipId, patientRequestId.toString()))
-                                    .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(), patientRequestId.toString())));
+                            .then(patientConsentRepository.insertConsentRequestToGateway(consentRequest, dataRequestId, hipId)
+                                    .doOnSuccess(discard -> response.put(hipId, dataRequestId.toString()))
+                                    .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(), dataRequestId.toString())));
                 })).then(Mono.just(response));
     }
 
@@ -173,13 +173,13 @@ public class ConsentService {
         }
 
         if (response.getConsentRequest() != null) {
-            var patientRequestId = UUID.fromString(patientRequestCache.asMap().get(response.getResp().getRequestId()));
+            var dataRequestId = UUID.fromString(patientRequestCache.asMap().get(response.getResp().getRequestId()));
             var consentRequestId = UUID.fromString(response.getConsentRequest().getId());
             return consentRepository.consentRequestStatus(response.getResp().getRequestId())
                     .switchIfEmpty(error(consentRequestNotFound()))
                     .flatMap(status -> updateConsentRequestStatus(response, status))
                     .then(patientConsentRepository
-                            .insertPatientConsentRequestMapping(patientRequestId, consentRequestId));
+                            .insertPatientConsentRequestMapping(dataRequestId, consentRequestId));
         }
 
         return error(ClientError.invalidDataFromGateway());
@@ -286,15 +286,6 @@ public class ConsentService {
                         return "";
                     }
                 });
-//        this.patientRequestCache = CacheBuilder
-//                .newBuilder()
-//                .maximumSize(50)
-//                .expireAfterWrite(10, TimeUnit.MINUTES)
-//                .build(new CacheLoader<>() {
-//                    public String load(String key) {
-//                        return "";
-//                    }
-//                });
         consentTasks.put(GRANTED, new GrantedConsentTask(
                 consentRepository, gatewayServiceClient, gateway,
                 gatewayResponseCache));
