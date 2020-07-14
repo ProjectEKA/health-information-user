@@ -2,6 +2,7 @@ package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
+import in.org.projecteka.hiu.consent.PatientConsentController;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,7 +51,9 @@ public class SecurityConfiguration {
             PATH_HEALTH_INFORMATION_HIU_ON_REQUEST
     };
 
-    private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(Map.entry(HttpMethod.GET, "/cm/hello"));
+    private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
+            Map.entry(HttpMethod.GET, "/cm/hello"),
+            Map.entry(HttpMethod.POST, PatientConsentController.APP_PATH_HIU_CONSENT_REQUESTS));
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
@@ -58,17 +61,18 @@ public class SecurityConfiguration {
             ReactiveAuthenticationManager authenticationManager,
             ServerSecurityContextRepository securityContextRepository) {
         final String[] allowedLists = {"/**.json",
-                                       "/ValueSet/**.json",
-                                       "/**.html",
-                                       "/**.js",
-                                       "/**.yaml",
-                                       "/**.css",
-                                       "/**.png",
-                                       "/health-information/fetch/**/attachments/**",
-                                       PATH_DATA_TRANSFER,
-                                       PATH_HEARTBEAT,
-                                       "/sessions",
-                                       "/config"};
+                "/ValueSet/**.json",
+                "/**.html",
+                "/**.js",
+                "/**.yaml",
+                "/**.css",
+                "/**.png",
+                "/health-information/fetch/**/attachments/**",
+                PATH_DATA_TRANSFER,
+                PATH_HEARTBEAT,
+                "/sessions",
+                "/config"};
+
         httpSecurity.authorizeExchange().pathMatchers(allowedLists).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
