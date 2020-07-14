@@ -70,7 +70,7 @@ public class Consent {
                 .hiu(HIU.builder().id(hiuId).build())
                 .requester(new Requester(requesterId))
                 .hiTypes(getHiTypes())
-                .permission( new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
+                .permission(new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
