@@ -23,7 +23,6 @@ import static in.org.projecteka.hiu.common.Serializer.from;
 import static in.org.projecteka.hiu.common.Serializer.to;
 import static in.org.projecteka.hiu.dataflow.model.RequestStatus.REQUESTED;
 import static java.lang.String.format;
-import static java.lang.String.join;
 
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
@@ -251,7 +250,7 @@ public class DataFlowRepository {
                                 .hipId(row.getString("hipid"))
                                 .consentArtifactId(row.getString("consent_artefact_id"))
                                 .consentRequestId(row.getString("consent_request_id"))
-                                .status(row.getString("status"))
+                                .status(HealthInfoStatus.valueOf(row.getString("status")))
                                 .requester(row.getString("requester"))
                                 .build());
                     }

@@ -61,7 +61,7 @@ public class HealthInfoManager {
     }
 
     private Flux<PatientDataEntry> getDataEntries(int limit, int offset, List<DataPartDetail> dataParts) {
-        HashMap<String, List<String>> dataPartStatuses = new HashMap<>();
+        HashMap<String, List<HealthInfoStatus>> dataPartStatuses = new HashMap<>();
         HashMap<String, PatientDataEntry.PatientDataEntryBuilder> dataEntries = new HashMap<>();
         dataParts.forEach(dataPart -> {
             var statuses = dataPartStatuses.get(dataPart.getTransactionId());
@@ -85,7 +85,7 @@ public class HealthInfoManager {
                 .mergeWith(Flux.fromIterable(partsInProcess));
     }
 
-    private List<PatientDataEntry> getDataPartsInProcess(HashMap<String, List<String>> dataPartStatuses,
+    private List<PatientDataEntry> getDataPartsInProcess(HashMap<String, List<HealthInfoStatus>> dataPartStatuses,
                                                          HashMap<String, PatientDataEntry.PatientDataEntryBuilder> dataEntries) {
         List<PatientDataEntry> processingTransactions = new ArrayList<>();
         dataPartStatuses.forEach((transactionId, statuses) -> {
@@ -97,8 +97,8 @@ public class HealthInfoManager {
         return processingTransactions;
     }
 
-    private boolean isProcessingOrReceived(String status) {
-        return status.equals(HealthInfoStatus.PROCESSING.toString()) || status.equals(HealthInfoStatus.RECEIVED.toString());
+    private boolean isProcessingOrReceived(HealthInfoStatus status) {
+        return status.equals(HealthInfoStatus.PROCESSING) || status.equals(HealthInfoStatus.RECEIVED);
     }
 
     public String getTransactionIdForConsentRequest(String consentRequestId) {

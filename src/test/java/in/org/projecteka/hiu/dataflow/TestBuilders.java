@@ -3,9 +3,15 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResult;
+import in.org.projecteka.hiu.dataflow.model.DataPartDetail;
 import in.org.projecteka.hiu.dataflow.model.Entry;
+import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
+import in.org.projecteka.hiu.dataflow.model.HealthInformationFetchRequest;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import org.jeasy.random.EasyRandom;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class TestBuilders {
     private static final EasyRandom easyRandom = new EasyRandom();
@@ -28,6 +34,15 @@ public class TestBuilders {
 
     public static DataFlowRequestResult.DataFlowRequestResultBuilder dataFlowRequestResult() {
         return easyRandom.nextObject(DataFlowRequestResult.DataFlowRequestResultBuilder.class);
+    }
+
+    public static HealthInformationFetchRequest.HealthInformationFetchRequestBuilder healthInformationRequest() {
+        return easyRandom.nextObject(HealthInformationFetchRequest.HealthInformationFetchRequestBuilder.class);
+    }
+
+    public static List<DataPartDetail> dataPartDetails(int size, String requester, HealthInfoStatus status) {
+        var builders = easyRandom.objects(DataPartDetail.DataPartDetailBuilder.class, size);
+        return builders.map(builder -> builder.requester(requester).status(status).build()).collect(Collectors.toList());
     }
 
     public static String string() {

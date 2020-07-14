@@ -30,6 +30,8 @@ public class HealthInfoController {
     private final HealthInfoManager healthInfoManager;
     private final DataFlowServiceProperties serviceProperties;
 
+    public static final String API_PATH_FETCH_PATIENT_HEALTH_INFO = "/v1/cm/patient/health-information/fetch/";
+
     @GetMapping("/health-information/fetch/{consent-request-id}")
     public Mono<HealthInformation> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
@@ -47,19 +49,18 @@ public class HealthInfoController {
                         .entries(dataEntries).build());
     }
 
-    @PostMapping("/patient/health-information/fetch/")
+    @PostMapping(API_PATH_FETCH_PATIENT_HEALTH_INFO)
     public Mono<PatientHealthInformation> fetchHealthInformation(@RequestBody HealthInformationFetchRequest dataRequest) {
+        var limit = Math.min(dataRequest.getLimit(serviceProperties.getDefaultPageSize()), serviceProperties.getMaxPageSize());
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
                 .flatMapMany(username -> healthInfoManager.fetchHealthInformation(
-                        dataRequest.getRequestIds(),
-                        username, dataRequest.getLimit(serviceProperties.getDefaultPageSize()),
-                        dataRequest.getOffset()))
+                        dataRequest.getRequestIds(), username, limit, dataRequest.getOffset()))
                 .collectList()
                 .map(patientDataEntries -> PatientHealthInformation.builder()
                         .size(patientDataEntries.size())
-                        .limit(Math.min(dataRequest.getLimit(serviceProperties.getDefaultPageSize()), serviceProperties.getMaxPageSize()))
+                        .limit(limit)
                         .offset(dataRequest.getOffset())
                         .entries(patientDataEntries).build());
     }

@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class DataPartDetail {
     private String transactionId;
-    private String status;
+    private HealthInfoStatus status;
     private String consentArtifactId;
     private String hipId;
     private String consentRequestId;
