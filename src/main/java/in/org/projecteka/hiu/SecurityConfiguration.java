@@ -27,11 +27,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_HIU_NOTIFY;
-import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_ON_FETCH;
-import static in.org.projecteka.hiu.common.Constants.V_1_CONSENTS_ON_FIND;
-import static in.org.projecteka.hiu.common.Constants.V_1_CONSENT_REQUESTS_ON_INIT;
-import static in.org.projecteka.hiu.common.Constants.V_1_HEALTH_INFORMATION_HIU_ON_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_HIU_NOTIFY;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FIND;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_INIT;
+import static in.org.projecteka.hiu.common.Constants.PATH_DATA_TRANSFER;
+import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -41,11 +43,11 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 public class SecurityConfiguration {
 
     protected static final String[] GATEWAY_APIS = new String[]{
-            V_1_CONSENT_REQUESTS_ON_INIT,
-            V_1_CONSENTS_HIU_NOTIFY,
-            V_1_CONSENTS_ON_FETCH,
-            V_1_CONSENTS_ON_FIND,
-            V_1_HEALTH_INFORMATION_HIU_ON_REQUEST
+            PATH_CONSENT_REQUESTS_ON_INIT,
+            PATH_CONSENTS_HIU_NOTIFY,
+            PATH_CONSENTS_ON_FETCH,
+            PATH_CONSENTS_ON_FIND,
+            PATH_HEALTH_INFORMATION_HIU_ON_REQUEST
     };
 
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(Map.entry(HttpMethod.GET, "/cm/hello"));
@@ -63,8 +65,8 @@ public class SecurityConfiguration {
                                        "/**.css",
                                        "/**.png",
                                        "/health-information/fetch/**/attachments/**",
-                                       "/data/notification",
-                                       "/v1/heartbeat",
+                                       PATH_DATA_TRANSFER,
+                                       PATH_HEARTBEAT,
                                        "/sessions",
                                        "/config"};
         httpSecurity.authorizeExchange().pathMatchers(allowedLists).permitAll();

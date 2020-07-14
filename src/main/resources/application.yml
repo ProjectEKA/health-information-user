@@ -41,6 +41,7 @@ spring:
     port: ${RABBITMQ_PORT}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+    queuePrefix: ${RABBITMQ_PREFIX}
   codec:
     max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
 webclient:
