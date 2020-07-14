@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.consent.ConsentRepository;
+import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.DataPartDetail;
@@ -26,6 +27,7 @@ import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
 public class HealthInfoManager {
     private final ConsentRepository consentRepository;
     private final DataFlowRepository dataFlowRepository;
+    private final PatientConsentRepository patientConsentRepository;
     private final HealthInformationRepository healthInformationRepository;
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
@@ -43,9 +45,11 @@ public class HealthInfoManager {
                                 consentDetail.get("hipName"))));
     }
 
-    public Flux<PatientDataEntry> fetchHealthInformation(List<String> consentRequestIds, String requesterId,
+    public Flux<PatientDataEntry> fetchHealthInformation(List<String> dataRequestIds, String requesterId,
                                                          int limit, int offset) {
-        return dataFlowRepository.fetchDataPartDetails(consentRequestIds)
+        return patientConsentRepository.fetchConsentRequestIds(dataRequestIds)
+                .collectList()
+                .flatMapMany(dataFlowRepository::fetchDataPartDetails)
                 .collectList()
                 .filter(dataParts -> isValidRequester(dataParts, requesterId))
                 .switchIfEmpty(Mono.error(unauthorizedRequester()))
