@@ -81,7 +81,7 @@ public class HealthDataProcessor {
     }
 
     public void process(DataAvailableMessage message) {
-        DataContext context = createContext(message);
+        DataContext context = createDataContext(message);
         if (context != null && context.getNotifiedData() != null) {
             processEntries(context);
         } else {
@@ -195,7 +195,7 @@ public class HealthDataProcessor {
                 status).block();
     }
 
-    private DataContext createContext(DataAvailableMessage message) {
+    private DataContext createDataContext(DataAvailableMessage message) {
         Path dataFilePath = Paths.get(message.getPathToFile());
         try (InputStream inputStream = Files.newInputStream(dataFilePath)) {
             var objectMapper = new ObjectMapper()
@@ -209,6 +209,7 @@ public class HealthDataProcessor {
                     .notifiedData(dataNotificationRequest)
                     .dataFilePath(dataFilePath)
                     .dataPartNumber(message.getPartNumber())
+                    .trackedResources(new ArrayList<>())
                     .build();
         } catch (Exception e) {
             logger.error("Could not create context from data file path", e);
@@ -251,6 +252,7 @@ public class HealthDataProcessor {
                     }
                 });
                 result.setEncoded(parser.encodeResourceToString(bundle));
+                context.addTrackedResources(bundleContext.getTrackedResources());
                 return result;
             } catch (Exception e) {
                 logger.error("Could not process bundle {exception}", e);

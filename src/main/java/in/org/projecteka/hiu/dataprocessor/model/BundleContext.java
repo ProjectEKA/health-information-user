@@ -16,24 +16,10 @@ public class BundleContext {
     private Bundle bundle;
     private Function<ResourceType, HITypeResourceProcessor> resourceProcessor;
     private List<Resource> processedResList = new ArrayList<>();
-    private List<ResourceReference> trackedResources = new ArrayList<>();
+    private List<TrackedResourceReference> trackedResources = new ArrayList<>();
 
     public Date getBundleDate() {
         return bundle.getTimestamp();
-    }
-
-    public static class ResourceReference {
-        private ResourceType resourceType;
-        private final String resourceId;
-        private final LocalDateTime localDateTime;
-        private String title;
-
-        public ResourceReference(ResourceType resourceType, String resourceId, LocalDateTime localDateTime, String title) {
-            this.resourceType = resourceType;
-            this.resourceId = resourceId;
-            this.localDateTime = localDateTime;
-            this.title = title;
-        }
     }
 
     public BundleContext(Bundle bundle, Function<ResourceType, HITypeResourceProcessor> resourceProcessor) {
@@ -65,14 +51,14 @@ public class BundleContext {
         LocalDateTime localDateTime = (date != null) ?
                 date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
                 : null;
-        trackedResources.add(new ResourceReference(resourceType, resourceId, localDateTime, title));
+        trackedResources.add(new TrackedResourceReference(resourceType, resourceId, localDateTime, title));
     }
 
     public HITypeResourceProcessor findResourceProcessor(ResourceType resourceType) {
         return resourceProcessor.apply(resourceType);
     }
 
-    public List<ResourceReference> getTrackedResources() {
+    public List<TrackedResourceReference> getTrackedResources() {
         return trackedResources;
     }
 }

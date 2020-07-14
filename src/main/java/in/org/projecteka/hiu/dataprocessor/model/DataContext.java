@@ -8,7 +8,9 @@ import lombok.Setter;
 import org.hl7.fhir.r4.model.ResourceType;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Builder
 @Getter
@@ -17,6 +19,7 @@ public class DataContext {
     private DataNotificationRequest notifiedData;
     private Path dataFilePath;
     private String dataPartNumber;
+    private List<TrackedResourceReference> trackedResources;
 
     public Path getLocalStoragePath() {
         return dataFilePath.getParent();
@@ -28,5 +31,9 @@ public class DataContext {
 
     public KeyMaterial getKeyMaterial(){
         return notifiedData.getKeyMaterial();
+    }
+
+    public void addTrackedResources(List<TrackedResourceReference> trackedResources) {
+        this.trackedResources.addAll(trackedResources);
     }
 }
