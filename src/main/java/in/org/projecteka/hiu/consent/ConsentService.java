@@ -174,13 +174,18 @@ public class ConsentService {
         }
 
         if (response.getConsentRequest() != null) {
-            var dataRequestId = UUID.fromString(patientRequestCache.asMap().get(response.getResp().getRequestId()));
-            var consentRequestId = UUID.fromString(response.getConsentRequest().getId());
-            return consentRepository.consentRequestStatus(response.getResp().getRequestId())
+            var dataRequestId = patientRequestCache.asMap().get(response.getResp().getRequestId());
+            var updatePublisher = consentRepository.consentRequestStatus(response.getResp().getRequestId())
                     .switchIfEmpty(error(consentRequestNotFound()))
-                    .flatMap(status -> updateConsentRequestStatus(response, status))
+                    .flatMap(status -> updateConsentRequestStatus(response, status));
+
+            if (dataRequestId == null) {
+                return updatePublisher;
+            }
+            var consentRequestId = UUID.fromString(response.getConsentRequest().getId());
+            return updatePublisher
                     .then(patientConsentRepository
-                            .insertPatientConsentRequestMapping(dataRequestId, consentRequestId));
+                            .insertPatientConsentRequestMapping(UUID.fromString(dataRequestId), consentRequestId));
         }
 
         return error(ClientError.invalidDataFromGateway());
