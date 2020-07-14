@@ -97,6 +97,9 @@ public class HealthDataProcessor {
             DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(transactionId).block();
             List<String> dataErrors = new ArrayList<>();
             List<StatusResponse> statusResponses = new ArrayList<>();
+            System.out.println("*********************************************");
+            System.out.println("Recieved data from HIP. Number of entries:" + context.getNotifiedData().getEntries().size());
+            System.out.println("*********************************************");
             context.getNotifiedData().getEntries().forEach(entry -> {
                 var entryToProcess = entry;
                 String dataPartNumber = context.getDataPartNumber();
@@ -282,10 +285,7 @@ public class HealthDataProcessor {
             return false;
         }
         Bundle.BundleEntryComponent firstEntry = bundle.getEntry().get(0);
-        if (!firstEntry.getResource().getResourceType().equals(ResourceType.Composition)) {
-            return false;
-        }
-        return true;
+        return firstEntry.getResource().getResourceType().equals(ResourceType.Composition);
     }
 
     private Optional<IParser> getEntryParser(String media) {
