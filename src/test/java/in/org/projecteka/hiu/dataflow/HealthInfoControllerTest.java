@@ -4,11 +4,13 @@ package in.org.projecteka.hiu.dataflow;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.consent.ConceptValidator;
 import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataPartDetail;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
+import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,6 +56,22 @@ class HealthInfoControllerTest {
     @Qualifier("identityServiceJWKSet")
     private JWKSet identityServiceJWKSet;
 
+    @SuppressWarnings("unused")
+    @MockBean
+    private DataAvailabilityListener dataAvailabilityListener;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    private DestinationsConfig destinationsConfig;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    private DataFlowRequestListener dataFlowRequestListener;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    private DataFlowDeleteListener dataFlowDeleteListener;
+
     @Autowired
     private WebTestClient webTestClient;
 
@@ -69,6 +87,7 @@ class HealthInfoControllerTest {
     @MockBean
     private HealthInformationRepository healthInformationRepository;
 
+    @SuppressWarnings("unused")
     @MockBean
     private ConceptValidator conceptValidator;
 

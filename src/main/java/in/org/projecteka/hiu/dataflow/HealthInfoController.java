@@ -31,8 +31,10 @@ public class HealthInfoController {
     private final DataFlowServiceProperties serviceProperties;
 
     public static final String API_PATH_FETCH_PATIENT_HEALTH_INFO = "/v1/cm/patient/health-information/fetch/";
+    public static final String API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST = "/health-information/fetch/{consent-request-id}";
+    public static final String API_PATH_GET_ATTACHMENT = "/health-information/fetch/{consent-request-id}/attachments/{file-name}";
 
-    @GetMapping("/health-information/fetch/{consent-request-id}")
+    @GetMapping(API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST)
     public Mono<HealthInformation> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @RequestParam(defaultValue = "${hiu.dataflowservice.defaultPageSize}") int limit,
@@ -65,7 +67,7 @@ public class HealthInfoController {
                         .entries(patientDataEntries).build());
     }
 
-    @GetMapping("/health-information/fetch/{consent-request-id}/attachments/{file-name}")
+    @GetMapping(API_PATH_GET_ATTACHMENT)
     public Mono<ResponseEntity<FileSystemResource>> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @PathVariable(value = "file-name") String fileName) {

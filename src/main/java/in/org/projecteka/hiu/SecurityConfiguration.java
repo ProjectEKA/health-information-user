@@ -2,6 +2,7 @@ package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
+import in.org.projecteka.hiu.dataflow.HealthInfoController;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,10 +54,11 @@ public class SecurityConfiguration {
 
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
-            Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST));
+            Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
+            Map.entry(HttpMethod.POST, HealthInfoController.API_PATH_FETCH_PATIENT_HEALTH_INFO));
 
     private static final List<Map.Entry<HttpMethod, String>> DOCTOR_AND_PATIENT_COMMON_APIS = List.of(
-            Map.entry(HttpMethod.GET, "/health-information/fetch/{consent-request-id}/attachments/{file-name}")
+            Map.entry(HttpMethod.GET, HealthInfoController.API_PATH_GET_ATTACHMENT)
     );
 
     @Bean
