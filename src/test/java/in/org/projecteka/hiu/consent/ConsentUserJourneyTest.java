@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
@@ -167,7 +168,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri(ConsentController.APP_PATH_HIU_CONSENT_REQUESTS)
+                .uri(APP_PATH_HIU_CONSENT_REQUESTS)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(consentRequestDetails)
