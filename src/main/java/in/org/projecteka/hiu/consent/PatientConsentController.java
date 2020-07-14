@@ -20,6 +20,7 @@ import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_RE
 @AllArgsConstructor
 public class PatientConsentController {
     private final ConsentService consentService;
+
     @PostMapping(APP_PATH_PATIENT_CONSENT_REQUEST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Mono<Map<String, String>> postPatientConsentRequest(@RequestBody PatientConsentRequest consentRequest) {
