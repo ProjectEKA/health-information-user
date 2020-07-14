@@ -2,7 +2,6 @@ package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
-import in.org.projecteka.hiu.consent.PatientConsentController;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;

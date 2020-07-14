@@ -44,7 +44,7 @@ paths:
                   id:
                     type: string
                     format: uuid
-  /patient/consent-request:
+  /v1/cm/patient/consent-request:
     post:
       tags:
         - frontend
