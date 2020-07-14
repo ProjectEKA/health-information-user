@@ -17,7 +17,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class PatientConsentController {
     private final ConsentService consentService;
-    public static final String APP_PATH_HIU_CONSENT_REQUESTS = "v1/hiu/patient/consent-request";
+    public static final String APP_PATH_HIU_CONSENT_REQUESTS = "/v1/hiu/patient/consent-request";
     @PostMapping(APP_PATH_HIU_CONSENT_REQUESTS)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Mono<Map<String, String>> postPatientConsentRequest(@RequestBody PatientConsentRequest consentRequest) {
