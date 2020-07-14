@@ -13,7 +13,7 @@ public class ErrorMappings {
     }
 
     static {
-        codeErrorMapping.put(1006, ClientError.patientNotFound());
+        codeErrorMapping.put(1414, ClientError.patientNotFound());
     }
 
     public static ClientError get(Integer errorCode) {
