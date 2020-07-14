@@ -2,6 +2,7 @@ package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
+import in.org.projecteka.hiu.consent.PatientConsentController;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -52,7 +53,7 @@ public class SecurityConfiguration {
 
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
-            Map.entry(HttpMethod.POST, "/hiu/patient/consent-request"));
+            Map.entry(HttpMethod.POST, PatientConsentController.APP_PATH_HIU_CONSENT_REQUESTS));
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
