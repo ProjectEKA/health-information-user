@@ -16,10 +16,10 @@ import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
-import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.common.UserAuthenticator;
 import in.org.projecteka.hiu.common.heartbeat.Heartbeat;
 import in.org.projecteka.hiu.common.heartbeat.RabbitMQOptions;
@@ -105,10 +105,7 @@ public class HiuConfiguration {
                 .setDatabase(dbProps.getSchema())
                 .setUser(dbProps.getUser())
                 .setPassword(dbProps.getPassword());
-
-        PoolOptions poolOptions =
-                new PoolOptions().setMaxSize(dbProps.getPoolSize());
-
+        var poolOptions = new PoolOptions().setMaxSize(dbProps.getPoolSize());
         return PgPool.pool(connectOptions, poolOptions);
     }
 
@@ -254,17 +251,21 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public RabbitQueueNames queueNames(RabbitMQOptions rabbitMQOptions){
+    public RabbitQueueNames queueNames(RabbitMQOptions rabbitMQOptions) {
         return new RabbitQueueNames(rabbitMQOptions.getQueuePrefix());
     }
 
     @Bean
     public DestinationsConfig destinationsConfig(AmqpAdmin amqpAdmin, RabbitQueueNames queueNames) {
         HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
-        queues.put(queueNames.getDataFlowRequestQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowRequestQueue()));
-        queues.put(queueNames.getDataFlowProcessQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowProcessQueue()));
-        queues.put(queueNames.getDataFlowDeleteQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowDeleteQueue()));
-        queues.put(queueNames.getHealthInfoQueue(), new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getHealthInfoQueue()));
+        queues.put(queueNames.getDataFlowRequestQueue(),
+                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowRequestQueue()));
+        queues.put(queueNames.getDataFlowProcessQueue(),
+                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowProcessQueue()));
+        queues.put(queueNames.getDataFlowDeleteQueue(),
+                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowDeleteQueue()));
+        queues.put(queueNames.getHealthInfoQueue(),
+                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getHealthInfoQueue()));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
         Queue deadLetterQueue = QueueBuilder.durable(queueNames.getHIUDeadLetterQueue()).build();
@@ -417,16 +418,17 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataAvailabilityListener dataAvailabilityListener(MessageListenerContainerFactory messageListenerContainerFactory,
-                                                             DestinationsConfig destinationsConfig,
-                                                             HealthDataRepository healthDataRepository,
-                                                             DataFlowRepository dataFlowRepository,
-                                                             LocalDicomServerProperties dicomServerProperties,
-                                                             HealthInformationClient healthInformationClient,
-                                                             Gateway gateway,
-                                                             HiuProperties hiuProperties,
-                                                             ConsentRepository consentRepository,
-                                                             RabbitQueueNames queueNames) {
+    public DataAvailabilityListener dataAvailabilityListener(
+            MessageListenerContainerFactory messageListenerContainerFactory,
+            DestinationsConfig destinationsConfig,
+            HealthDataRepository healthDataRepository,
+            DataFlowRepository dataFlowRepository,
+            LocalDicomServerProperties dicomServerProperties,
+            HealthInformationClient healthInformationClient,
+            Gateway gateway,
+            HiuProperties hiuProperties,
+            ConsentRepository consentRepository,
+            RabbitQueueNames queueNames) {
         return new DataAvailabilityListener(
                 messageListenerContainerFactory,
                 destinationsConfig,
@@ -441,8 +443,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public GatewayAuthenticationClient centralRegistryClient(@Qualifier("customBuilder") WebClient.Builder builder,
-                                                             GatewayProperties gatewayProperties) {
+    public GatewayAuthenticationClient centralRegistryClient(
+            @Qualifier("customBuilder") WebClient.Builder builder,
+            GatewayProperties gatewayProperties) {
         return new GatewayAuthenticationClient(builder.baseUrl(gatewayProperties.getBaseUrl()));
     }
 
@@ -459,12 +462,14 @@ public class HiuConfiguration {
     }
 
     @Bean("centralRegistryJWKSet")
-    public JWKSet centralRegistryJWKSet(GatewayProperties gatewayProperties) throws IOException, ParseException {
+    public JWKSet centralRegistryJWKSet(GatewayProperties gatewayProperties)
+            throws IOException, ParseException {
         return JWKSet.load(new URL(gatewayProperties.getJwkUrl()));
     }
 
     @Bean("identityServiceJWKSet")
-    public JWKSet identityServiceJWKSet(IdentityServiceProperties identityServiceProperties) throws IOException, ParseException {
+    public JWKSet identityServiceJWKSet(IdentityServiceProperties identityServiceProperties)
+            throws IOException, ParseException {
         return JWKSet.load(new URL(identityServiceProperties.getJwkUrl()));
     }
 
