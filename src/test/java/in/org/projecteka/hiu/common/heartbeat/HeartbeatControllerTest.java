@@ -6,6 +6,7 @@ import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.TestBuilders;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;
 import in.org.projecteka.hiu.common.heartbeat.model.Status;
@@ -86,7 +87,7 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri("/v1/heartbeat")
+                .uri(Constants.PATH_HEARTBEAT)
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -106,7 +107,7 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri("/v1/heartbeat")
+                .uri(Constants.PATH_HEARTBEAT)
                 .exchange()
                 .expectStatus()
                 .isOk()

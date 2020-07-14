@@ -8,6 +8,7 @@ import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
@@ -24,12 +25,10 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
 
 @AllArgsConstructor
 public class DataAvailabilityListener {
@@ -42,6 +41,7 @@ public class DataAvailabilityListener {
     private final Gateway gateway;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
+    private final RabbitQueueNames queueNames;
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
 
@@ -50,7 +50,7 @@ public class DataAvailabilityListener {
     public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
-                .get(DATA_FLOW_PROCESS_QUEUE);
+                .get(queueNames.getDataFlowProcessQueue());
         if (destinationInfo == null) {
             throw queueNotFound();
         }

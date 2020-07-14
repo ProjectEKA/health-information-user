@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -9,21 +10,21 @@ import org.springframework.amqp.core.AmqpTemplate;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
-import static in.org.projecteka.hiu.HiuConfiguration.HEALTH_INFO_QUEUE;
 
 @AllArgsConstructor
 public class HealthInformationPublisher {
     private static final Logger logger = Logger.getLogger(HealthInformationPublisher.class);
     private final AmqpTemplate amqpTemplate;
     private final DestinationsConfig destinationsConfig;
+    private final RabbitQueueNames queueNames;
 
     @SneakyThrows
     public Mono<Void> publish(ConsentArtefactReference consentArtefactReference) {
         DestinationsConfig.DestinationInfo destinationInfo =
-                destinationsConfig.getQueues().get(HEALTH_INFO_QUEUE);
+                destinationsConfig.getQueues().get(queueNames.getHealthInfoQueue());
 
         if (destinationInfo == null) {
-            logger.info(HEALTH_INFO_QUEUE + " not found");
+            logger.info(queueNames.getHealthInfoQueue() + " not found");
             throw queueNotFound();
         }
 

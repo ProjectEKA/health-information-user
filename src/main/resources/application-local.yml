@@ -32,16 +32,17 @@ hiu:
     user: orthanc
     password: orthanc
   gatewayservice:
-    baseUrl: http://localhost:8000/v1
+    baseUrl: http://localhost:8000/v0.5
     requestTimeout: 2000
     clientId: 10000002
     clientSecret: ${CLIENT_SECRET}
-    jwkUrl: http://localhost:8000/v1/certs
+    jwkUrl: http://localhost:8000/v0.5/certs
 spring:
   rabbitmq:
     host: localhost
     port: 5672
     username: guest
     password: guest
+    queuePrefix: ""
   codec:
     max-in-memory-size: 500MB
