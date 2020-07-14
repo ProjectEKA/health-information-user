@@ -67,8 +67,8 @@ public class SecurityConfiguration {
                 "/**.css",
                 "/**.png",
                 "/health-information/fetch/**/attachments/**",
-                "/data/notification",
-                "/v1/heartbeat",
+                PATH_DATA_TRANSFER,
+                PATH_HEARTBEAT,
                 "/sessions",
                 "/config"};
 
