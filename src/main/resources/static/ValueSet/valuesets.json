@@ -71,6 +71,14 @@
             {
               "code": "DocumentReference",
               "display": "Clinical Documents"
+            },
+            {
+              "code": "DischargeSummary",
+              "display": "Discharge Summary"
+            },
+            {
+              "code": "Prescription",
+              "display": "Prescription"
             }
           ]
         }

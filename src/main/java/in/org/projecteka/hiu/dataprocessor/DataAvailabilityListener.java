@@ -85,8 +85,10 @@ public class DataAvailabilityListener {
 
     private List<HITypeResourceProcessor> allResourceProcessors() {
         return Arrays.asList(
+                new CompositionResourceProcessor(),
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)),
-                new DocumentReferenceResourceProcessor());
+                new DocumentReferenceResourceProcessor(),
+                new MedicationRequestResourceProcessor());
     }
 
     @SneakyThrows
