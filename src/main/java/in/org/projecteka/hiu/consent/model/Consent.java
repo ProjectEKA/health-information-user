@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,6 +26,9 @@ public class Consent {
     private Purpose purpose;
     private List<HIType> hiTypes;
     private Permission permission;
+    @Valid
+    private String hipId;
+
 
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
@@ -42,7 +46,7 @@ public class Consent {
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
-                        ONE_HOUR));
+                        ONE_HOUR), hipId);
     }
 
     public ConsentRequest toConsentRequest(String id, String requesterId) {
@@ -75,6 +79,7 @@ public class Consent {
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
                         ONE_HOUR))
+                .hipId(hipId)
                 .build();
 
     }

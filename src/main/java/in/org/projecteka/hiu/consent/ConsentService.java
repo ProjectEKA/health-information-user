@@ -114,7 +114,7 @@ public class ConsentService {
                                                                  PatientConsentRequest consentRequest) {
         Map<String, String> response = new HashMap<>();
         return Flux.fromIterable(consentRequest.getHipIds())
-                .flatMap(hipId -> buildConsentRequest(requesterId).flatMap(consentRequestData -> {
+                .flatMap(hipId -> buildConsentRequest(requesterId, hipId).flatMap(consentRequestData -> {
                     var dataRequestId = UUID.randomUUID();
                     var gatewayRequestId = UUID.randomUUID();
                     return validateConsentRequest(consentRequestData)
@@ -129,7 +129,7 @@ public class ConsentService {
                 .then(Mono.just(response));
     }
 
-    private Mono<ConsentRequestData> buildConsentRequest(String requesterId) {
+    private Mono<ConsentRequestData> buildConsentRequest(String requesterId, String hipId) {
 
         return Mono.just(ConsentRequestData.builder().consent(Consent.builder()
                 .hiTypes(List.of(HIType.class.getEnumConstants()))
@@ -142,6 +142,7 @@ public class ConsentService {
                                 .to(LocalDateTime.now(ZoneOffset.UTC)).build())
                         .build())
                 .purpose(new Purpose("PATRQT"))
+                .hipId(hipId)
                 .build())
                 .build());
     }
@@ -248,13 +249,13 @@ public class ConsentService {
             String consentRequestId) {
         var consent = consentRequest.toBuilder().status(reqStatus).build();
         return reqStatus.equals(ConsentStatus.POSTED)
-               ? Mono.just(consent)
-               : consentRepository.getConsentDetails(consentRequestId)
-                       .take(1)
-                       .next()
-                       .map(map -> ConsentStatus.valueOf(map.get("status")))
-                       .switchIfEmpty(Mono.just(reqStatus))
-                       .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
+                ? Mono.just(consent)
+                : consentRepository.getConsentDetails(consentRequestId)
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get("status")))
+                .switchIfEmpty(Mono.just(reqStatus))
+                .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
     public Mono<Void> handleNotification(HiuConsentNotificationRequest hiuNotification) {

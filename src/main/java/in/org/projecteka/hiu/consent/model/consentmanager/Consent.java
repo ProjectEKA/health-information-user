@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -22,4 +23,6 @@ public class Consent {
     private Requester requester;
     private List<HIType> hiTypes;
     private Permission permission;
+    @Valid
+    private String hipId;
 }
