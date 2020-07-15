@@ -35,6 +35,10 @@ hiu:
     clientId: ${HIU_CLIENT_ID}
     clientSecret: ${HIU_CLIENT_SECRET}
     jwkUrl: ${GATEWAY_JWK_URL}
+  consentservice:
+    consentRequestFromYears: ${CONSENT_REQUEST_FROM_YEARS:7}
+    consentExpiryInMonths: ${CONSETN_EXPIRY_IN_MONTHS:2}
+    defaultPageSize: ${DEFAULT_CR_PAGE_SIZE:200}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
