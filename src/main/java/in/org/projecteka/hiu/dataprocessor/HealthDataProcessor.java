@@ -97,9 +97,7 @@ public class HealthDataProcessor {
             DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(transactionId).block();
             List<String> dataErrors = new ArrayList<>();
             List<StatusResponse> statusResponses = new ArrayList<>();
-            System.out.println("*********************************************");
-            System.out.println("Recieved data from HIP. Number of entries:" + context.getNotifiedData().getEntries().size());
-            System.out.println("*********************************************");
+            logger.info("Received data from HIP. Number of entries: %d", context.getNotifiedData().getEntries().size());
             context.getNotifiedData().getEntries().forEach(entry -> {
                 var entryToProcess = entry;
                 String dataPartNumber = context.getDataPartNumber();
@@ -131,6 +129,8 @@ public class HealthDataProcessor {
             if (!dataErrors.isEmpty()) {
                 var errors = dataErrors.stream().map("[ERROR]"::concat).collect(joining());
                 var allErrors = "[ERROR]".concat(errors);
+                logger.error("Error occurred while processing data from HIP. Transaction id: %s. Errors: %s",
+                        context.getTransactionId(), allErrors);
                 updateDataProcessStatus(context, allErrors, HealthInfoStatus.ERRORED);
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.FAILED);
             } else {
@@ -138,6 +138,7 @@ public class HealthDataProcessor {
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
             }
         } catch (Exception ex) {
+            logger.error("Error occurred while processing data from HIP. Transaction id: %s.", context.getTransactionId());
             logger.error(ex.getMessage(), ex);
         }
     }
