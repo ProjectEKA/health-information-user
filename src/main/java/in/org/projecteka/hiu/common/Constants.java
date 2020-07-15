@@ -13,7 +13,8 @@ public class Constants {
     public static final String X_CM_ID = "X-CM-ID";
     public static final String PATH_DATA_TRANSFER = "/data/notification";
     public static final String EMPTY_STRING = "";
-
+    public static final String APP_PATH_PATIENT_CONSENT_REQUEST = "/v1/cm/patient/consent-request";
+    public static final String APP_PATH_HIU_CONSENT_REQUESTS = "/v1/hiu/consent-requests";
     private Constants() {
     }
 }

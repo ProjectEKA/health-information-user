@@ -20,14 +20,15 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 
+import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
+
 @RestController
 @AllArgsConstructor
 public class ConsentController {
-    public static final String APP_PATH_HIU_CONSENT_REQUESTS = "/v1/hiu/consent-requests";
     private final ConsentService consentService;
 
     @PostMapping(APP_PATH_HIU_CONSENT_REQUESTS)
-    public Mono<ResponseEntity> postConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
+    public Mono<ResponseEntity<HttpStatus>> postConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
@@ -36,7 +37,8 @@ public class ConsentController {
     }
 
     @PostMapping(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
-    public Mono<ResponseEntity> onInitConsentRequest(@RequestBody ConsentRequestInitResponse consentRequestInitResponse) {
+    public Mono<ResponseEntity<HttpStatus>> onInitConsentRequest(
+            @RequestBody ConsentRequestInitResponse consentRequestInitResponse) {
         return consentService.updatePostedRequest(consentRequestInitResponse)
                 .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
@@ -50,13 +52,15 @@ public class ConsentController {
     }
 
     @PostMapping(Constants.PATH_CONSENTS_HIU_NOTIFY)
-    public Mono<ResponseEntity> hiuConsentNotification(@RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
+    public Mono<ResponseEntity<HttpStatus>> hiuConsentNotification(
+            @RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
         consentService.handleNotification(hiuNotification).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
     @PostMapping(Constants.PATH_CONSENTS_ON_FETCH)
-    public Mono<ResponseEntity> onFetchConsentArtefact(@RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
+    public Mono<ResponseEntity<HttpStatus>> onFetchConsentArtefact(
+            @RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
         consentService.handleConsentArtefact(consentArtefactResponse).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }

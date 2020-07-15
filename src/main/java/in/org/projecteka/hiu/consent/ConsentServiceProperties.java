@@ -15,4 +15,5 @@ import org.springframework.context.annotation.Configuration;
 public class ConsentServiceProperties {
     private int consentRequestFromYears;
     private int consentExpiryInMonths;
+    private long defaultPageSize;
 }

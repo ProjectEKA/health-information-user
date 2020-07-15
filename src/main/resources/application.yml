@@ -38,6 +38,7 @@ hiu:
   consentservice:
     consentRequestFromYears: ${CONSENT_REQUEST_FROM_YEARS:7}
     consentExpiryInMonths: ${CONSETN_EXPIRY_IN_MONTHS:2}
+    defaultPageSize: ${DEFAULT_CR_PAGE_SIZE:200}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
