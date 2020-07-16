@@ -196,7 +196,7 @@ class ConsentUserJourneyTest {
         when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(just(ConsentStatus.POSTED));
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6", ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(empty());
-        when(patientConsentRepository.insertPatientConsentRequestMapping(any(), any()))
+        when(patientConsentRepository.updatePatientConsentRequest(any(), any(),any()))
                 .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller.builder()
@@ -272,7 +272,7 @@ class ConsentUserJourneyTest {
                 ConsentStatus.REQUESTED,
                 "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(empty());
-        when(patientConsentRepository.insertPatientConsentRequestMapping(any(), any()))
+        when(patientConsentRepository.updatePatientConsentRequest(any(), any(),any()))
                 .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller

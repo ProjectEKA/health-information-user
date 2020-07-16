@@ -15,6 +15,7 @@ public class Constants {
     public static final String EMPTY_STRING = "";
     public static final String APP_PATH_PATIENT_CONSENT_REQUEST = "/v1/cm/patient/consent-request";
     public static final String APP_PATH_HIU_CONSENT_REQUESTS = "/v1/hiu/consent-requests";
+    public static final String PATIENT_REQUESTED_PURPOSE_CODE = "PATRQT";
     private Constants() {
     }
 }

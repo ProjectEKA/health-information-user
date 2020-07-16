@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.consent.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import in.org.projecteka.hiu.consent.ConceptLookup;
 import in.org.projecteka.hiu.consent.model.consentmanager.AccessMode;
+import in.org.projecteka.hiu.consent.model.consentmanager.HIP;
 import in.org.projecteka.hiu.consent.model.consentmanager.HIU;
 import in.org.projecteka.hiu.consent.model.consentmanager.Requester;
 import lombok.AllArgsConstructor;
@@ -34,6 +35,7 @@ public class Consent {
                                                                          String hiuId,
                                                                          String hiuName,
                                                                          ConceptLookup conceptLookup) {
+        var hip = hipId != null ? new HIP(hipId) : null;
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
                         conceptLookup.getPurposeDescription(getPurpose().getCode()),
@@ -46,10 +48,12 @@ public class Consent {
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
-                        ONE_HOUR), hipId);
+                        ONE_HOUR),
+                hip);
     }
 
     public ConsentRequest toConsentRequest(String id, String requesterId) {
+        var hip = hipId != null ? new HIP(hipId) : null;
         return ConsentRequest.builder()
                 .id(id)
                 .requesterId(requesterId)
@@ -59,6 +63,7 @@ public class Consent {
                 .permission(getPermission())
                 .status(ConsentStatus.REQUESTED)
                 .createdDate(LocalDateTime.now())
+                .hip(hip)
                 .build();
     }
 
@@ -66,6 +71,7 @@ public class Consent {
                                                                          String hiuId,
                                                                          ConceptLookup conceptLookup) {
 
+        var hip = hipId != null ? new HIP(hipId) : null;
         return in.org.projecteka.hiu.consent.model.consentmanager.Consent.builder()
                 .purpose(new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
                         conceptLookup.getPurposeDescription(getPurpose().getCode()),
@@ -79,7 +85,7 @@ public class Consent {
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
                         ONE_HOUR))
-                .hipId(hipId)
+                .hip(hip)
                 .build();
 
     }

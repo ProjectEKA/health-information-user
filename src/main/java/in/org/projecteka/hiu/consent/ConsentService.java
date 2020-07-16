@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
+import static in.org.projecteka.hiu.common.Constants.PATIENT_REQUESTED_PURPOSE_CODE;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
@@ -119,7 +120,7 @@ public class ConsentService {
                     var gatewayRequestId = UUID.randomUUID();
                     return validateConsentRequest(consentRequestData)
                             .then(sendConsentRequestToGateway(requesterId, consentRequestData, gatewayRequestId))
-                            .then(patientConsentRepository.insertConsentRequestToGateway(consentRequest,
+                            .then(patientConsentRepository.insertPatientConsentRequest(
                                     dataRequestId,
                                     hipId)
                                     .doOnSuccess(discard -> response.put(hipId, dataRequestId.toString()))
@@ -141,7 +142,7 @@ public class ConsentService {
                                         .minusYears(consentServiceProperties.getConsentRequestFromYears()))
                                 .to(LocalDateTime.now(ZoneOffset.UTC)).build())
                         .build())
-                .purpose(new Purpose("PATRQT"))
+                .purpose(new Purpose(PATIENT_REQUESTED_PURPOSE_CODE))
                 .hipId(hipId)
                 .build())
                 .build());
@@ -195,7 +196,7 @@ public class ConsentService {
             var consentRequestId = UUID.fromString(response.getConsentRequest().getId());
             return updatePublisher
                     .then(patientConsentRepository
-                            .insertPatientConsentRequestMapping(UUID.fromString(dataRequestId), consentRequestId));
+                            .updatePatientConsentRequest(UUID.fromString(dataRequestId), consentRequestId,LocalDateTime.now(ZoneOffset.UTC)));
         }
 
         return error(ClientError.invalidDataFromGateway());
