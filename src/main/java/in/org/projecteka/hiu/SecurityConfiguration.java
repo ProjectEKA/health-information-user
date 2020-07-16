@@ -2,7 +2,6 @@ package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
-import in.org.projecteka.hiu.dataflow.HealthInfoController;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,6 +35,8 @@ import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_IN
 import static in.org.projecteka.hiu.common.Constants.PATH_DATA_TRANSFER;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_ATTACHMENT;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -55,10 +56,10 @@ public class SecurityConfiguration {
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
-            Map.entry(HttpMethod.POST, HealthInfoController.API_PATH_FETCH_PATIENT_HEALTH_INFO));
+            Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO));
 
     private static final List<Map.Entry<HttpMethod, String>> DOCTOR_AND_PATIENT_COMMON_APIS = List.of(
-            Map.entry(HttpMethod.GET, HealthInfoController.API_PATH_GET_ATTACHMENT)
+            Map.entry(HttpMethod.GET, API_PATH_GET_ATTACHMENT)
     );
 
     @Bean

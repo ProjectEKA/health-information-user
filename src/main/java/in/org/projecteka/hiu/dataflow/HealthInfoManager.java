@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.dataflow;
 
+import com.google.common.collect.Sets;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
@@ -14,10 +15,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactGone;
 import static in.org.projecteka.hiu.ClientError.invalidHealthInformationRequest;
@@ -76,22 +75,27 @@ public class HealthInfoManager {
             statuses.add(dataPart.getStatus());
             dataPartStatuses.put(dataPart.getTransactionId(), statuses);
         });
-        List<String> transactionIds = List.copyOf(dataEntries.keySet());
-        List<PatientDataEntry> partsInProcess = getDataPartsInProcess(dataPartStatuses, dataEntries);
-        return healthInformationRepository.getHealthInformation(transactionIds, limit, offset)
+
+        Set<String> allTransactionIds = dataEntries.keySet();
+        Set<String> processingTransactionsIds = getDataPartsInProcess(dataPartStatuses);
+        Set<String> completedTransactionIds = Sets.difference(allTransactionIds, processingTransactionsIds);
+
+        return healthInformationRepository.getHealthInformation(List.copyOf(completedTransactionIds), limit, offset)
                 .map(healthInfo -> dataEntries.get(healthInfo.get("transaction_id").toString())
                         .status(toStatus((String) healthInfo.get("status")))
                         .data(healthInfo.get("data")).build())
-                .mergeWith(Flux.fromIterable(partsInProcess));
+                .mergeWith(Flux.fromIterable(processingTransactionsIds
+                        .stream()
+                        .map(transactionId -> dataEntries.get(transactionId).status(EntryStatus.PROCESSING).build())
+                        .collect(Collectors.toList())));
     }
 
-    private List<PatientDataEntry> getDataPartsInProcess(HashMap<String, List<HealthInfoStatus>> dataPartStatuses,
-                                                         HashMap<String, PatientDataEntry.PatientDataEntryBuilder> dataEntries) {
-        List<PatientDataEntry> processingTransactions = new ArrayList<>();
+    private Set<String> getDataPartsInProcess(HashMap<String, List<HealthInfoStatus>> dataPartStatuses) {
+        Set<String> processingTransactions = new HashSet<>();
         dataPartStatuses.forEach((transactionId, statuses) -> {
             var isProcessing = statuses.stream().anyMatch(this::isProcessingOrReceived);
             if (isProcessing) {
-                processingTransactions.add(dataEntries.get(transactionId).status(EntryStatus.PROCESSING).build());
+                processingTransactions.add(transactionId);
             }
         });
         return processingTransactions;

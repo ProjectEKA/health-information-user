@@ -24,15 +24,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_ATTACHMENT;
+
+@SuppressWarnings("MVCPathVariableInspection")
 @RestController
 @AllArgsConstructor
 public class HealthInfoController {
     private final HealthInfoManager healthInfoManager;
     private final DataFlowServiceProperties serviceProperties;
-
-    public static final String API_PATH_FETCH_PATIENT_HEALTH_INFO = "/v1/cm/patient/health-information/fetch/";
-    public static final String API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST = "/health-information/fetch/{consent-request-id}";
-    public static final String API_PATH_GET_ATTACHMENT = "/health-information/fetch/{consent-request-id}/attachments/{file-name}";
 
     @GetMapping(API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST)
     public Mono<HealthInformation> fetchHealthInformation(

@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -107,7 +108,8 @@ class HealthInfoControllerTest {
         var caller = new Caller(requester, false, null, true);
         var healthInfoRequest = TestBuilders.healthInformationRequest().limit(10).build();
         var consentRequestIds = List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
-        var dataPartDetails = TestBuilders.dataPartDetails(2, requester, HealthInfoStatus.SUCCEEDED);
+        var dataPartDetails = TestBuilders.dataPartDetails(2, requester, HealthInfoStatus.SUCCEEDED)
+                .stream().map(DataPartDetail.DataPartDetailBuilder::build).collect(Collectors.toList());
         var transactionIds = dataPartDetails.stream().map(DataPartDetail::getTransactionId).collect(Collectors.toList());
         List<Map<String, Object>> healthInfo = List.of(Map.of(
                 "data", JsonNodeFactory.instance.objectNode(),
@@ -122,7 +124,7 @@ class HealthInfoControllerTest {
 
         webTestClient
                 .post()
-                .uri(HealthInfoController.API_PATH_FETCH_PATIENT_HEALTH_INFO)
+                .uri(API_PATH_FETCH_PATIENT_HEALTH_INFO)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(healthInfoRequest)

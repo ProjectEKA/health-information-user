@@ -40,9 +40,9 @@ public class TestBuilders {
         return easyRandom.nextObject(HealthInformationFetchRequest.HealthInformationFetchRequestBuilder.class);
     }
 
-    public static List<DataPartDetail> dataPartDetails(int size, String requester, HealthInfoStatus status) {
+    public static List<DataPartDetail.DataPartDetailBuilder> dataPartDetails(int size, String requester, HealthInfoStatus status) {
         var builders = easyRandom.objects(DataPartDetail.DataPartDetailBuilder.class, size);
-        return builders.map(builder -> builder.requester(requester).status(status).build()).collect(Collectors.toList());
+        return builders.map(builder -> builder.requester(requester).status(status)).collect(Collectors.toList());
     }
 
     public static String string() {
