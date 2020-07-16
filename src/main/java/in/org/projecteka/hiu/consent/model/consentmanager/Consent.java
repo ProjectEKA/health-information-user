@@ -24,5 +24,5 @@ public class Consent {
     private List<HIType> hiTypes;
     private Permission permission;
     @Valid
-    private String hipId;
+    private HIP hip;
 }
