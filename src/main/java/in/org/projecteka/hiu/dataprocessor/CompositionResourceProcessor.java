@@ -30,25 +30,26 @@ public class CompositionResourceProcessor implements HITypeResourceProcessor {
                 processCompositionEntry(entry, dataContext, bundleContext, compositionContext);
             });
         }
-        String title = String.format("%s : %s", composition.getTitle(), FHIRUtils.getDisplay(composition.getType()));
-        bundleContext.trackResource(ResourceType.Composition, resource.getId(), ((Composition) resource).getDate(), title);
+        String title = String.format("Composition - %s : %s", composition.getTitle(), FHIRUtils.getDisplay(composition.getType()));
+        bundleContext.trackResource(ResourceType.Composition, composition.getId(), composition.getDate(), title);
     }
 
 
     private void processCompositionEntry(Reference entry, DataContext dataContext, BundleContext bundleContext, ProcessContext compositionContext) {
         IBaseResource entryResource = entry.getResource();
         if (entryResource == null) {
-            compositionContext.getContextResourceId();
             logger.warn(String.format("Composition section entry not found. Composition id: %s, Entry reference: %s",
                     compositionContext.getContextResourceId(), entry.getReference()));
         }
         if (!(entryResource instanceof Resource)) {
+            logger.warn(String.format("Composition section entry is not an instance of FHIR resource. Composition id: %s, Entry reference: %s",
+                    compositionContext.getContextResourceId(), entry.getReference()));
             return;
         }
-        Resource bundleResource = (Resource) entryResource;
-        HITypeResourceProcessor resProcessor = bundleContext.findResourceProcessor(bundleResource.getResourceType());
+        Resource sectionEntryResource = (Resource) entryResource;
+        HITypeResourceProcessor resProcessor = bundleContext.findResourceProcessor(sectionEntryResource.getResourceType());
         if (resProcessor != null) {
-            resProcessor.process(bundleResource, dataContext, bundleContext, compositionContext);
+            resProcessor.process(sectionEntryResource, dataContext, bundleContext, compositionContext);
         }
     }
 }

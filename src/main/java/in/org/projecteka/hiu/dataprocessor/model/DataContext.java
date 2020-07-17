@@ -7,7 +7,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Builder
 @Getter
@@ -32,5 +34,14 @@ public class DataContext {
 
     public void addTrackedResources(List<TrackedResourceReference> trackedResources) {
         this.trackedResources.addAll(trackedResources);
+    }
+    public LocalDateTime latestResourceDate() {
+        if (trackedResources == null || trackedResources.isEmpty()) {
+            return null;
+        }
+        List<LocalDateTime> dateTimes = trackedResources.stream()
+                .map(res -> res.getLocalDateTime())
+                .filter(resDate -> resDate != null).collect(Collectors.toList());
+        return dateTimes.isEmpty() ?  null : dateTimes.stream().max(LocalDateTime::compareTo).get();
     }
 }

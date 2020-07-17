@@ -5,6 +5,7 @@ import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dataprocessor.model.ProcessContext;
 import in.org.projecteka.hiu.dicomweb.DicomStudy;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Attachment;
 import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Media;
@@ -60,10 +61,42 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         DiagnosticReport diagnosticReport = (DiagnosticReport) resource;
         processPresentedForm(diagnosticReport, dataContext.getLocalStoragePath());
         processMedia(diagnosticReport, dataContext.getLocalStoragePath(), bundleContext);
+        processResults(diagnosticReport, dataContext, bundleContext, processContext);
         bundleContext.doneProcessing(diagnosticReport);
         Date reportDate = getReportDate(diagnosticReport, bundleContext, processContext);
         String title = String.format("Diagnostic Report : %s", FHIRUtils.getDisplay(diagnosticReport.getCode()));
         bundleContext.trackResource(ResourceType.DiagnosticReport, diagnosticReport.getId(), reportDate, title);
+    }
+
+    private ResourceType getDiagnosticReportResourceType() {
+        return ResourceType.DiagnosticReport;
+    }
+
+    private void processResults(DiagnosticReport diagnosticReport, DataContext dataContext, BundleContext bundleContext, ProcessContext processContext) {
+        if (diagnosticReport.hasResult()) {
+            ProcessContext reportProcessCtx = processContext != null ? processContext : getReportContext(diagnosticReport, bundleContext);
+            diagnosticReport.getResult().stream().forEach(ref -> {
+                IBaseResource resource = ref.getResource();
+                if (resource == null) {
+                    logger.warn(String.format("Diagnostic results not found. diagnosticReport id: %s, result reference: %s",
+                            diagnosticReport.getId(), ref.getReference()));
+                }
+                if (!(resource instanceof Resource)) {
+                    return;
+                }
+                Resource bundleResource = (Resource) resource;
+                HITypeResourceProcessor resProcessor = bundleContext.findResourceProcessor(bundleResource.getResourceType());
+                if (resProcessor != null) {
+                    resProcessor.process(bundleResource, dataContext, bundleContext, reportProcessCtx);
+                }
+            });
+        }
+    }
+
+    private ProcessContext getReportContext(DiagnosticReport diagnosticReport, BundleContext bundleContext) {
+        return new ProcessContext(
+               () -> getReportDate(diagnosticReport, bundleContext, null),
+               diagnosticReport::getId, this::getDiagnosticReportResourceType);
     }
 
     private Date getReportDate(DiagnosticReport diagnosticReport, BundleContext bundleContext, ProcessContext processContext) {
