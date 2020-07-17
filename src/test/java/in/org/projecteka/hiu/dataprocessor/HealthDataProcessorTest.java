@@ -22,14 +22,12 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestKeyMaterial;
@@ -111,12 +109,12 @@ class HealthDataProcessorTest {
         String cmId = "ncg";
         String token = string();
 
-        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any()))
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any(), any()))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any()))
                 .thenReturn(Mono.empty());
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any()))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
         when(gateway.token()).thenReturn(Mono.just(token));
@@ -134,11 +132,11 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any(), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any());
     }
 
     @Test
@@ -167,11 +165,11 @@ class HealthDataProcessorTest {
         String cmId = "ncg";
         String token = string();
 
-        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any())).thenReturn(Mono.empty());
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any(), any())).thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any()))
                 .thenReturn(Mono.empty());
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any()))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
         when(gateway.token()).thenReturn(Mono.just(token));
@@ -189,11 +187,11 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any(), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any());
     }
 
     @Test
@@ -222,11 +220,11 @@ class HealthDataProcessorTest {
         var savedKeyMaterial = dataFlowRequestKeyMaterial().build();
         String token = string();
 
-        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any())).thenReturn(Mono.empty());
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any(), any())).thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("123456")).thenReturn(Mono.just(savedKeyMaterial));
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any()))
                 .thenReturn(Mono.empty());
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any()))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
         when(gateway.token()).thenReturn(Mono.just(token));
@@ -244,11 +242,11 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any(), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any());
     }
 
     @Test
@@ -267,12 +265,12 @@ class HealthDataProcessorTest {
         String cmId = "ncg";
         String token = string();
 
-        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any()))
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any(), any()))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("101")).thenReturn(Mono.just(savedKeyMaterial));
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any()))
                 .thenReturn(Mono.empty());
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any()))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
         when(gateway.token()).thenReturn(Mono.just(token));
@@ -290,11 +288,11 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any(), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any());
     }
 
     @Test
@@ -317,12 +315,12 @@ class HealthDataProcessorTest {
         String cmId = "ncg";
         String token = string();
 
-        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any()))
+        when(healthDataRepository.insertDataFor(eq(transactionId), eq(partNumber), any(), any()))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.getKeys("102")).thenReturn(Mono.just(savedKeyMaterial));
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any()))
                 .thenReturn(Mono.empty());
-        when(dataFlowRepository.updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING))
+        when(dataFlowRepository.updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any()))
                 .thenReturn(Mono.empty());
         when(decryptor.decrypt(any(), any(), any())).thenReturn(content);
         when(gateway.token()).thenReturn(Mono.just(token));
@@ -340,11 +338,11 @@ class HealthDataProcessorTest {
                 .getHipId(eq(consentId));
         verify(consentRepository,times(1))
                 .getConsentMangerId(eq(consentId));
-        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any());
+        verify(healthDataRepository, times(1)).insertDataFor(eq(transactionId), eq(partNumber), any(), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.SUCCEEDED);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.SUCCEEDED), any());
         verify(dataFlowRepository, times(1))
-                .updateDataFlowWithStatus(transactionId, partNumber, "", HealthInfoStatus.PROCESSING);
+                .updateDataFlowWithStatus(eq(transactionId), eq(partNumber), eq(""), eq(HealthInfoStatus.PROCESSING), any());
     }
 
     private DataContext getFHIRResource(DataAvailableMessage message) {

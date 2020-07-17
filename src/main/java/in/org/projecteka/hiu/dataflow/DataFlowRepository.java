@@ -42,7 +42,7 @@ public class DataFlowRepository {
                     "INNER JOIN consent_artefact ca ON dfr.consent_artefact_id=ca.consent_artefact_id " +
                     "WHERE dfr.transaction_id=$1";
     private static final String UPDATE_HEALTH_DATA_AVAILABILITY = "UPDATE data_flow_parts SET status = $1, errors = " +
-            "$2 WHERE transaction_id = $3 AND part_number = $4";
+            "$2, latest_res_date = $3 WHERE transaction_id = $4 AND part_number = $5";
     private static final String SELECT_CONSENT_ID = "SELECT consent_artefact_id FROM data_flow_request WHERE " +
             "transaction_id = $1";
 
@@ -209,9 +209,9 @@ public class DataFlowRepository {
     }
 
     public Mono<Void> updateDataFlowWithStatus(String transactionId, String dataPartNumber, String allErrors,
-                                               HealthInfoStatus status) {
+                                               HealthInfoStatus status, LocalDateTime latestResourceDate) {
         return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_HEALTH_DATA_AVAILABILITY)
-                .execute(Tuple.of(status.toString(), allErrors, transactionId, dataPartNumber),
+                .execute(Tuple.of(status.toString(), allErrors, latestResourceDate, transactionId, dataPartNumber),
                         handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
