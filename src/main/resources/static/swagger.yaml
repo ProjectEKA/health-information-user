@@ -249,7 +249,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthInformation'
-  /v1/cm/patient/health-information/fetch/:
+  /v1/patient/health-information/fetch/:
     post:
       tags:
         - cm app
@@ -272,12 +272,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PatientHealthDataResponse'
-  /v1/cm/patient/health-information/status/:
+  /v1/patient/health-information/status/:
     post:
       tags:
         - cm app
       summary: Get health information status.
-      description: This API can be used to checkt the status of health information against a set of data request ids when CM app request for data.
+      description: This API can be used to check the status of health information against a set of data request ids when CM app request for data.
       parameters:
         - $ref: '#/components/parameters/authorization'
       requestBody:
