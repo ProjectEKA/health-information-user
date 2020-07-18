@@ -30,7 +30,8 @@ public class HealthInformationRepository {
             "transaction_id=$1";
     private static final String SELECT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS = "SELECT data, status, transaction_id " +
             "FROM health_information WHERE transaction_id in (%s) " +
-            "ORDER BY date_created DESC LIMIT $1 OFFSET $2";
+            "ORDER BY transaction_id, latest_res_date DESC NULLS LAST " +
+            "LIMIT $1 OFFSET $2";
 
     private static final String COUNT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS = "SELECT COUNT(*) " +
             "FROM health_information WHERE transaction_id in (%s)";
