@@ -27,7 +27,7 @@ public class PatientConsentRepository {
     private static final String UPDATE_PATIENT_CONSENT_REQUEST = "UPDATE " +
             "patient_consent_request SET consent_request_id=$2, date_modified=$3 WHERE data_request_id=$1";
 
-    private static final String SELECT_CONSENT_REQ_IDS = "SELECT consent_request_id FROM patient_consent_request_mapping " +
+    private static final String SELECT_CONSENT_REQ_IDS = "SELECT consent_request_id FROM patient_consent_request " +
             "WHERE data_request_id IN (%s)";
 
     private final PgPool dbClient;
