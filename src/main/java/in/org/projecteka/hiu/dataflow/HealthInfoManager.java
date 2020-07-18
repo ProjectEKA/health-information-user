@@ -15,6 +15,8 @@ import reactor.util.function.Tuple2;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.time.ZoneOffset;
+import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactGone;
 import static in.org.projecteka.hiu.ClientError.invalidHealthInformationRequest;
@@ -81,7 +83,7 @@ public class HealthInfoManager {
 
     private boolean isConsentNotExpired(Map<String, String> consentDetail) {
         var consentExpiryDate = LocalDateTime.parse(consentDetail.get("consentExpiryDate"));
-        return consentExpiryDate.isAfter(LocalDateTime.now());
+        return consentExpiryDate.isAfter(LocalDateTime.now(ZoneOffset.UTC));
     }
 
     private boolean isGrantedConsent(Map<String, String> consentDetail) {
