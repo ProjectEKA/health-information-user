@@ -237,6 +237,9 @@ public class DataFlowRepository {
 
     public Flux<DataPartDetail> fetchDataPartDetails(List<String> consentRequestIds) {
         var generatedQuery = String.format(FETCH_DATA_PART_DETAILS, joinByComma(consentRequestIds));
+        if(consentRequestIds.isEmpty()){
+            return Flux.empty();
+        }
         return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
                 .execute(handler -> {
                     if (handler.failed()) {

@@ -37,6 +37,7 @@ import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU
 import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
 import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -57,7 +58,8 @@ public class SecurityConfiguration {
             Map.entry(HttpMethod.GET, "/cm/hello"),
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
             Map.entry(HttpMethod.POST, CM_API_PATH_GET_ATTACHMENT),
-            Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO));
+            Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO),
+            Map.entry(HttpMethod.POST, API_PATH_GET_HEALTH_INFO_STATUS));
 
 
     @Bean
