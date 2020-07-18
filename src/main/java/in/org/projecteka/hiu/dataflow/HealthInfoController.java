@@ -58,14 +58,13 @@ public class HealthInfoController {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
-                .flatMapMany(username -> healthInfoManager.fetchHealthInformation(
+                .flatMap(username -> healthInfoManager.fetchHealthInformation(
                         dataRequest.getRequestIds(), username, limit, dataRequest.getOffset()))
-                .collectList()
-                .map(patientDataEntries -> PatientHealthInformation.builder()
-                        .size(patientDataEntries.size())
+                .map(tuple -> PatientHealthInformation.builder()
+                        .size(tuple.getT2())
                         .limit(limit)
                         .offset(dataRequest.getOffset())
-                        .entries(patientDataEntries).build());
+                        .entries(tuple.getT1()).build());
     }
 
     @GetMapping(API_PATH_GET_ATTACHMENT)

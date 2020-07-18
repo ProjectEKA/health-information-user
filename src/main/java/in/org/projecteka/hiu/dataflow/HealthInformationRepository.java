@@ -31,6 +31,10 @@ public class HealthInformationRepository {
     private static final String SELECT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS = "SELECT data, status, transaction_id " +
             "FROM health_information WHERE transaction_id in (%s) " +
             "ORDER BY date_created DESC LIMIT $1 OFFSET $2";
+
+    private static final String COUNT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS = "SELECT COUNT(*) " +
+            "FROM health_information WHERE transaction_id in (%s)";
+
     private static final String DELETE_HEALTH_INFO_FOR_EXPIRED_CONSENT = "DELETE FROM health_information WHERE transaction_id=$1";
 
     private final PgPool dbClient;
@@ -62,6 +66,19 @@ public class HealthInformationRepository {
         return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
                 .execute(Tuple.of(limit, offset),
                         getHealthInfo(fluxSink, "Failed to get health information for given transaction ids")));
+    }
+
+    public Mono<Integer> getTotalCountOfEntries(List<String> transactionIds) {
+        var generatedQuery = String.format(COUNT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS, joinByComma(transactionIds));
+        return Mono.create(monoSink -> dbClient.preparedQuery(generatedQuery)
+                .execute(handler -> {
+                    if (handler.failed()) {
+                        logger.error(handler.cause().getMessage(), handler.cause());
+                        monoSink.error(new Exception("Failed to count total number of entries for given transaction ids"));
+                        return;
+                    }
+                    monoSink.success(handler.result().iterator().next().getInteger("count"));
+                }));
     }
 
     private Map<String, Object> toHealthInfo(Row row) throws JsonProcessingException {

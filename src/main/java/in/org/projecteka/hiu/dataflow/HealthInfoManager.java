@@ -1,22 +1,20 @@
 package in.org.projecteka.hiu.dataflow;
 
-import com.google.common.collect.Sets;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.DataPartDetail;
-import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.PatientDataEntry;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactGone;
 import static in.org.projecteka.hiu.ClientError.invalidHealthInformationRequest;
@@ -44,7 +42,7 @@ public class HealthInfoManager {
                                 consentDetail.get("hipName"))));
     }
 
-    public Flux<PatientDataEntry> fetchHealthInformation(List<String> dataRequestIds, String requesterId,
+    public Mono<Tuple2<List<PatientDataEntry>, Integer>> fetchHealthInformation(List<String> dataRequestIds, String requesterId,
                                                          int limit, int offset) {
         return patientConsentRepository.fetchConsentRequestIds(dataRequestIds)
                 .collectList()
@@ -52,57 +50,28 @@ public class HealthInfoManager {
                 .collectList()
                 .filter(dataParts -> isValidRequester(dataParts, requesterId))
                 .switchIfEmpty(Mono.error(unauthorizedRequester()))
-                .flatMapMany(dataParts -> getDataEntries(limit, offset, dataParts));
+                .flatMap(dataParts -> getDataEntries(limit, offset, dataParts));
     }
 
     private boolean isValidRequester(List<DataPartDetail> dataParts, String requesterId) {
         return dataParts.stream().allMatch(dataPart -> dataPart.getRequester().equals(requesterId));
     }
 
-    private Flux<PatientDataEntry> getDataEntries(int limit, int offset, List<DataPartDetail> dataParts) {
-        HashMap<String, List<HealthInfoStatus>> dataPartStatuses = new HashMap<>();
+    private Mono<Tuple2<List<PatientDataEntry>, Integer>> getDataEntries(int limit, int offset, List<DataPartDetail> dataParts) {
         HashMap<String, PatientDataEntry.PatientDataEntryBuilder> dataEntries = new HashMap<>();
-        dataParts.forEach(dataPart -> {
-            var statuses = dataPartStatuses.get(dataPart.getTransactionId());
-            dataEntries.put(dataPart.getTransactionId(), PatientDataEntry.builder()
-                    .consentRequestId(dataPart.getConsentRequestId())
-                    .hipId(dataPart.getHipId())
-                    .consentArtefactId(dataPart.getConsentArtifactId()));
-            if (statuses == null) {
-                dataPartStatuses.put(dataPart.getTransactionId(), List.of(dataPart.getStatus()));
-                return;
-            }
-            statuses.add(dataPart.getStatus());
-            dataPartStatuses.put(dataPart.getTransactionId(), statuses);
+        dataParts.forEach(dataPartDetail -> {
+            dataEntries.put(dataPartDetail.getTransactionId(), PatientDataEntry.builder()
+                    .consentRequestId(dataPartDetail.getConsentRequestId())
+                    .hipId(dataPartDetail.getHipId())
+                    .consentArtefactId(dataPartDetail.getConsentArtifactId()));
         });
-
-        Set<String> allTransactionIds = dataEntries.keySet();
-        Set<String> processingTransactionsIds = getDataPartsInProcess(dataPartStatuses);
-        Set<String> completedTransactionIds = Sets.difference(allTransactionIds, processingTransactionsIds);
-
-        return healthInformationRepository.getHealthInformation(List.copyOf(completedTransactionIds), limit, offset)
+        var transactionIds = List.copyOf(dataEntries.keySet());
+        return healthInformationRepository.getHealthInformation(transactionIds, limit, offset)
                 .map(healthInfo -> dataEntries.get(healthInfo.get("transaction_id").toString())
                         .status(toStatus((String) healthInfo.get("status")))
                         .data(healthInfo.get("data")).build())
-                .mergeWith(Flux.fromIterable(processingTransactionsIds
-                        .stream()
-                        .map(transactionId -> dataEntries.get(transactionId).status(EntryStatus.PROCESSING).build())
-                        .collect(Collectors.toList())));
-    }
-
-    private Set<String> getDataPartsInProcess(HashMap<String, List<HealthInfoStatus>> dataPartStatuses) {
-        Set<String> processingTransactions = new HashSet<>();
-        dataPartStatuses.forEach((transactionId, statuses) -> {
-            var isProcessing = statuses.stream().anyMatch(this::isProcessingOrReceived);
-            if (isProcessing) {
-                processingTransactions.add(transactionId);
-            }
-        });
-        return processingTransactions;
-    }
-
-    private boolean isProcessingOrReceived(HealthInfoStatus status) {
-        return status.equals(HealthInfoStatus.PROCESSING) || status.equals(HealthInfoStatus.RECEIVED);
+                .collectList()
+                .zipWith(healthInformationRepository.getTotalCountOfEntries(transactionIds));
     }
 
     public String getTransactionIdForConsentRequest(String consentRequestId) {
