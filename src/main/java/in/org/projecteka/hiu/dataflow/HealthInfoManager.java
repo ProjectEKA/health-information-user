@@ -3,11 +3,13 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
+import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactGone;
@@ -38,6 +40,10 @@ public class HealthInfoManager {
     public String getTransactionIdForConsentRequest(String consentRequestId) {
         return consentRepository.getConsentArtefactId(consentRequestId)
                 .flatMap(dataFlowRepository::getTransactionId).block();
+    }
+
+    public Flux<PatientHealthInfoStatus> getStatusFor(List<String> dataRequestIds, String requester){
+        return Flux.empty();
     }
 
     private boolean isConsentNotExpired(Map<String, String> consentDetail) {
