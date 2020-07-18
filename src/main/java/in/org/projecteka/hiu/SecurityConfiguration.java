@@ -35,6 +35,8 @@ import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_IN
 import static in.org.projecteka.hiu.common.Constants.PATH_DATA_TRANSFER;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
+import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -53,7 +55,9 @@ public class SecurityConfiguration {
 
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
-            Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST));
+            Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
+            Map.entry(HttpMethod.POST, CM_API_PATH_GET_ATTACHMENT),
+            Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO));
 
 
     @Bean
@@ -68,7 +72,6 @@ public class SecurityConfiguration {
                 "/**.yaml",
                 "/**.css",
                 "/**.png",
-                "/health-information/fetch/**/attachments/**",
                 PATH_DATA_TRANSFER,
                 PATH_HEARTBEAT,
                 "/sessions",
@@ -116,14 +119,17 @@ public class SecurityConfiguration {
         @Override
         public Mono<SecurityContext> load(ServerWebExchange exchange) {
             var token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            var requestPath = exchange.getRequest().getPath().toString();
+            var requestMethod = exchange.getRequest().getMethod();
+
             if (isEmpty(token)) {
                 return Mono.empty();
             }
-            if (isGatewayOnlyRequest(exchange.getRequest().getPath().toString())) {
+            if (isGatewayOnlyRequest(requestPath)) {
                 return checkGateway(token);
             }
 
-            if (isCMPatientRequest(exchange.getRequest().getPath().toString(), exchange.getRequest().getMethod())) {
+            if (isCMPatientRequest(requestPath, requestMethod)) {
                 return checkUserToken(token);
             }
 

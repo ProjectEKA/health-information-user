@@ -698,7 +698,7 @@ components:
           type: string
         status:
           type: string
-          enum: [SUCCEEDED, ERRORED, PROCESSING, TRANS_ERRORED]
+          enum: [SUCCEEDED, ERRORED, PROCESSING]
         data:
           type: object
           description: data is a FHIR bundle. https://www.hl7.org/fhir/bundle.html
