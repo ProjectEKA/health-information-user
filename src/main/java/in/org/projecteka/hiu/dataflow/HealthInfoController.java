@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_ATTACHMENT;
+import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
 
 @SuppressWarnings("MVCPathVariableInspection")
 @RestController
@@ -67,7 +68,7 @@ public class HealthInfoController {
                         .entries(tuple.getT1()).build());
     }
 
-    @GetMapping(API_PATH_GET_ATTACHMENT)
+    @GetMapping(value = {API_PATH_GET_ATTACHMENT, CM_API_PATH_GET_ATTACHMENT})
     public Mono<ResponseEntity<FileSystemResource>> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @PathVariable(value = "file-name") String fileName) {

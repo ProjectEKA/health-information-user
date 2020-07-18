@@ -25,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -121,6 +122,7 @@ class HealthInfoControllerTest {
         when(dataFlowRepository.fetchDataPartDetails(consentRequestIds)).thenReturn(Flux.fromIterable(dataPartDetails));
         when(healthInformationRepository.getHealthInformation(transactionIdsCaptor.capture(), eq(healthInfoRequest.getLimit()), eq(healthInfoRequest.getOffset())))
                 .thenReturn(Flux.fromIterable(healthInfo));
+        when(healthInformationRepository.getTotalCountOfEntries(transactionIdsCaptor.capture())).thenReturn(Mono.just(100));
 
         webTestClient
                 .post()

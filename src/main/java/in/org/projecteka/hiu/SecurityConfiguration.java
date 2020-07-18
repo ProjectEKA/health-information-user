@@ -36,7 +36,7 @@ import static in.org.projecteka.hiu.common.Constants.PATH_DATA_TRANSFER;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
-import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_ATTACHMENT;
+import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -56,11 +56,9 @@ public class SecurityConfiguration {
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
+            Map.entry(HttpMethod.POST, CM_API_PATH_GET_ATTACHMENT),
             Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO));
 
-    private static final List<Map.Entry<HttpMethod, String>> DOCTOR_AND_PATIENT_COMMON_APIS = List.of(
-            Map.entry(HttpMethod.GET, API_PATH_GET_ATTACHMENT)
-    );
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
@@ -74,7 +72,6 @@ public class SecurityConfiguration {
                 "/**.yaml",
                 "/**.css",
                 "/**.png",
-                "/health-information/fetch/**/attachments/**",
                 PATH_DATA_TRANSFER,
                 PATH_HEARTBEAT,
                 "/sessions",
@@ -85,7 +82,6 @@ public class SecurityConfiguration {
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
         CM_PATIENT_APIS.forEach(entry -> httpSecurity.authorizeExchange().pathMatchers(entry.getValue()).authenticated());
-        DOCTOR_AND_PATIENT_COMMON_APIS.forEach(entry -> httpSecurity.authorizeExchange().pathMatchers(entry.getValue()).authenticated());
         httpSecurity.authorizeExchange()
                 .pathMatchers(GATEWAY_APIS)
                 .hasAnyRole(GATEWAY.toString())
@@ -131,10 +127,6 @@ public class SecurityConfiguration {
             }
             if (isGatewayOnlyRequest(requestPath)) {
                 return checkGateway(token);
-            }
-
-            if(isDoctorOrPatientRequest(requestPath, requestMethod)){
-                return checkUserToken(token).switchIfEmpty(check(token));
             }
 
             if (isCMPatientRequest(requestPath, requestMethod)) {
@@ -187,13 +179,6 @@ public class SecurityConfiguration {
         private boolean isCMPatientRequest(String path, HttpMethod method) {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return CM_PATIENT_APIS.stream()
-                    .anyMatch(pattern ->
-                            antPathMatcher.matchStart(pattern.getValue(), path) && method == pattern.getKey());
-        }
-
-        private boolean isDoctorOrPatientRequest(String path, HttpMethod method) {
-            AntPathMatcher antPathMatcher = new AntPathMatcher();
-            return DOCTOR_AND_PATIENT_COMMON_APIS.stream()
                     .anyMatch(pattern ->
                             antPathMatcher.matchStart(pattern.getValue(), path) && method == pattern.getKey());
         }
