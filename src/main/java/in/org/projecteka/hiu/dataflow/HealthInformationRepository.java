@@ -64,6 +64,9 @@ public class HealthInformationRepository {
 
     public Flux<Map<String, Object>> getHealthInformation(List<String> transactionIds, int limit, int offset) {
         var generatedQuery = String.format(SELECT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS, joinByComma(transactionIds));
+        if(transactionIds.isEmpty()){
+            return Flux.empty();
+        }
         return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
                 .execute(Tuple.of(limit, offset),
                         getHealthInfo(fluxSink, "Failed to get health information for given transaction ids")));
@@ -71,6 +74,9 @@ public class HealthInformationRepository {
 
     public Mono<Integer> getTotalCountOfEntries(List<String> transactionIds) {
         var generatedQuery = String.format(COUNT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS, joinByComma(transactionIds));
+        if (transactionIds.isEmpty()){
+            return Mono.just(0);
+        }
         return Mono.create(monoSink -> dbClient.preparedQuery(generatedQuery)
                 .execute(handler -> {
                     if (handler.failed()) {
