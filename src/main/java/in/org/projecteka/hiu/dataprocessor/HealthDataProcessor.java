@@ -239,7 +239,7 @@ public class HealthDataProcessor {
                 result.getErrors().add("Could not decrypt content");
                 return result;
             }
-            Bundle bundle = (Bundle) parser.parseResource(decryptedContent);
+            Bundle bundle = parser.parseResource(Bundle.class, decryptedContent);
             if (!isValidBundleType(bundle)) {
                 result.addError("Can not process entry content, invalid envelope." +
                         "Entry content is either not a FHIR Bundle type COLLECTION or DOCUMENT. " +

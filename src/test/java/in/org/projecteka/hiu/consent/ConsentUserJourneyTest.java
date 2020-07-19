@@ -334,6 +334,7 @@ class ConsentUserJourneyTest {
                         .build())
                 .build();
         gatewayServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        when(consentRepository.updateConsentRequestStatus(ConsentStatus.GRANTED, consentRequestId)).thenReturn(empty());
         when(consentRepository.insertConsentArtefact(
                 eq(consent.getConsentDetail()),
                 eq(consent.getStatus()),
