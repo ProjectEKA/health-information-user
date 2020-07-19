@@ -2,17 +2,21 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.DataPartDetail;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.RequestStatus;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
 import org.apache.log4j.Logger;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 import static in.org.projecteka.hiu.common.Serializer.from;
@@ -45,6 +49,15 @@ public class DataFlowRepository {
             "$2, latest_res_date = $3 WHERE transaction_id = $4 AND part_number = $5";
     private static final String SELECT_CONSENT_ID = "SELECT consent_artefact_id FROM data_flow_request WHERE " +
             "transaction_id = $1";
+
+    private static final String FETCH_DATA_PART_DETAILS = "select " +
+            "ca.consent_artefact -> 'hip' ->> 'id' as hipId, " +
+            "ca.consent_artefact -> 'requester' ->> 'name' as requester, " +
+            "dfp.transaction_id, dfp.status, ca.consent_request_id, ca.consent_artefact_id " +
+            "from data_flow_parts dfp " +
+            "join data_flow_request dfr on dfp.transaction_id = dfr.transaction_id " +
+            "join consent_artefact ca on dfr.consent_artefact_id = ca.consent_artefact_id " +
+            "where ca.consent_request_id in (%s)";
 
     private static final Logger logger = Logger.getLogger(DataFlowRepository.class);
     private final PgPool dbClient;
@@ -83,7 +96,7 @@ public class DataFlowRepository {
 
     public Mono<Void> updateDataRequest(String transactionId, RequestStatus status, String requestId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_DATA_FLOW_REQUEST)
-                .execute(Tuple.of( transactionId, status.toString(), requestId),
+                .execute(Tuple.of(transactionId, status.toString(), requestId),
                         handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
@@ -220,5 +233,35 @@ public class DataFlowRepository {
                             }
                             monoSink.success();
                         }));
+    }
+
+    public Flux<DataPartDetail> fetchDataPartDetails(List<String> consentRequestIds) {
+        var generatedQuery = String.format(FETCH_DATA_PART_DETAILS, joinByComma(consentRequestIds));
+        if(consentRequestIds.isEmpty()){
+            return Flux.empty();
+        }
+        return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
+                .execute(handler -> {
+                    if (handler.failed()) {
+                        logger.error(handler.cause().getMessage(), handler.cause());
+                        fluxSink.error(dbOperationFailure("Failed to fetch data part details"));
+                        return;
+                    }
+                    for (Row row : handler.result()) {
+                        fluxSink.next(DataPartDetail.builder()
+                                .transactionId(row.getString("transaction_id"))
+                                .hipId(row.getString("hipid"))
+                                .consentArtifactId(row.getString("consent_artefact_id"))
+                                .consentRequestId(row.getString("consent_request_id"))
+                                .status(HealthInfoStatus.valueOf(row.getString("status")))
+                                .requester(row.getString("requester"))
+                                .build());
+                    }
+                    fluxSink.complete();
+                }));
+    }
+
+    private String joinByComma(List<String> list) {
+        return String.join(", ", list.stream().map(e -> String.format("'%s'", e)).collect(Collectors.toList()));
     }
 }
