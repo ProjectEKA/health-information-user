@@ -90,51 +90,45 @@ public class HealthInfoManager {
         return patientConsentRepository.fetchConsentRequestIds(dataRequestIds)
                 .collectList()
                 .flatMapMany(requestMappings -> {
-                    var requestsWithoutConsentReqIds = new ArrayList<PatientDataRequestMapping>();
-                    var consentRequestIds = new ArrayList<String>();
-                    var statusBuildersByConsentReqId = new HashMap<String, PatientHealthInfoStatus.PatientHealthInfoStatusBuilder>();
+                    var patientHealthInfoStatuses = new ArrayList<PatientHealthInfoStatus>();
+                    var statusesByConsentReqId = new HashMap<String, PatientHealthInfoStatus>();
+
                     requestMappings.forEach(requestMapping -> {
+                        var patientHealthInfoStatus = PatientHealthInfoStatus.builder()
+                                .hipId(requestMapping.getHipId())
+                                .requestId(requestMapping.getDataRequestId())
+                                .status(DataRequestStatus.PROCESSING).build();
                         if (StringUtils.isEmpty(requestMapping.getConsentRequestId())) {
-                            requestsWithoutConsentReqIds.add(requestMapping);
+                            patientHealthInfoStatuses.add(patientHealthInfoStatus);
                             return;
                         }
-                        consentRequestIds.add(requestMapping.getConsentRequestId());
-                        statusBuildersByConsentReqId.put(requestMapping.getConsentRequestId(),
-                                PatientHealthInfoStatus.builder()
-                                        .requestId(requestMapping.getDataRequestId())
-                                        .hipId(requestMapping.getHipId()));
+                        statusesByConsentReqId.put(requestMapping.getConsentRequestId(), patientHealthInfoStatus);
                     });
 
-                    var inProcessingRequestStatuses = requestsWithoutConsentReqIds.stream()
-                            .map(requestMapping -> PatientHealthInfoStatus.builder()
-                                    .hipId(requestMapping.getHipId())
-                                    .requestId(requestMapping.getDataRequestId())
-                                    .status(DataRequestStatus.PROCESSING)
-                                    .build())
-                            .collect(Collectors.toList());
-
+                    var consentRequestIds = List.copyOf(statusesByConsentReqId.keySet());
                     return dataFlowRepository.fetchDataPartDetails(consentRequestIds)
                             .collectList()
                             .filter(dataParts -> isValidRequester(dataParts, requesterId))
                             .switchIfEmpty(Mono.error(unauthorizedRequester()))
-                            .flatMapMany(dataParts -> {
-                                Map<String, List<DataPartDetail>> dataPartsByConsentReqId = dataParts.stream()
-                                        .collect(Collectors.groupingBy(DataPartDetail::getConsentRequestId));
-
-                                var completedRequestsStatuses = new ArrayList<PatientHealthInfoStatus>();
-                                statusBuildersByConsentReqId.forEach((consentReqId, statusBuilder) -> {
-                                    var currentDataParts = dataPartsByConsentReqId.get(consentReqId);
-                                    if (currentDataParts == null) {
-                                        inProcessingRequestStatuses.add(statusBuilder.status(DataRequestStatus.PROCESSING).build());
-                                        return;
-                                    }
-                                    completedRequestsStatuses.add(statusBuilder.status(getStatusFor(currentDataParts)).build());
-                                });
-                               return Flux.fromIterable(inProcessingRequestStatuses)
-                                       .mergeWith(Flux.fromIterable(completedRequestsStatuses));
-                            });
+                            .flatMapMany(dataParts -> calculateDataPartStatuses(statusesByConsentReqId, dataParts))
+                            .mergeWith(Flux.fromIterable(patientHealthInfoStatuses));
                 });
 
+    }
+
+    private Flux<PatientHealthInfoStatus> calculateDataPartStatuses(HashMap<String, PatientHealthInfoStatus> statusesByConsentReqId,
+                                                                    List<DataPartDetail> dataParts) {
+        var dataPartStatuses = new ArrayList<PatientHealthInfoStatus>();
+        Map<String, List<DataPartDetail>> dataPartsByConsentReqId = dataParts.stream()
+                .collect(Collectors.groupingBy(DataPartDetail::getConsentRequestId));
+
+        statusesByConsentReqId.forEach((consentReqId, patientHealthInfoStatus) -> {
+            var currentDataParts = dataPartsByConsentReqId.get(consentReqId);
+            var dataPartsStatus = currentDataParts == null ? DataRequestStatus.PROCESSING : getStatusFor(currentDataParts);
+            dataPartStatuses.add(patientHealthInfoStatus.toBuilder().status(dataPartsStatus).build());
+        });
+
+        return Flux.fromIterable(dataPartStatuses);
     }
 
     private DataRequestStatus getStatusFor(List<DataPartDetail> dataParts) {
