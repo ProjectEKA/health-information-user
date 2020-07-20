@@ -90,7 +90,8 @@ public class DataAvailabilityListener {
                 new DocumentReferenceResourceProcessor(),
                 new MedicationRequestResourceProcessor(),
                 new ConditionResourceProcessor(),
-                new ObservationResourceProcessor());
+                new ObservationResourceProcessor(),
+                new BinaryResourceProcessor());
     }
 
     @SneakyThrows
