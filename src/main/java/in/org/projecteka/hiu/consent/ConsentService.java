@@ -136,6 +136,9 @@ public class ConsentService {
 
     private Mono<ConsentRequestData> validatePatientConsentRequest(String requesterId, String hipId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        if (hipId == null) {
+            return Mono.empty();
+        }
         return patientConsentRepository.getConsentDetails(hipId, requesterId)
                 .flatMap(consentData -> {
                     if (consentData.isEmpty()) {
