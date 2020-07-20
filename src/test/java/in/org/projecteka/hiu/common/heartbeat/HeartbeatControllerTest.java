@@ -5,7 +5,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
-import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.TestBuilders;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;

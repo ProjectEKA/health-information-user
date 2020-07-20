@@ -97,7 +97,7 @@ public class HealthDataProcessor {
             DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(transactionId).block();
             List<String> dataErrors = new ArrayList<>();
             List<StatusResponse> statusResponses = new ArrayList<>();
-            logger.info("Received data from HIP. Number of entries: %d", context.getNotifiedData().getEntries().size());
+            logger.info("Received data from HIP. Number of entries: " + context.getNumberOfEntries());
             context.getNotifiedData().getEntries().forEach(entry -> {
                 var entryToProcess = entry;
                 String dataPartNumber = context.getDataPartNumber();
@@ -226,7 +226,7 @@ public class HealthDataProcessor {
     private ProcessedEntry processEntryContent(DataContext context,
                                                Entry entry,
                                                DataFlowRequestKeyMaterial keyMaterial) {
-        logger.info("Process entry {}", entry);
+        logger.info("Process entry for care-context: {}", entry.getCareContextReference());
         ProcessedEntry result = new ProcessedEntry();
         var mayBeParser = getEntryParser(entry.getMedia());
 
@@ -239,7 +239,7 @@ public class HealthDataProcessor {
                 result.getErrors().add("Could not decrypt content");
                 return result;
             }
-            Bundle bundle = (Bundle) parser.parseResource(decryptedContent);
+            Bundle bundle = parser.parseResource(Bundle.class, decryptedContent);
             if (!isValidBundleType(bundle)) {
                 result.addError("Can not process entry content, invalid envelope." +
                         "Entry content is either not a FHIR Bundle type COLLECTION or DOCUMENT. " +
