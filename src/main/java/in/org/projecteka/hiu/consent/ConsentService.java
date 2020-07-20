@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
+import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -136,7 +137,7 @@ public class ConsentService {
 
     private Mono<ConsentRequestData> validatePatientConsentRequest(String requesterId, String hipId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        if (hipId == null) {
+        if (Strings.isNullOrEmpty(hipId)) {
             return Mono.empty();
         }
         return patientConsentRepository.getConsentDetails(hipId, requesterId)
