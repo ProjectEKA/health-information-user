@@ -49,6 +49,7 @@ import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
+import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.SUCCEEDED;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static reactor.core.publisher.Mono.error;
 
@@ -142,7 +143,7 @@ public class ConsentService {
                                 .minusYears(consentServiceProperties.getConsentRequestFromYears()));
                     }
                     for (Map<String, Object> consent : consentData) {
-                        var consentArtefactId = consent.get("consentArtefactId");
+                        var consentArtefactId = consent.get("consentArtefactId").toString();
                         var consentCreatedDate = (LocalDateTime) consent.get("dateCreated");
                         if (consentCreatedDate.isAfter(now.minusMinutes(consentServiceProperties.getConsentRequestDelay()))) {
                             return Mono.empty();
@@ -150,11 +151,12 @@ public class ConsentService {
                         if (consentArtefactId == null) {
                             continue;
                         } else {
-                            return patientConsentRepository.getDataFlowParts(consentArtefactId.toString()).flatMap(dataFlowParts -> {
+                            return patientConsentRepository.getDataFlowParts(consentArtefactId).flatMap(dataFlowParts -> {
+                                DateRange dateRange = (DateRange) consent.get("dateRange");
                                 if (dataFlowParts.isEmpty()) {
-                                    return consentRepository.consentRequestStatus(consent.get("consentRequestId").toString()).flatMap(consentStatus -> {
+                                    var consentRequestId = consent.get("consentRequestId").toString();
+                                    return consentRepository.consentRequestForConsentRequestId(consentRequestId).flatMap(consentStatus -> {
                                         if (consentStatus.equals(ConsentStatus.ERRORED) || consentStatus.equals(EXPIRED)) {
-                                            DateRange dateRange = (DateRange) consent.get("dateRange");
                                             return buildConsentRequest(requesterId, hipId, dateRange.getFrom());
                                         } else {
                                             return Mono.empty();
@@ -162,24 +164,18 @@ public class ConsentService {
                                     });
                                 } else {
                                     for (Map<String, Object> dataFlowPart : dataFlowParts) {
+                                        var latestResourceDate = (LocalDateTime) dataFlowPart.get("latestResourceDate");
                                         var dataFlowStatus = dataFlowPart.get("status").toString();
-                                        if (HealthInfoStatus.valueOf(dataFlowStatus).equals(HealthInfoStatus.SUCCEEDED)) {
-                                            var latestResourceDate = (LocalDateTime) dataFlowPart.get("latestResourceDate");
-                                            if (latestResourceDate == null) {
-                                                DateRange dateRange = (DateRange) consent.get("dateRange");
-                                                return buildConsentRequest(requesterId, hipId, dateRange.getFrom());
-                                            } else {
-                                                return buildConsentRequest(requesterId, hipId, latestResourceDate);
-                                            }
+                                        if (HealthInfoStatus.valueOf(dataFlowStatus).equals(SUCCEEDED)) {
+                                            return latestResourceDate == null ?
+                                                    buildConsentRequest(requesterId, hipId, dateRange.getFrom()) :
+                                                    buildConsentRequest(requesterId, hipId, latestResourceDate);
                                         }
                                         if (HealthInfoStatus.valueOf(dataFlowStatus).equals(HealthInfoStatus.ERRORED)) {
-                                            var latestResourceDate = (LocalDateTime) dataFlowPart.get("latestResourceDate");
-                                            if (latestResourceDate != null) {
-                                                return buildConsentRequest(requesterId, hipId, latestResourceDate);
-                                            } else {
-                                                DateRange dateRange = (DateRange) consent.get("dateRange");
-                                                return buildConsentRequest(requesterId, hipId, dateRange.getFrom());
-                                            }
+                                            return latestResourceDate != null ?
+                                                    buildConsentRequest(requesterId, hipId, latestResourceDate) :
+                                                    buildConsentRequest(requesterId, hipId, dateRange.getFrom());
+
                                         }
                                     }
                                 }

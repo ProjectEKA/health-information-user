@@ -290,6 +290,24 @@ public class ConsentRepository {
                         }));
     }
 
+    public Mono<ConsentStatus> consentRequestForConsentRequestId(String consentRequestId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
+                .execute(Tuple.of(consentRequestId),
+                        handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(dbOperationFailure("Failed to identify consent request"));
+                                return;
+                            }
+                            var iterator = handler.result().iterator();
+                            if (!iterator.hasNext()) {
+                                monoSink.success();
+                                return;
+                            }
+                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString("status")));
+                        }));
+    }
+
     public Mono<Void> updateConsentRequestStatus(String gatewayRequestId,
                                                  ConsentStatus status,
                                                  String consentRequestId) {

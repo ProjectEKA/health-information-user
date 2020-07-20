@@ -76,7 +76,7 @@ public class PatientConsentRepository {
     private Map<String, Object> toDataFlowPartsDetail(Row row) {
         Map<String, Object> map = new HashMap<>();
         map.put("latestResourceDate", row.getLocalDateTime("latest_res_date"));
-        map.put("status", row.getString("data_flow_parts_status"));
+        map.put("status", row.getString("status"));
         map.put("dataFlowPartNumber", "part_number");
         return map;
     }
