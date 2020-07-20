@@ -8,6 +8,7 @@ import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.HealthInformationFetchRequest;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.PatientDataRequestMapping;
 import org.jeasy.random.EasyRandom;
 
 import java.util.List;
@@ -43,6 +44,21 @@ public class TestBuilders {
     public static List<DataPartDetail.DataPartDetailBuilder> dataPartDetails(int size, String requester, HealthInfoStatus status) {
         var builders = easyRandom.objects(DataPartDetail.DataPartDetailBuilder.class, size);
         return builders.map(builder -> builder.requester(requester).status(status)).collect(Collectors.toList());
+    }
+
+
+    public static DataPartDetail.DataPartDetailBuilder dataPartDetail() {
+        return easyRandom.nextObject(DataPartDetail.DataPartDetailBuilder.class);
+    }
+
+
+    public static List<PatientDataRequestMapping.PatientDataRequestMappingBuilder> dataRequestMappings(int size) {
+        return easyRandom.objects(PatientDataRequestMapping.PatientDataRequestMappingBuilder.class, size)
+                .collect(Collectors.toList());
+    }
+
+    public static PatientDataRequestMapping.PatientDataRequestMappingBuilder dataRequestMapping() {
+        return easyRandom.nextObject(PatientDataRequestMapping.PatientDataRequestMappingBuilder.class);
     }
 
     public static String string() {

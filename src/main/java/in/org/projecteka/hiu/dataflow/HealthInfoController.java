@@ -5,6 +5,8 @@ import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataflow.model.HealthInformationFetchRequest;
 import in.org.projecteka.hiu.dataflow.model.PatientHealthInformation;
+import in.org.projecteka.hiu.dataflow.model.DataRequestStatusResponse;
+import in.org.projecteka.hiu.dataflow.model.DataRequestStatusCheckRequest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.core.io.FileSystemResource;
@@ -28,6 +30,7 @@ import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEAL
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_ATTACHMENT;
 import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
 
 @SuppressWarnings("MVCPathVariableInspection")
 @RestController
@@ -79,6 +82,16 @@ public class HealthInfoController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDispositionHeaderValue)
                 .contentType(responseContentType(filePath))
                 .body(new FileSystemResource(filePath)));
+    }
+
+    @PostMapping(API_PATH_GET_HEALTH_INFO_STATUS)
+    public Mono<DataRequestStatusResponse> fetchHealthInformationStatus(@RequestBody DataRequestStatusCheckRequest dataRequest) {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
+                .map(Caller::getUsername)
+                .flatMapMany(username -> healthInfoManager.fetchHealthInformationStatus(dataRequest.getRequestIds(), username))
+                .collectList()
+                .map(DataRequestStatusResponse::new);
     }
 
     @SneakyThrows
