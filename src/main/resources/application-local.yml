@@ -17,6 +17,7 @@ hiu:
   consentservice:
     consentRequestFromYears: 7
     consentExpiryInMonths: 2
+    consentRequestDelay: 2
   database:
     host: localhost
     port: 5432
