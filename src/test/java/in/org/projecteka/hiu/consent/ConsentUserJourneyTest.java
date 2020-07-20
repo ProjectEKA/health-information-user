@@ -13,6 +13,7 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.consent.model.Patient;
+import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
@@ -51,6 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
+import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
@@ -110,6 +112,10 @@ class ConsentUserJourneyTest {
     @MockBean
     @Qualifier("hiuUserAuthenticator")
     private Authenticator authenticator;
+
+    @MockBean
+    @Qualifier("userAuthenticator")
+    private Authenticator cmPatientAuthenticator;
 
     @SuppressWarnings("unused")
     @MockBean
@@ -429,6 +435,33 @@ class ConsentUserJourneyTest {
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(gatewayConsentArtefactResponse)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    void shouldMakeAConsentRequestForTheFirstTime() {
+        String requesterId = "hinapatel79@ncg";
+        String hipId = "100005";
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
+        when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
+        when(gateway.token()).thenReturn(just(randomString()));
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        var consentRequestDetails = new PatientConsentRequest(List.of(hipId));
+        var token = randomString();
+        var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
+        when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
+        when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
+        when(patientConsentRepository.getConsentDetails(hipId, requesterId)).thenReturn(Mono.empty());
+        webTestClient
+                .post()
+                .uri(APP_PATH_PATIENT_CONSENT_REQUEST)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentRequestDetails)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
