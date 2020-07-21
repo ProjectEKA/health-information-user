@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.cache.Cache;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.Caller;
@@ -202,7 +203,7 @@ class ConsentUserJourneyTest {
         when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(just(ConsentStatus.POSTED));
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6", ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(empty());
-        when(patientConsentRepository.updatePatientConsentRequest(any(), any(),any()))
+        when(patientConsentRepository.updatePatientConsentRequest(any(), any(), any()))
                 .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller.builder()
@@ -278,7 +279,7 @@ class ConsentUserJourneyTest {
                 ConsentStatus.REQUESTED,
                 "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(empty());
-        when(patientConsentRepository.updatePatientConsentRequest(any(), any(),any()))
+        when(patientConsentRepository.updatePatientConsentRequest(any(), any(), any()))
                 .thenReturn(empty());
         var token = randomString();
         var caller = ServiceCaller
@@ -466,5 +467,34 @@ class ConsentUserJourneyTest {
                 .exchange()
                 .expectStatus()
                 .isAccepted();
+    }
+
+    @Test
+    void shouldReturnEmptyResponseForAConsentRequestWithEmptyHipId() throws JsonProcessingException {
+        String requesterId = "hinapatel79@ncg";
+        String hipId = "";
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
+        when(conceptValidator.getPurposeDescription(anyString())).thenReturn("Purpose description");
+        when(gateway.token()).thenReturn(just(randomString()));
+        gatewayServer.enqueue(
+                new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
+        var consentRequestDetails = new PatientConsentRequest(List.of(hipId));
+        var token = randomString();
+        var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
+        when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
+
+
+        webTestClient
+                .post()
+                .uri(APP_PATH_PATIENT_CONSENT_REQUEST)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentRequestDetails)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted()
+                .expectBody()
+                .json("{}");
     }
 }
