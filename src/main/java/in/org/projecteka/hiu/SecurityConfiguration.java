@@ -30,7 +30,10 @@ import java.util.Map;
 
 import static in.org.projecteka.hiu.ClientError.authenticationFailed;
 import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_HIU_NOTIFY;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FIND;
@@ -38,9 +41,6 @@ import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_IN
 import static in.org.projecteka.hiu.common.Constants.PATH_DATA_TRANSFER;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
-import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
-import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
-import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.of;
@@ -109,8 +109,8 @@ public class SecurityConfiguration {
     public SecurityContextRepository contextRepository(GatewayTokenVerifier gatewayTokenVerifier,
                                                        @Qualifier("hiuUserAuthenticator") Authenticator authenticator,
                                                        @Qualifier("userAuthenticator") Authenticator userAuthenticator,
-                                                       @Value("${hiu.authorization.header}") String headerName) {
-        return new SecurityContextRepository(gatewayTokenVerifier, authenticator, userAuthenticator, headerName);
+                                                       @Value("${hiu.authorization.header}") String authHeader) {
+        return new SecurityContextRepository(gatewayTokenVerifier, authenticator, userAuthenticator, authHeader);
     }
 
     @AllArgsConstructor
@@ -118,7 +118,7 @@ public class SecurityConfiguration {
         private final GatewayTokenVerifier gatewayTokenVerifier;
         private final Authenticator authenticator;
         private final Authenticator userAuthenticator;
-        private final String headerName;
+        private final String authHeader;
 
         @Override
         public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {
@@ -133,7 +133,7 @@ public class SecurityConfiguration {
             }
 
             if (isCMPatientRequest(path, exchange.getRequest().getMethod())) {
-                var patientToken = exchange.getRequest().getHeaders().getFirst(headerName);
+                var patientToken = exchange.getRequest().getHeaders().getFirst(authHeader);
                 return isEmpty(patientToken)
                        ? error(unauthorizedRequester())
                        : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
