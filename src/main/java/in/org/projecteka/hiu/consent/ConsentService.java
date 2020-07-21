@@ -153,15 +153,15 @@ public class ConsentService {
                             return Mono.empty();
                         }
                         if (consentArtefactId == null) {
-                            continue;
                         } else {
                             return patientConsentRepository.getDataFlowParts(consentArtefactId).flatMap(dataFlowParts -> {
                                 DateRange dateRange = (DateRange) consent.get("dateRange");
+                                var fromDate = dateRange.getFrom();
                                 if (dataFlowParts.isEmpty()) {
                                     var consentRequestId = consent.get("consentRequestId").toString();
-                                    return consentRepository.consentRequestForConsentRequestId(consentRequestId).flatMap(consentStatus -> {
+                                    return consentRepository.consentRequestStatusFor(consentRequestId).flatMap(consentStatus -> {
                                         if (consentStatus.equals(ConsentStatus.ERRORED) || consentStatus.equals(EXPIRED)) {
-                                            return buildConsentRequest(requesterId, hipId, dateRange.getFrom());
+                                            return buildConsentRequest(requesterId, hipId, fromDate);
                                         } else {
                                             return Mono.empty();
                                         }
@@ -172,14 +172,13 @@ public class ConsentService {
                                         var dataFlowStatus = dataFlowPart.get("status").toString();
                                         if (HealthInfoStatus.valueOf(dataFlowStatus).equals(SUCCEEDED)) {
                                             return latestResourceDate == null ?
-                                                    buildConsentRequest(requesterId, hipId, dateRange.getFrom()) :
+                                                    buildConsentRequest(requesterId, hipId, fromDate) :
                                                     buildConsentRequest(requesterId, hipId, latestResourceDate);
                                         }
                                         if (HealthInfoStatus.valueOf(dataFlowStatus).equals(HealthInfoStatus.ERRORED)) {
                                             return latestResourceDate != null ?
                                                     buildConsentRequest(requesterId, hipId, latestResourceDate) :
-                                                    buildConsentRequest(requesterId, hipId, dateRange.getFrom());
-
+                                                    buildConsentRequest(requesterId, hipId, fromDate);
                                         }
                                     }
                                 }
@@ -187,7 +186,8 @@ public class ConsentService {
                             });
                         }
                     }
-                    return Mono.empty();
+                    return buildConsentRequest(requesterId, hipId, now
+                            .minusYears(consentServiceProperties.getConsentRequestFromYears()));
                 });
     }
 

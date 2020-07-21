@@ -290,7 +290,7 @@ public class ConsentRepository {
                         }));
     }
 
-    public Mono<ConsentStatus> consentRequestForConsentRequestId(String consentRequestId) {
+    public Mono<ConsentStatus> consentRequestStatusFor(String consentRequestId) {
         return Mono.create(monoSink -> dbClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
                 .execute(Tuple.of(consentRequestId),
                         handler -> {
@@ -336,7 +336,7 @@ public class ConsentRepository {
                             for (Row result : handler.result()) {
                                 ConsentRequest consentRequest = to(
                                         result.getValue(CONSENT_REQUEST).toString(), ConsentRequest.class);
-                                if(consentRequest == null){
+                                if (consentRequest == null) {
                                     continue;
                                 }
                                 Map<String, Object> resultMap = new HashMap<>();
