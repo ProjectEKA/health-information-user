@@ -5,6 +5,7 @@ import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static in.org.projecteka.hiu.ClientError.authenticationFailed;
+import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_HIU_NOTIFY;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
@@ -40,7 +43,10 @@ import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.of;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static reactor.core.publisher.Mono.empty;
+import static reactor.core.publisher.Mono.error;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -60,26 +66,25 @@ public class SecurityConfiguration {
             Map.entry(HttpMethod.POST, CM_API_PATH_GET_ATTACHMENT),
             Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO),
             Map.entry(HttpMethod.POST, API_PATH_GET_HEALTH_INFO_STATUS));
-
+    private static final String[] ALLOWED_LISTS = new String[]{"/**.json",
+                                                               "/ValueSet/**.json",
+                                                               "/**.html",
+                                                               "/**.js",
+                                                               "/**.yaml",
+                                                               "/**.css",
+                                                               "/**.png",
+                                                               PATH_DATA_TRANSFER,
+                                                               PATH_HEARTBEAT,
+                                                               "/sessions",
+                                                               "/config"};
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity httpSecurity,
             ReactiveAuthenticationManager authenticationManager,
             ServerSecurityContextRepository securityContextRepository) {
-        final String[] allowedLists = {"/**.json",
-                "/ValueSet/**.json",
-                "/**.html",
-                "/**.js",
-                "/**.yaml",
-                "/**.css",
-                "/**.png",
-                PATH_DATA_TRANSFER,
-                PATH_HEARTBEAT,
-                "/sessions",
-                "/config"};
 
-        httpSecurity.authorizeExchange().pathMatchers(allowedLists).permitAll();
+        httpSecurity.authorizeExchange().pathMatchers(ALLOWED_LISTS).permitAll();
         httpSecurity.httpBasic().disable().formLogin().disable().csrf().disable().logout().disable();
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.POST, "/users").hasAnyRole(Role.ADMIN.toString());
         httpSecurity.authorizeExchange().pathMatchers(HttpMethod.PUT, "/users/password").authenticated();
@@ -103,8 +108,9 @@ public class SecurityConfiguration {
     @Bean
     public SecurityContextRepository contextRepository(GatewayTokenVerifier gatewayTokenVerifier,
                                                        @Qualifier("hiuUserAuthenticator") Authenticator authenticator,
-                                                       @Qualifier("userAuthenticator") Authenticator userAuthenticator) {
-        return new SecurityContextRepository(gatewayTokenVerifier, authenticator, userAuthenticator);
+                                                       @Qualifier("userAuthenticator") Authenticator userAuthenticator,
+                                                       @Value("${hiu.authorization.header}") String headerName) {
+        return new SecurityContextRepository(gatewayTokenVerifier, authenticator, userAuthenticator, headerName);
     }
 
     @AllArgsConstructor
@@ -112,6 +118,7 @@ public class SecurityConfiguration {
         private final GatewayTokenVerifier gatewayTokenVerifier;
         private final Authenticator authenticator;
         private final Authenticator userAuthenticator;
+        private final String headerName;
 
         @Override
         public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {
@@ -120,22 +127,31 @@ public class SecurityConfiguration {
 
         @Override
         public Mono<SecurityContext> load(ServerWebExchange exchange) {
+            String path = exchange.getRequest().getPath().toString();
+            if (isSafe(path)) {
+                return empty();
+            }
+
+            if (isCMPatientRequest(path, exchange.getRequest().getMethod())) {
+                var patientToken = exchange.getRequest().getHeaders().getFirst(headerName);
+                return isEmpty(patientToken)
+                       ? error(unauthorizedRequester())
+                       : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
+            }
+
             var token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-            var requestPath = exchange.getRequest().getPath().toString();
-            var requestMethod = exchange.getRequest().getMethod();
 
-            if (isEmpty(token)) {
-                return Mono.empty();
+            if (isGatewayOnlyRequest(path)) {
+                return isEmpty(token)
+                       ? error(authenticationFailed())
+                       : checkGateway(token).switchIfEmpty(error(unauthorizedRequester()));
             }
-            if (isGatewayOnlyRequest(requestPath)) {
-                return checkGateway(token);
-            }
+            return check(token).switchIfEmpty(error(unauthorizedRequester()));
+        }
 
-            if (isCMPatientRequest(requestPath, requestMethod)) {
-                return checkUserToken(token);
-            }
-
-            return check(token);
+        private boolean isSafe(String path) {
+            var antPathMatcher = new AntPathMatcher();
+            return of(ALLOWED_LISTS).anyMatch(pattern -> antPathMatcher.matchStart(pattern, path));
         }
 
         private Mono<SecurityContext> checkUserToken(String token) {
@@ -193,7 +209,7 @@ public class SecurityConfiguration {
             var auth = new UsernamePasswordAuthenticationToken(
                     authentication.getPrincipal(),
                     token,
-                    new ArrayList<SimpleGrantedAuthority>());
+                    new ArrayList<>());
             return Mono.just(auth);
         }
     }

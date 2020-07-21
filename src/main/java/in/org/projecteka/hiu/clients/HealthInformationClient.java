@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.clients;
 
 import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
-import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -14,13 +13,17 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
-@AllArgsConstructor
 public class HealthInformationClient {
-    private final WebClient.Builder builder;
+    private final WebClient client;
     private final GatewayProperties gatewayProperties;
 
+    public HealthInformationClient(WebClient.Builder client, GatewayProperties gatewayProperties) {
+        this.client = client.build();
+        this.gatewayProperties = gatewayProperties;
+    }
+
     public Mono<HealthInformation> informationFrom(String url) {
-        return builder.build()
+        return client
                 .get()
                 .uri(url)
                 .retrieve()
@@ -36,7 +39,7 @@ public class HealthInformationClient {
     public Mono<Void> notifyHealthInfo(HealthInfoNotificationRequest notificationRequest,
                                        String token,
                                        String consentManagerId) {
-        return builder.build()
+        return client
                 .post()
                 .uri(gatewayProperties.getBaseUrl() + "/health-information/notify")
                 .header(AUTHORIZATION, token)
