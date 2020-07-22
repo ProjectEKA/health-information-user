@@ -15,7 +15,7 @@ public class Error {
     private ErrorCode code;
     private String message;
 
-    public static Error serviceDownError(String message) {
+    public static Error of(String message) {
         return new Error(ErrorCode.SERVICE_DOWN, message);
     }
 }
