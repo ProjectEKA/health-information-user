@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
+import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -24,6 +25,7 @@ import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
 import in.org.projecteka.hiu.consent.model.Permission;
 import in.org.projecteka.hiu.consent.model.Purpose;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,7 @@ import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
+import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.SUCCEEDED;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static reactor.core.publisher.Mono.error;
 
@@ -114,32 +117,87 @@ public class ConsentService {
     public Mono<Map<String, String>> handlePatientConsentRequest(String requesterId,
                                                                  PatientConsentRequest consentRequest) {
         Map<String, String> response = new HashMap<>();
+
         return Flux.fromIterable(consentRequest.getHipIds())
-                .flatMap(hipId -> buildConsentRequest(requesterId, hipId).flatMap(consentRequestData -> {
-                    var dataRequestId = UUID.randomUUID();
-                    var gatewayRequestId = UUID.randomUUID();
-                    return validateConsentRequest(consentRequestData)
-                            .then(sendConsentRequestToGateway(requesterId, consentRequestData, gatewayRequestId))
-                            .then(patientConsentRepository.insertPatientConsentRequest(
-                                    dataRequestId,
-                                    hipId)
-                                    .doOnSuccess(discard -> response.put(hipId, dataRequestId.toString()))
-                                    .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(),
-                                            dataRequestId.toString())));
-                }))
+                .flatMap(hipId -> validatePatientConsentRequest(requesterId, hipId)
+                        .flatMap(consentRequestData -> {
+                            var dataRequestId = UUID.randomUUID();
+                            var gatewayRequestId = UUID.randomUUID();
+                            return validateConsentRequest(consentRequestData)
+                                    .then(sendConsentRequestToGateway(requesterId, consentRequestData, gatewayRequestId))
+                                    .then(patientConsentRepository.insertPatientConsentRequest(
+                                            dataRequestId,
+                                            hipId, requesterId)
+                                            .doOnSuccess(discard -> response.put(hipId, dataRequestId.toString()))
+                                            .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(),
+                                                    dataRequestId.toString())));
+                        }))
                 .then(Mono.just(response));
     }
 
-    private Mono<ConsentRequestData> buildConsentRequest(String requesterId, String hipId) {
+    private Mono<ConsentRequestData> validatePatientConsentRequest(String requesterId, String hipId) {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        if (Strings.isNullOrEmpty(hipId)) {
+            return Mono.empty();
+        }
+        return patientConsentRepository.getConsentDetails(hipId, requesterId)
+                .flatMap(consentData -> {
+                    if (consentData.isEmpty()) {
+                        return buildConsentRequest(requesterId, hipId, now
+                                .minusYears(consentServiceProperties.getConsentRequestFromYears()));
+                    }
+                    for (Map<String, Object> consent : consentData) {
+                        var consentArtefactId = consent.get("consentArtefactId");
+                        var consentCreatedDate = (LocalDateTime) consent.get("dateCreated");
+                        if (consentCreatedDate.isAfter(now.minusMinutes(consentServiceProperties.getConsentRequestDelay()))) {
+                            return Mono.empty();
+                        }
+                        if (consentArtefactId != null) {
+                            return patientConsentRepository.getDataFlowParts(consentArtefactId.toString()).flatMap(dataFlowParts -> {
+                                DateRange dateRange = (DateRange) consent.get("dateRange");
+                                var fromDate = dateRange.getFrom();
+                                if (dataFlowParts.isEmpty()) {
+                                    var consentRequestId = consent.get("consentRequestId").toString();
+                                    return consentRepository.consentRequestStatusFor(consentRequestId).flatMap(consentStatus -> {
+                                        if (consentStatus.equals(ConsentStatus.ERRORED) || consentStatus.equals(EXPIRED)) {
+                                            return buildConsentRequest(requesterId, hipId, fromDate);
+                                        } else {
+                                            return Mono.empty();
+                                        }
+                                    });
+                                } else {
+                                    for (Map<String, Object> dataFlowPart : dataFlowParts) {
+                                        var latestResourceDate = (LocalDateTime) dataFlowPart.get("latestResourceDate");
+                                        var dataFlowStatus = dataFlowPart.get("status").toString();
+                                        if (HealthInfoStatus.valueOf(dataFlowStatus).equals(SUCCEEDED)) {
+                                            return latestResourceDate == null ?
+                                                    buildConsentRequest(requesterId, hipId, fromDate) :
+                                                    buildConsentRequest(requesterId, hipId, latestResourceDate);
+                                        }
+                                        if (HealthInfoStatus.valueOf(dataFlowStatus).equals(HealthInfoStatus.ERRORED)) {
+                                            return latestResourceDate != null ?
+                                                    buildConsentRequest(requesterId, hipId, latestResourceDate) :
+                                                    buildConsentRequest(requesterId, hipId, fromDate);
+                                        }
+                                    }
+                                }
+                                return Mono.empty();
+                            });
+                        }
+                    }
+                    return buildConsentRequest(requesterId, hipId, now
+                            .minusYears(consentServiceProperties.getConsentRequestFromYears()));
+                });
+    }
 
+    private Mono<ConsentRequestData> buildConsentRequest(String requesterId, String hipId, LocalDateTime dateFrom) {
         return Mono.just(ConsentRequestData.builder().consent(Consent.builder()
                 .hiTypes(List.of(HIType.class.getEnumConstants()))
                 .patient(Patient.builder().id(requesterId).build())
                 .permission(Permission.builder().dataEraseAt(LocalDateTime.now(ZoneOffset.UTC)
                         .plusMonths(consentServiceProperties.getConsentExpiryInMonths()))
                         .dateRange(DateRange.builder()
-                                .from(LocalDateTime.now(ZoneOffset.UTC)
-                                        .minusYears(consentServiceProperties.getConsentRequestFromYears()))
+                                .from(dateFrom)
                                 .to(LocalDateTime.now(ZoneOffset.UTC)).build())
                         .build())
                 .purpose(new Purpose(PATIENT_REQUESTED_PURPOSE_CODE))
@@ -196,7 +254,7 @@ public class ConsentService {
             var consentRequestId = UUID.fromString(response.getConsentRequest().getId());
             return updatePublisher
                     .then(patientConsentRepository
-                            .updatePatientConsentRequest(UUID.fromString(dataRequestId), consentRequestId,LocalDateTime.now(ZoneOffset.UTC)));
+                            .updatePatientConsentRequest(UUID.fromString(dataRequestId), consentRequestId, LocalDateTime.now(ZoneOffset.UTC)));
         }
 
         return error(ClientError.invalidDataFromGateway());
