@@ -35,7 +35,6 @@ import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -160,7 +159,7 @@ public class ConsentServiceTest {
     }
 
     @Test
-    void shouldBuildFirstConsentRequestIfConsentDataIsEmpty(){
+    void shouldBuildFirstConsentRequestIfConsentDataIsEmpty() {
         String requesterId = randomString();
         var hiuProperties = hiuProperties().build();
         var token = randomString();
@@ -179,7 +178,7 @@ public class ConsentServiceTest {
                 patientRequestCache);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
-        when(patientConsentRepository.getConsentDetails("10000005",requesterId)).thenReturn(Mono.empty());
+        when(patientConsentRepository.getConsentDetails("10000005", requesterId)).thenReturn(Mono.empty());
         when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
         when(gateway.token()).thenReturn(Mono.just(token));
         when(gatewayServiceClient.sendConsentRequest(eq(token), anyString(), any()))
