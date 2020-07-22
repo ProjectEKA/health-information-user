@@ -135,14 +135,27 @@ public class ConsentService {
                 .then(Mono.just(response));
     }
 
+    private Mono<ConsentRequestData> handleForReloadConsent(String patientId, String hipId) {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+
+        return patientConsentRepository.deletePatientConsentRequestFor(patientId)
+                .flatMap(patientConsentRepository::deleteConsentRequestFor)
+                .flatMap(patientConsentRepository::deleteConsentArteFactFor)
+                .flatMap(patientConsentRepository::deleteDataFlowRequestFor)
+                .flatMap(patientConsentRepository::deleteHealthInformationFor)
+                .flatMap(patientConsentRepository::deleteDataFlowPartsFor)
+                .flatMap(patientConsentRepository::deleteDataFlowRequestKeysFor)
+                .then(buildConsentRequest(patientId, hipId, now
+                        .minusYears(consentServiceProperties.getConsentRequestFromYears())));
+    }
+
     private Mono<ConsentRequestData> validatePatientConsentRequest(String requesterId, String hipId, boolean reloadConsent) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         if (Strings.isNullOrEmpty(hipId)) {
             return Mono.empty();
         }
         if (reloadConsent) {
-            return buildConsentRequest(requesterId, hipId, now
-                    .minusYears(consentServiceProperties.getConsentRequestFromYears()));
+            return handleForReloadConsent(requesterId, hipId);
         }
         return patientConsentRepository.getConsentDetails(hipId, requesterId)
                 .flatMap(consentData -> {
