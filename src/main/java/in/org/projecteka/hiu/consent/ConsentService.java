@@ -119,7 +119,7 @@ public class ConsentService {
         Map<String, String> response = new HashMap<>();
 
         return Flux.fromIterable(consentRequest.getHipIds())
-                .flatMap(hipId -> validatePatientConsentRequest(requesterId, hipId)
+                .flatMap(hipId -> validatePatientConsentRequest(requesterId, hipId, consentRequest.isReloadConsent())
                         .flatMap(consentRequestData -> {
                             var dataRequestId = UUID.randomUUID();
                             var gatewayRequestId = UUID.randomUUID();
@@ -135,10 +135,14 @@ public class ConsentService {
                 .then(Mono.just(response));
     }
 
-    private Mono<ConsentRequestData> validatePatientConsentRequest(String requesterId, String hipId) {
+    private Mono<ConsentRequestData> validatePatientConsentRequest(String requesterId, String hipId, boolean reloadConsent) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         if (Strings.isNullOrEmpty(hipId)) {
             return Mono.empty();
+        }
+        if (reloadConsent) {
+            return buildConsentRequest(requesterId, hipId, now
+                    .minusYears(consentServiceProperties.getConsentRequestFromYears()));
         }
         return patientConsentRepository.getConsentDetails(hipId, requesterId)
                 .flatMap(consentData -> {

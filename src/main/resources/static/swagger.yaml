@@ -44,7 +44,7 @@ paths:
                   id:
                     type: string
                     format: uuid
-  /v1/cm/patient/consent-request:
+  /v1/patient/consent-request:
     post:
       tags:
         - frontend
@@ -420,6 +420,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HIPIds'
+        reloadConsent:
+          type: boolean
     PatientConsentResponse:
       type: object
       additionalProperties:
