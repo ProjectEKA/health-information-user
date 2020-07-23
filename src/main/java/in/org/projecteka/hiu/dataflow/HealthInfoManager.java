@@ -38,6 +38,7 @@ public class HealthInfoManager {
     private final DataFlowRepository dataFlowRepository;
     private final PatientConsentRepository patientConsentRepository;
     private final HealthInformationRepository healthInformationRepository;
+    private final DataFlowServiceProperties serviceProperties;
 
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return consentRepository.getConsentDetails(consentRequestId)
@@ -111,7 +112,7 @@ public class HealthInfoManager {
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getPatientDataRequestedAt(),
-                                            1))
+                                            serviceProperties.getConsentRequestWaitTime()))
                                     .build());
                             return;
                         }
@@ -120,7 +121,7 @@ public class HealthInfoManager {
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getConsentRequestedAt(),
-                                            1))
+                                            serviceProperties.getConsentArtefactWaitTime()))
                                     .build());
                             return;
                         }
@@ -129,7 +130,7 @@ public class HealthInfoManager {
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getDataFlowRequestedAt(),
-                                            1))
+                                            serviceProperties.getDataPartWaitTime()))
                                     .build());
                             return;
                         }

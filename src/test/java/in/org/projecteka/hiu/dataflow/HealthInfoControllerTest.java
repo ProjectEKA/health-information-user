@@ -35,6 +35,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,6 +109,9 @@ class HealthInfoControllerTest {
         MockitoAnnotations.initMocks(this);
         when(serviceProperties.getDefaultPageSize()).thenReturn(20);
         when(serviceProperties.getMaxPageSize()).thenReturn(20);
+        when(serviceProperties.getConsentRequestWaitTime()).thenReturn(2);
+        when(serviceProperties.getConsentArtefactWaitTime()).thenReturn(2);
+        when(serviceProperties.getDataPartWaitTime()).thenReturn(2);
     }
 
     @Test
@@ -150,6 +155,25 @@ class HealthInfoControllerTest {
         assertEquals(Set.copyOf(transactionIds), Set.copyOf(transactionIdsCaptor.getValue()));
     }
 
+    private void assertHealthInfoStatus(String token,
+                                        DataRequestStatusCheckRequest request,
+                                        DataRequestStatusResponse expectedResponse) throws JsonProcessingException {
+        webTestClient
+                .post()
+                .uri(API_PATH_GET_HEALTH_INFO_STATUS)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .json(new ObjectMapper()
+                        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+                        .writeValueAsString(expectedResponse));
+    }
+
     @Test
     void shouldReturnSucceededStatusForGivenDataRequestIds() throws JsonProcessingException {
         var token = TestBuilders.string();
@@ -168,23 +192,219 @@ class HealthInfoControllerTest {
                         .hipId(dataRequestDetail.getHipId())
                         .requestId(dataRequestDetail.getDataRequestId())
                         .status(DataRequestStatus.SUCCEEDED)
-                        .build()));
+                        .build())).build();
 
-        webTestClient
-                .post()
-                .uri(API_PATH_GET_HEALTH_INFO_STATUS)
-                .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(dataStatusCheckRequest)
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus()
-                .isOk()
-                .expectBody()
-                .json(new ObjectMapper()
-                        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-                        .writeValueAsString(expectedResponse));
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
 
+    @Test
+    void shouldReturnPartialStatusForGivenDataRequestIds() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.ERRORED).build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.PARTIAL)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnProcessingStatusWhenDataPartIsBeingProcessed() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.PROCESSING).build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.PROCESSING)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnProcessingStatusWhenConsentRequestIsNotCreatedAndWaitingTimeIsNotPassed() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail()
+                .consentRequestId(null)
+                .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC))
+                .build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.PROCESSING)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnProcessingStatusWhenConsentArtefactIsNotReachedAndWaitingTimeIsNotPassed() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail()
+                .consentArtefactId(null)
+                .consentRequestedAt(LocalDateTime.now(ZoneOffset.UTC))
+                .build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.PROCESSING)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnProcessingStatusWhenDataFlowIsNotReachedAndWaitingTimeIsNotPassed() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail()
+                .dataPartStatus(null)
+                .dataFlowRequestedAt(LocalDateTime.now(ZoneOffset.UTC))
+                .build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.PROCESSING)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnErroredStatusWhenDataFlowIsNotReachedWithinWatingTimeLimit() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail()
+                .dataPartStatus(null)
+                .dataFlowRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
+                .build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.ERRORED)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnErroredStatusWhenConsentArtefactNotReachedWithinWatingTimeLimit() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail()
+                .consentArtefactId(null)
+                .consentRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
+                .build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.ERRORED)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnErroredStatusWhenConsentRequestIsNotCreatedWithinWatingTimeLimit() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail()
+                .consentRequestId(null)
+                .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
+                .build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.ERRORED)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
         assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
     }
 }

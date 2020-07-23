@@ -402,8 +402,9 @@ public class HiuConfiguration {
     public HealthInfoManager healthInfoManager(ConsentRepository consentRepository,
                                                DataFlowRepository dataFlowRepository,
                                                HealthInformationRepository healthInformationRepository,
-                                               PatientConsentRepository patientConsentRepository) {
-        return new HealthInfoManager(consentRepository, dataFlowRepository, patientConsentRepository, healthInformationRepository);
+                                               PatientConsentRepository patientConsentRepository,
+                                               DataFlowServiceProperties serviceProperties) {
+        return new HealthInfoManager(consentRepository, dataFlowRepository, patientConsentRepository, healthInformationRepository, serviceProperties);
     }
 
     @Bean
