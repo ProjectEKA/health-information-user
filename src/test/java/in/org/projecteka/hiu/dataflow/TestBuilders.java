@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.HealthInformationFetchRequest;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.PatientDataRequestMapping;
+import in.org.projecteka.hiu.dataflow.model.PatientDataRequestDetail;
 import org.jeasy.random.EasyRandom;
 
 import java.util.List;
@@ -59,6 +60,10 @@ public class TestBuilders {
 
     public static PatientDataRequestMapping.PatientDataRequestMappingBuilder dataRequestMapping() {
         return easyRandom.nextObject(PatientDataRequestMapping.PatientDataRequestMappingBuilder.class);
+    }
+
+    public static PatientDataRequestDetail.PatientDataRequestDetailBuilder patientDataRequestDetail() {
+        return easyRandom.nextObject(PatientDataRequestDetail.PatientDataRequestDetailBuilder.class);
     }
 
     public static String string() {

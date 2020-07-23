@@ -17,6 +17,7 @@ import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.DataRequestStatus;
 import in.org.projecteka.hiu.dataflow.model.DataRequestStatusResponse;
+import in.org.projecteka.hiu.dataflow.model.DataRequestStatusCheckRequest;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -150,54 +151,31 @@ class HealthInfoControllerTest {
     }
 
     @Test
-    void shouldReturnStatusesForGivenDataRequestIds() throws JsonProcessingException {
+    void shouldReturnSucceededStatusForGivenDataRequestIds() throws JsonProcessingException {
         var token = TestBuilders.string();
         var requester = "someone@ncg";
         var caller = new Caller(requester, false, null, true);
-        var healthInfoRequest = TestBuilders.healthInformationRequest().limit(10).build();
-        var dataRequestMappingBuilder = TestBuilders.dataRequestMapping();
-        var succeededDataConsentReqId = UUID.randomUUID().toString();
-        var partialDataConsentReqId = UUID.randomUUID().toString();
-        var processingDataConsentReqId = UUID.randomUUID().toString();
-
-        var dataRequestMappings = List.of(
-                dataRequestMappingBuilder.consentRequestId(null).build(),
-                dataRequestMappingBuilder.consentRequestId(succeededDataConsentReqId).build(),
-                dataRequestMappingBuilder.consentRequestId(partialDataConsentReqId).build(),
-                dataRequestMappingBuilder.consentRequestId(processingDataConsentReqId).build());
-
-        var consentRequestIds = Set.of(succeededDataConsentReqId, partialDataConsentReqId, processingDataConsentReqId);
-
-        var resultStatuses = dataRequestMappings.stream()
-                .map(mapping -> PatientHealthInfoStatus.builder()
-                        .requestId(mapping.getDataRequestId())
-                        .hipId(mapping.getHipId()))
-                .collect(Collectors.toList());
-
-        ArgumentCaptor<List<String>> consentRequestIdsCaptor = ArgumentCaptor.forClass(List.class);
-
-        var dataPartBuilder = TestBuilders.dataPartDetail().requester(requester);
-        var dataPartDetails = List.of(
-                dataPartBuilder.consentRequestId(succeededDataConsentReqId).status(HealthInfoStatus.SUCCEEDED).build(),
-                dataPartBuilder.consentRequestId(partialDataConsentReqId).status(HealthInfoStatus.ERRORED).build(),
-                dataPartBuilder.consentRequestId(processingDataConsentReqId).status(HealthInfoStatus.PROCESSING).build());
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.SUCCEEDED).build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
-        when(patientConsentRepository.fetchConsentRequestIds(healthInfoRequest.getRequestIds())).thenReturn(Flux.fromIterable(dataRequestMappings));
-        when(dataFlowRepository.fetchDataPartDetails(consentRequestIdsCaptor.capture())).thenReturn(Flux.fromIterable(dataPartDetails));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
 
-        var expectedResponse = DataRequestStatusResponse.builder().statuses(List.of(
-                resultStatuses.get(0).status(DataRequestStatus.PROCESSING).build(),
-                resultStatuses.get(1).status(DataRequestStatus.SUCCEEDED).build(),
-                resultStatuses.get(2).status(DataRequestStatus.PARTIAL).build(),
-                resultStatuses.get(3).status(DataRequestStatus.PROCESSING).build()));
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.SUCCEEDED)
+                        .build()));
 
         webTestClient
                 .post()
                 .uri(API_PATH_GET_HEALTH_INFO_STATUS)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(healthInfoRequest)
+                .bodyValue(dataStatusCheckRequest)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
@@ -207,6 +185,6 @@ class HealthInfoControllerTest {
                         .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
                         .writeValueAsString(expectedResponse));
 
-        assertEquals(Set.copyOf(consentRequestIdsCaptor.getValue()), consentRequestIds);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
     }
 }
