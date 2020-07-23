@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.consent;
 
-import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -38,9 +37,11 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
@@ -118,7 +119,7 @@ public class ConsentService {
                                                                  PatientConsentRequest consentRequest) {
         Map<String, String> response = new HashMap<>();
 
-        return Flux.fromIterable(consentRequest.getHipIds())
+        return Flux.fromIterable(filterEmptyAndNullValues(consentRequest.getHipIds()))
                 .flatMap(hipId -> validatePatientConsentRequest(requesterId, hipId, consentRequest.isReloadConsent())
                         .flatMap(consentRequestData -> {
                             var dataRequestId = UUID.randomUUID();
@@ -133,6 +134,11 @@ public class ConsentService {
                                                     dataRequestId.toString())));
                         }))
                 .then(Mono.just(response));
+    }
+
+
+    private List<String> filterEmptyAndNullValues(List<String> ids) {
+        return ids.stream().filter(Objects::nonNull).filter(n -> !n.equals("")).collect(Collectors.toList());
     }
 
     private Mono<ConsentRequestData> handleForReloadConsent(String patientId, String hipId) {
@@ -151,9 +157,6 @@ public class ConsentService {
 
     private Mono<ConsentRequestData> validatePatientConsentRequest(String requesterId, String hipId, boolean reloadConsent) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        if (Strings.isNullOrEmpty(hipId)) {
-            return Mono.empty();
-        }
         if (reloadConsent) {
             return handleForReloadConsent(requesterId, hipId);
         }
