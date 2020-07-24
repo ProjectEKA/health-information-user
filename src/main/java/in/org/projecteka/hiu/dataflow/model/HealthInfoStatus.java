@@ -4,5 +4,6 @@ public enum HealthInfoStatus {
     RECEIVED,
     PROCESSING,
     SUCCEEDED,
-    ERRORED
+    ERRORED,
+    PARTIAL
 }

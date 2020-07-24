@@ -45,6 +45,7 @@ import java.util.function.Function;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.PARTIAL;
 import static java.util.stream.Collectors.joining;
 
 public class HealthDataProcessor {
@@ -127,12 +128,14 @@ public class HealthDataProcessor {
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
 
+            var status = dataErrors.size() == context.getNumberOfEntries() ? HealthInfoStatus.ERRORED : PARTIAL;
+
             if (!dataErrors.isEmpty()) {
                 var errors = dataErrors.stream().map("[ERROR]"::concat).collect(joining());
                 var allErrors = "[ERROR]".concat(errors);
                 logger.error("Error occurred while processing data from HIP. Transaction id: %s. Errors: %s",
                         context.getTransactionId(), allErrors);
-                updateDataProcessStatus(context, allErrors, HealthInfoStatus.ERRORED, context.latestResourceDate());
+                updateDataProcessStatus(context, allErrors, status, context.latestResourceDate());
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.FAILED);
             } else {
                 updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED, context.latestResourceDate());
