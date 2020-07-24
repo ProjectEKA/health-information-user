@@ -109,6 +109,7 @@ public class HealthInfoManager {
                                 .requestId(dataRequestDetail.getDataRequestId());
 
                         if (StringUtils.isEmpty(dataRequestDetail.getConsentRequestId())) {
+                            logger.info("Consent request is not yet created for data request id {}", dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getPatientDataRequestedAt(),
@@ -118,6 +119,7 @@ public class HealthInfoManager {
                         }
 
                         if (StringUtils.isEmpty(dataRequestDetail.getConsentArtefactId())) {
+                            logger.info("Consent artefact is not yet received for data request id {}", dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getConsentRequestedAt(),
@@ -127,6 +129,7 @@ public class HealthInfoManager {
                         }
 
                         if (Objects.isNull(dataRequestDetail.getDataPartStatus())) {
+                            logger.info("Data is not yet received for data request id {}", dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getDataFlowRequestedAt(),
@@ -135,6 +138,7 @@ public class HealthInfoManager {
                             return;
                         }
 
+                        logger.info("Data recieved  for data request id {}", dataRequestDetail.getDataRequestId());
                         patientHealthInfoStatuses.add(statusBuilder.status(getStatusFor(dataRequestDetails)).build());
                     });
 
