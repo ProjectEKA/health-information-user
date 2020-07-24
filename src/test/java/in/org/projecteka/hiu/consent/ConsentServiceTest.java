@@ -186,7 +186,7 @@ public class ConsentServiceTest {
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
 
 
-        Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId, new PatientConsentRequest(List.of("10000005")));
+        Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId, new PatientConsentRequest(List.of("10000005"),false));
 
         StepVerifier.create(request).expectNext(request.block()).verifyComplete();
     }
