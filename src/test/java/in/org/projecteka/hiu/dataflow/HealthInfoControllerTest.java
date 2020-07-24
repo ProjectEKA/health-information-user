@@ -206,7 +206,7 @@ class HealthInfoControllerTest {
         var dataRequestIds = List.of(UUID.randomUUID().toString());
         var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
-        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.ERRORED).build();
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.PARTIAL).build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
         when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
@@ -240,6 +240,30 @@ class HealthInfoControllerTest {
                         .hipId(dataRequestDetail.getHipId())
                         .requestId(dataRequestDetail.getDataRequestId())
                         .status(DataRequestStatus.PROCESSING)
+                        .build())).build();
+
+        assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnErroredStatusWhenDataPartHasAllEntriesErrored() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.ERRORED).build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        var expectedResponse = DataRequestStatusResponse.builder().statuses(
+                List.of(PatientHealthInfoStatus.builder()
+                        .hipId(dataRequestDetail.getHipId())
+                        .requestId(dataRequestDetail.getDataRequestId())
+                        .status(DataRequestStatus.ERRORED)
                         .build())).build();
 
         assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);

@@ -164,6 +164,9 @@ public class HealthInfoManager {
         if (isProcessing(statuses)) {
             return DataRequestStatus.PROCESSING;
         }
+        if(isErrored(statuses)){
+            return DataRequestStatus.ERRORED;
+        }
         if (isPartial(statuses)) {
             return DataRequestStatus.PARTIAL;
         }
@@ -171,7 +174,11 @@ public class HealthInfoManager {
     }
 
     private boolean isPartial(List<HealthInfoStatus> statuses) {
-        return statuses.stream().anyMatch(status -> status.equals(HealthInfoStatus.ERRORED));
+        return statuses.stream().anyMatch(status -> status.equals(HealthInfoStatus.PARTIAL));
+    }
+
+    private boolean isErrored(List<HealthInfoStatus> statuses) {
+        return statuses.stream().allMatch(status -> status.equals(HealthInfoStatus.ERRORED));
     }
 
     private boolean isProcessing(List<HealthInfoStatus> statuses) {
