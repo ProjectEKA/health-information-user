@@ -13,6 +13,10 @@ hiu:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}
     maxPageSize: ${MAX_PAGE_SIZE}
     localStoragePath: ${LOCAL_STORAGE_PATH}
+    #Time in minutes
+    consentRequestWaitTime: ${DATA_FLOW_CONSENT_REQUEST_WAIT_TIME}
+    consentArtefactWaitTime: ${DATA_FLOW_CONSENT_ARTEFACT_WAIT_TIME}
+    dataPartWaitTime: ${DATA_FLOW_PART_WAIT_TIME}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}

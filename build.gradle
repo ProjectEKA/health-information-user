@@ -44,17 +44,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework:spring-context-support'
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'io.vertx:vertx-pg-client:3.9.0'
+    implementation 'io.vertx:vertx-pg-client:3.9.2'
     implementation 'log4j:log4j:1.2.17'
     implementation 'com.google.guava:guava:29.0-jre'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.projectlombok:lombok'
-    implementation 'org.bouncycastle:bcprov-jdk15on:1.65.01'
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.66'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
-    testImplementation "com.squareup.okhttp3:okhttp:4.7.2"
+    testImplementation "com.squareup.okhttp3:okhttp:4.8.0"
     testImplementation "com.squareup.okhttp3:mockwebserver:4.7.2"
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.jeasy:easy-random-core:4.2.0'

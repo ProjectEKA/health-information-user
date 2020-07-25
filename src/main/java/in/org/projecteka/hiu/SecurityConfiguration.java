@@ -62,7 +62,7 @@ public class SecurityConfiguration {
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
-            Map.entry(HttpMethod.POST, "/v1/patient/health-information/fetch/**/attachments/**"),
+            Map.entry(HttpMethod.GET, "/v1/patient/health-information/fetch/**/attachments/**"),
             Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO),
             Map.entry(HttpMethod.POST, API_PATH_GET_HEALTH_INFO_STATUS));
     private static final String[] ALLOWED_LISTS = new String[]{"/**.json",
@@ -197,7 +197,7 @@ public class SecurityConfiguration {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return CM_PATIENT_APIS.stream()
                     .anyMatch(pattern ->
-                            antPathMatcher.matchStart(pattern.getValue(), path) && method == pattern.getKey());
+                            antPathMatcher.match(pattern.getValue(), path) && method == pattern.getKey());
         }
     }
 

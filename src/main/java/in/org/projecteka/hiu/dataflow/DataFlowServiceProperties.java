@@ -18,4 +18,7 @@ public class DataFlowServiceProperties {
     private int maxPageSize;
     private int defaultPageSize;
     private String localStoragePath;
+    private int consentRequestWaitTime;
+    private int consentArtefactWaitTime;
+    private int dataPartWaitTime;
 }
