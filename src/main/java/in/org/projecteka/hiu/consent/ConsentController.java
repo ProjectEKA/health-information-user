@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
@@ -19,13 +20,15 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 
+import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
+
 @RestController
 @AllArgsConstructor
 public class ConsentController {
     private final ConsentService consentService;
 
-    @PostMapping("/v1/hiu/consent-requests")
-    public Mono<ResponseEntity> postConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
+    @PostMapping(APP_PATH_HIU_CONSENT_REQUESTS)
+    public Mono<ResponseEntity<HttpStatus>> postConsentRequest(@RequestBody ConsentRequestData consentRequestData) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
@@ -33,13 +36,14 @@ public class ConsentController {
                 .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
-    @PostMapping("/v1/consent-requests/on-init")
-    public Mono<ResponseEntity> onInitConsentRequest(@RequestBody ConsentRequestInitResponse consentRequestInitResponse) {
+    @PostMapping(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
+    public Mono<ResponseEntity<HttpStatus>> onInitConsentRequest(
+            @RequestBody ConsentRequestInitResponse consentRequestInitResponse) {
         return consentService.updatePostedRequest(consentRequestInitResponse)
                 .thenReturn(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
-    @GetMapping("/v1/hiu/consent-requests")
+    @GetMapping(APP_PATH_HIU_CONSENT_REQUESTS)
     public Flux<ConsentRequestRepresentation> consentRequests() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
@@ -47,14 +51,16 @@ public class ConsentController {
                 .flatMapMany(consentService::requestsOf);
     }
 
-    @PostMapping("/v1/consents/hiu/notify")
-    public Mono<ResponseEntity> hiuConsentNotification(@RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
+    @PostMapping(Constants.PATH_CONSENTS_HIU_NOTIFY)
+    public Mono<ResponseEntity<HttpStatus>> hiuConsentNotification(
+            @RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
         consentService.handleNotification(hiuNotification).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
-    @PostMapping("/v1/consents/on-fetch")
-    public Mono<ResponseEntity> onFetchConsentArtefact(@RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
+    @PostMapping(Constants.PATH_CONSENTS_ON_FETCH)
+    public Mono<ResponseEntity<HttpStatus>> onFetchConsentArtefact(
+            @RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
         consentService.handleConsentArtefact(consentArtefactResponse).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }

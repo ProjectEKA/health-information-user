@@ -8,6 +8,7 @@ import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -24,11 +25,11 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
 
 @AllArgsConstructor
 public class DataFlowRequestListener {
@@ -42,13 +43,14 @@ public class DataFlowRequestListener {
     private final Gateway gateway;
     private final Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
     private final ConsentRepository consentRepository;
+    private final RabbitQueueNames queueNames;
 
     @PostConstruct
     @SneakyThrows
     public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
-                .get(DATA_FLOW_REQUEST_QUEUE);
+                .get(queueNames.getDataFlowRequestQueue());
         if (destinationInfo == null) {
             throw queueNotFound();
         }
@@ -100,7 +102,7 @@ public class DataFlowRequestListener {
 
     private GatewayDataFlowRequest getDataFlowRequest(DataFlowRequest dataFlowRequest) {
         var requestId = UUID.randomUUID();
-        var timestamp = java.time.Instant.now().toString();
+        var timestamp = LocalDateTime.now(ZoneOffset.UTC);
         return new GatewayDataFlowRequest(requestId, timestamp, dataFlowRequest);
     }
 

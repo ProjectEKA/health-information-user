@@ -14,13 +14,14 @@ import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
+import in.org.projecteka.hiu.dataprocessor.model.BundleContext;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dataprocessor.model.DataContext;
 import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
 import in.org.projecteka.hiu.dataprocessor.model.HiStatus;
 import in.org.projecteka.hiu.dataprocessor.model.Notification;
 import in.org.projecteka.hiu.dataprocessor.model.Notifier;
-import in.org.projecteka.hiu.dataprocessor.model.ProcessedResource;
+import in.org.projecteka.hiu.dataprocessor.model.ProcessedEntry;
 import in.org.projecteka.hiu.dataprocessor.model.SessionStatus;
 import in.org.projecteka.hiu.dataprocessor.model.StatusNotification;
 import in.org.projecteka.hiu.dataprocessor.model.StatusResponse;
@@ -35,13 +36,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.PARTIAL;
 import static java.util.stream.Collectors.joining;
 
 public class HealthDataProcessor {
@@ -78,7 +82,7 @@ public class HealthDataProcessor {
     }
 
     public void process(DataAvailableMessage message) {
-        DataContext context = createContext(message);
+        DataContext context = createDataContext(message);
         if (context != null && context.getNotifiedData() != null) {
             processEntries(context);
         } else {
@@ -89,11 +93,12 @@ public class HealthDataProcessor {
 
     private void processEntries(DataContext context) {
         try {
-            updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING);
+            updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING, null);
             String transactionId = context.getTransactionId();
             DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(transactionId).block();
             List<String> dataErrors = new ArrayList<>();
             List<StatusResponse> statusResponses = new ArrayList<>();
+            logger.info("Received data from HIP. Number of entries: " + context.getNumberOfEntries());
             context.getNotifiedData().getEntries().forEach(entry -> {
                 var entryToProcess = entry;
                 String dataPartNumber = context.getDataPartNumber();
@@ -118,20 +123,26 @@ public class HealthDataProcessor {
                     statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
                     return;
                 }
-                healthDataRepository.insertDataFor(transactionId, dataPartNumber, result.getResource()).block();
+                context.addTrackedResources(result.getTrackedResources());
+                healthDataRepository.insertDataFor(transactionId, dataPartNumber, result.getResource(), result.latestResourceDate()).block();
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
+
+            var status = dataErrors.size() == context.getNumberOfEntries() ? HealthInfoStatus.ERRORED : PARTIAL;
 
             if (!dataErrors.isEmpty()) {
                 var errors = dataErrors.stream().map("[ERROR]"::concat).collect(joining());
                 var allErrors = "[ERROR]".concat(errors);
-                updateDataProcessStatus(context, allErrors, HealthInfoStatus.ERRORED);
+                logger.error("Error occurred while processing data from HIP. Transaction id: %s. Errors: %s",
+                        context.getTransactionId(), allErrors);
+                updateDataProcessStatus(context, allErrors, status, context.latestResourceDate());
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.FAILED);
             } else {
-                updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED);
+                updateDataProcessStatus(context, "", HealthInfoStatus.SUCCEEDED, context.latestResourceDate());
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
             }
         } catch (Exception ex) {
+            logger.error("Error occurred while processing data from HIP. Transaction id: %s.", context.getTransactionId());
             logger.error(ex.getMessage(), ex);
         }
     }
@@ -163,11 +174,11 @@ public class HealthDataProcessor {
                                                                            String hipId) {
         return HealthInfoNotificationRequest.builder()
                 .requestId(UUID.randomUUID())
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now(ZoneOffset.UTC))
                 .notification(Notification.builder()
                         .consentId(consentId)
                         .transactionId(context.getTransactionId())
-                        .doneAt(LocalDateTime.now())
+                        .doneAt(LocalDateTime.now(ZoneOffset.UTC))
                         .notifier(Notifier.builder()
                                 .type(Type.HIU)
                                 .id(hiuProperties.getId())
@@ -185,14 +196,15 @@ public class HealthDataProcessor {
         return consentRepository.getConsentMangerId(consentId).block();
     }
 
-    private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status) {
+    private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status, LocalDateTime latestResourceDate) {
         dataFlowRepository.updateDataFlowWithStatus(context.getTransactionId(),
                 context.getDataPartNumber(),
                 allErrors,
-                status).block();
+                status,
+                latestResourceDate).block();
     }
 
-    private DataContext createContext(DataAvailableMessage message) {
+    private DataContext createDataContext(DataAvailableMessage message) {
         Path dataFilePath = Paths.get(message.getPathToFile());
         try (InputStream inputStream = Files.newInputStream(dataFilePath)) {
             var objectMapper = new ObjectMapper()
@@ -206,6 +218,7 @@ public class HealthDataProcessor {
                     .notifiedData(dataNotificationRequest)
                     .dataFilePath(dataFilePath)
                     .dataPartNumber(message.getPartNumber())
+                    .trackedResources(new ArrayList<>())
                     .build();
         } catch (Exception e) {
             logger.error("Could not create context from data file path", e);
@@ -213,11 +226,11 @@ public class HealthDataProcessor {
         }
     }
 
-    private ProcessedResource processEntryContent(DataContext context,
-                                                  Entry entry,
-                                                  DataFlowRequestKeyMaterial keyMaterial) {
-        logger.info("Process entry {}", entry);
-        ProcessedResource result = new ProcessedResource();
+    private ProcessedEntry processEntryContent(DataContext context,
+                                               Entry entry,
+                                               DataFlowRequestKeyMaterial keyMaterial) {
+        logger.info("Process entry for care-context: {}", entry.getCareContextReference());
+        ProcessedEntry result = new ProcessedEntry();
         var mayBeParser = getEntryParser(entry.getMedia());
 
         return mayBeParser.map(parser -> {
@@ -229,22 +242,27 @@ public class HealthDataProcessor {
                 result.getErrors().add("Could not decrypt content");
                 return result;
             }
-            Bundle bundle = (Bundle) parser.parseResource(decryptedContent);
-            if (!isValidBundleType(bundle.getType())) {
-                result.addError("Can not process entry content." +
-                        "Entry content is not a FHIR Bundle type COLLECTION or DOCUMENT");
+            Bundle bundle = parser.parseResource(Bundle.class, decryptedContent);
+            if (!isValidBundleType(bundle)) {
+                result.addError("Can not process entry content, invalid envelope." +
+                        "Entry content is either not a FHIR Bundle type COLLECTION or DOCUMENT. " +
+                        "For Document bundle type (e.g Discharge Summary), the first entry must be composition.");
                 return result;
             }
+            Function<ResourceType, HITypeResourceProcessor> resourceProcessor = this::identifyResourceProcessor;
+            BundleContext bundleContext = new BundleContext(bundle, resourceProcessor);
             try {
+                logger.info("Processing bundle id:" + bundle.getId());
                 bundle.getEntry().forEach(bundleEntry -> {
                     ResourceType resourceType = bundleEntry.getResource().getResourceType();
                     logger.info("bundle entry resource type:  {}", resourceType);
                     HITypeResourceProcessor processor = identifyResourceProcessor(resourceType);
                     if (processor != null) {
-                        processor.process(bundleEntry.getResource(), context);
+                        processor.process(bundleEntry.getResource(), context, bundleContext, null);
                     }
                 });
                 result.setEncoded(parser.encodeResourceToString(bundle));
+                result.addTrackedResources(bundleContext.getTrackedResources(), bundleContext.getBundleDate());
                 return result;
             } catch (Exception e) {
                 logger.error("Could not process bundle {exception}", e);
@@ -262,8 +280,19 @@ public class HealthDataProcessor {
         return resourceProcessors.stream().filter(p -> p.supports(resourceType)).findAny().orElse(null);
     }
 
-    private boolean isValidBundleType(Bundle.BundleType type) {
-        return type.equals(Bundle.BundleType.COLLECTION) || type.equals(Bundle.BundleType.DOCUMENT);
+    private boolean isValidBundleType(Bundle bundle) {
+        Bundle.BundleType bundleType = bundle.getType();
+        if (bundleType.equals(Bundle.BundleType.COLLECTION)) {
+            return true;
+        }
+        if (!bundleType.equals(Bundle.BundleType.DOCUMENT)) {
+            return false;
+        }
+        if (bundle.getEntry().isEmpty()) {
+            return false;
+        }
+        Bundle.BundleEntryComponent firstEntry = bundle.getEntry().get(0);
+        return firstEntry.getResource().getResourceType().equals(ResourceType.Composition);
     }
 
     private Optional<IParser> getEntryParser(String media) {

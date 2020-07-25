@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -64,7 +66,7 @@ public class PatientService {
 
     private FindPatientRequest getFindPatientRequest(String id) {
         var requestId = UUID.randomUUID();
-        var timestamp = java.time.Instant.now().toString();
+        var timestamp = LocalDateTime.now(ZoneOffset.UTC);
         var patient = new in.org.projecteka.hiu.consent.model.Patient(id);
         var requester = new Requester("HIU", hiuProperties.getId());
         var query = new FindPatientQuery(patient, requester);
@@ -98,7 +100,7 @@ public class PatientService {
         if (response.getPatient() != null) {
             cache.put(response.getPatient().getId(), Optional.of(response.getPatient().toPatient()));
         }
-        gatewayResponseCache.put(response.getResp().getRequestId(),Optional.of(response));
+        gatewayResponseCache.put(response.getResp().getRequestId(), Optional.of(response));
         return Mono.empty();
     }
 }

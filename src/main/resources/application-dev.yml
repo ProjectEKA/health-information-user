@@ -30,11 +30,11 @@ hiu:
     user: orthanc
     password: orthanc
   gatewayservice:
-    baseUrl: http://localhost:8004/v1
+    baseUrl: http://localhost:8080/v0.5
     requestTimeout: 2000
     clientId: 10000005
     clientSecret: 95ca9a9d-1473-4172-9d87-0fd4d87ee1d6
-    jwkUrl: http://localhost:8080/certs
+    jwkUrl: http://localhost:8080/v0.5/certs
 spring:
   rabbitmq:
     host: localhost

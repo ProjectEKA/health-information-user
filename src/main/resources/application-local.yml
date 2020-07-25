@@ -12,6 +12,16 @@ hiu:
     defaultPageSize: 20
     maxPageSize: 100
     localStoragePath: /tmp/
+    #Time in minutes
+    consentRequestWaitTime: 1
+    consentArtefactWaitTime: 1
+    dataPartWaitTime: 1
+  userservice:
+    jwkUrl: http://localhost:9001/auth/realms/consent-manager/protocol/openid-connect/certs
+  consentservice:
+    consentRequestFromYears: 7
+    consentExpiryInMonths: 2
+    consentRequestDelay: 2
   database:
     host: localhost
     port: 5432
@@ -27,16 +37,17 @@ hiu:
     user: orthanc
     password: orthanc
   gatewayservice:
-    baseUrl: http://localhost:8000/v1
+    baseUrl: http://localhost:8000/v0.5
     requestTimeout: 2000
     clientId: 10000002
     clientSecret: ${CLIENT_SECRET}
-    jwkUrl: http://localhost:8000/v1/certs
+    jwkUrl: http://localhost:8000/v0.5/certs
 spring:
   rabbitmq:
     host: localhost
     port: 5672
     username: guest
     password: guest
+    queuePrefix: ""
   codec:
     max-in-memory-size: 500MB

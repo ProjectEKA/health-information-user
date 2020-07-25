@@ -13,6 +13,10 @@ hiu:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}
     maxPageSize: ${MAX_PAGE_SIZE}
     localStoragePath: ${LOCAL_STORAGE_PATH}
+    #Time in minutes
+    consentRequestWaitTime: ${DATA_FLOW_CONSENT_REQUEST_WAIT_TIME}
+    consentArtefactWaitTime: ${DATA_FLOW_CONSENT_ARTEFACT_WAIT_TIME}
+    dataPartWaitTime: ${DATA_FLOW_PART_WAIT_TIME}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}
@@ -27,17 +31,29 @@ hiu:
     url: ${ORTHANC_SERVER_URL}
     user: ${ORTHANC_USERNAME}
     password: ${ORTHANC_PASSWORD}
+  userservice:
+    jwkUrl: ${IDENTITY_JWK_URL}
   gatewayservice:
     baseUrl: ${GATEWAY_BASE_URL}
     requestTimeout: ${GATEWAY_REQUEST_TIMEOUT}
     clientId: ${HIU_CLIENT_ID}
     clientSecret: ${HIU_CLIENT_SECRET}
     jwkUrl: ${GATEWAY_JWK_URL}
+  consentservice:
+    consentRequestFromYears: ${CONSENT_REQUEST_FROM_YEARS:7}
+    consentExpiryInMonths: ${CONSETN_EXPIRY_IN_MONTHS:2}
+    defaultPageSize: ${DEFAULT_CR_PAGE_SIZE:200}
+    consentRequestDelay: ${MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES:10}
+  authorization:
+    header: ${AUTHORIZATION_HEADER:Authorization}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+    queuePrefix: ${RABBITMQ_PREFIX}
   codec:
     max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
+webclient:
+  keepAlive: ${HIU_KEEP_ALIVE:true}

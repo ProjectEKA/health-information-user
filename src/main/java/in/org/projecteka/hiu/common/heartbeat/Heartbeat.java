@@ -4,7 +4,6 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import in.org.projecteka.hiu.DatabaseProperties;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;
-import in.org.projecteka.hiu.common.heartbeat.model.Status;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -12,62 +11,50 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
-import static in.org.projecteka.hiu.Error.serviceDownError;
+import static in.org.projecteka.hiu.Error.of;
+import static in.org.projecteka.hiu.common.heartbeat.model.Status.DOWN;
+import static in.org.projecteka.hiu.common.heartbeat.model.Status.UP;
+import static java.time.LocalDateTime.now;
+import static java.time.ZoneOffset.UTC;
+import static reactor.core.publisher.Mono.just;
 
 
 @AllArgsConstructor
 public class Heartbeat {
+    public static final String SERVICE_DOWN = "Service Down";
     private final RabbitMQOptions rabbitMQOptions;
     private final DatabaseProperties databaseProperties;
 
     public Mono<HeartbeatResponse> getStatus() {
         try {
             return (isRabbitMQUp() && isPostgresUp())
-                    ? Mono.just(HeartbeatResponse.builder()
-                    .timeStamp(Instant.now().toString())
-                    .status(Status.UP)
-                    .build())
-                    : Mono.just(HeartbeatResponse.builder()
-                    .timeStamp(Instant.now().toString())
-                    .status(Status.DOWN)
-                    .error(serviceDownError("Service Down"))
-                    .build());
+                   ? just(HeartbeatResponse.builder().timeStamp(now(UTC)).status(UP).build())
+                   : just(HeartbeatResponse.builder().timeStamp(now(UTC)).status(DOWN).error(of(SERVICE_DOWN)).build());
         } catch (IOException | TimeoutException e) {
-            return Mono.just(HeartbeatResponse.builder()
-                    .timeStamp(Instant.now().toString())
-                    .status(Status.DOWN)
-                    .error(serviceDownError("Service Down"))
-                    .build());
+            return just(HeartbeatResponse.builder().timeStamp(now(UTC)).status(DOWN).error(of(SERVICE_DOWN)).build());
         }
-
     }
 
     private boolean isRabbitMQUp() throws IOException, TimeoutException {
-        ConnectionFactory factory = new ConnectionFactory();
+        var factory = new ConnectionFactory();
         factory.setHost(rabbitMQOptions.getHost());
         factory.setPort(rabbitMQOptions.getPort());
-        Connection connection = factory.newConnection();
-        return connection.isOpen();
+        try (Connection connection = factory.newConnection()) {
+            return connection.isOpen();
+        }
     }
 
     private boolean isPostgresUp() throws IOException {
-        return checkConnection(databaseProperties.getHost(),databaseProperties.getPort());
+        return checkConnection(databaseProperties.getHost(), databaseProperties.getPort());
     }
 
     private boolean checkConnection(String host, int port) throws IOException {
-        boolean isAlive;
         SocketAddress socketAddress = new InetSocketAddress(host, port);
-        Socket socket = new Socket();
-        try {
+        try (Socket socket = new Socket()) {
             socket.connect(socketAddress);
-            socket.close();
-            isAlive = true;
-        } catch (IOException exception) {
-            throw exception;
+            return socket.isConnected();
         }
-        return isAlive;
     }
 }

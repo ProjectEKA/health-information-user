@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.consent.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import in.org.projecteka.hiu.consent.ConceptLookup;
 import in.org.projecteka.hiu.consent.model.consentmanager.AccessMode;
+import in.org.projecteka.hiu.consent.model.consentmanager.HIP;
 import in.org.projecteka.hiu.consent.model.consentmanager.HIU;
 import in.org.projecteka.hiu.consent.model.consentmanager.Requester;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,11 +27,15 @@ public class Consent {
     private Purpose purpose;
     private List<HIType> hiTypes;
     private Permission permission;
+    @Valid
+    private String hipId;
+
 
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
                                                                          String hiuId,
                                                                          String hiuName,
                                                                          ConceptLookup conceptLookup) {
+        var hip = hipId != null ? new HIP(hipId) : null;
         return new in.org.projecteka.hiu.consent.model.consentmanager.Consent(
                 new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
                         conceptLookup.getPurposeDescription(getPurpose().getCode()),
@@ -42,10 +48,12 @@ public class Consent {
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
-                        ONE_HOUR));
+                        ONE_HOUR),
+                hip);
     }
 
     public ConsentRequest toConsentRequest(String id, String requesterId) {
+        var hip = hipId != null ? new HIP(hipId) : null;
         return ConsentRequest.builder()
                 .id(id)
                 .requesterId(requesterId)
@@ -55,6 +63,7 @@ public class Consent {
                 .permission(getPermission())
                 .status(ConsentStatus.REQUESTED)
                 .createdDate(LocalDateTime.now())
+                .hip(hip)
                 .build();
     }
 
@@ -62,6 +71,7 @@ public class Consent {
                                                                          String hiuId,
                                                                          ConceptLookup conceptLookup) {
 
+        var hip = hipId != null ? new HIP(hipId) : null;
         return in.org.projecteka.hiu.consent.model.consentmanager.Consent.builder()
                 .purpose(new in.org.projecteka.hiu.consent.model.consentmanager.Purpose(
                         conceptLookup.getPurposeDescription(getPurpose().getCode()),
@@ -70,11 +80,12 @@ public class Consent {
                 .hiu(HIU.builder().id(hiuId).build())
                 .requester(new Requester(requesterId))
                 .hiTypes(getHiTypes())
-                .permission( new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
+                .permission(new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
                         ONE_HOUR))
+                .hip(hip)
                 .build();
 
     }

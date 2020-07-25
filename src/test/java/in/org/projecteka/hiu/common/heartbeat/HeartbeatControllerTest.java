@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.TestBuilders;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;
 import in.org.projecteka.hiu.common.heartbeat.model.Status;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -25,7 +27,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.mockito.Mockito.when;
 
@@ -38,8 +41,14 @@ class HeartbeatControllerTest {
     private WebTestClient webTestClient;
 
     @SuppressWarnings("unused")
-    @MockBean(name = "centralRegistryJWKSet")
+    @MockBean
+    @Qualifier("centralRegistryJWKSet")
     private JWKSet centralRegistryJWKSet;
+
+    @SuppressWarnings("unused")
+    @MockBean
+    @Qualifier("identityServiceJWKSet")
+    private JWKSet identityServiceJWKSet;
 
     @MockBean
     private Heartbeat heartbeat;
@@ -68,9 +77,9 @@ class HeartbeatControllerTest {
     }
 
     @Test
-    public void shouldGiveCMStatusAsUp() throws JsonProcessingException {
+    public void shouldGiveHIUStatusAsUp() throws JsonProcessingException {
         var heartbeatResponse = HeartbeatResponse.builder()
-                .timeStamp(Instant.now().toString())
+                .timeStamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(Status.UP)
                 .build();
         var heartbeatResponseJson = TestBuilders.OBJECT_MAPPER.writeValueAsString(heartbeatResponse);
@@ -78,7 +87,7 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri("/v1/heartbeat")
+                .uri(Constants.PATH_HEARTBEAT)
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -87,9 +96,9 @@ class HeartbeatControllerTest {
     }
 
     @Test
-    public void shouldGiveCMStatusAsDown() throws JsonProcessingException {
+    public void shouldGiveHIUStatusAsDown() throws JsonProcessingException {
         var heartbeatResponse = HeartbeatResponse.builder()
-                .timeStamp(Instant.now().toString())
+                .timeStamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(Status.DOWN)
                 .error(new Error(ErrorCode.SERVICE_DOWN,"Service Down"))
                 .build();
@@ -98,7 +107,7 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri("/v1/heartbeat")
+                .uri(Constants.PATH_HEARTBEAT)
                 .exchange()
                 .expectStatus()
                 .isOk()

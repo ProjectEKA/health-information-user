@@ -7,10 +7,12 @@ import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.ConsentNotification;
+import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 
@@ -37,7 +39,7 @@ public class GrantedConsentTask extends ConsentTask {
                     var consentArtefactRequest = ConsentArtefactRequest
                             .builder()
                             .consentId(reference.getId())
-                            .timestamp(LocalDateTime.now())
+                            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
                             .requestId(requestId)
                             .build();
                     return gatewayClient.requestConsentArtefact(consentArtefactRequest, cmSuffix, token);
@@ -50,10 +52,11 @@ public class GrantedConsentTask extends ConsentTask {
                 .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
                 .flatMap(consentRequest -> {
                     var cmSuffix = getCmSuffix(consentRequest.getPatient().getId());
-                    return Flux.fromIterable(consentNotification.getConsentArtefacts())
-                            .flatMap(reference -> perform(reference, consentNotification.getConsentRequestId(),
-                                    cmSuffix))
-                            .then();
+                    return consentRepository.updateConsentRequestStatus(
+                            ConsentStatus.GRANTED, consentNotification.getConsentRequestId())
+                            .then(Flux.fromIterable(consentNotification.getConsentArtefacts())
+                                    .flatMap(reference -> perform(reference, consentNotification.getConsentRequestId(), cmSuffix))
+                                    .then());
                 });
     }
 

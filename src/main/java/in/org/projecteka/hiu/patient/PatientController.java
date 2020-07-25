@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.patient;
 
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,16 +18,22 @@ import static in.org.projecteka.hiu.patient.PatientRepresentation.from;
 @AllArgsConstructor
 public class PatientController {
 
+    private static final String APP_PATH_PATIENTS_ID = "/v1/patients/{id}";
     private final PatientService patientService;
 
-    @GetMapping("/v1/patients/{id}")
+    @GetMapping(APP_PATH_PATIENTS_ID)
     public Mono<SearchRepresentation> findUserWith(@PathVariable(name = "id") String consentManagerUserId) {
         return patientService.findPatientWith(consentManagerUserId).map(patient -> new SearchRepresentation(from(patient)));
     }
 
     @ResponseStatus(HttpStatus.ACCEPTED)
-    @PostMapping("/v1/patients/on-find")
+    @PostMapping(Constants.PATH_PATIENTS_ON_FIND)
     public Mono<Void> onFindUser(@RequestBody PatientSearchGatewayResponse patientSearchGatewayResponse) {
         return patientService.onFindPatient(patientSearchGatewayResponse);
+    }
+
+    @GetMapping("/cm/hello")
+    public Mono<String> helloWorld(){
+        return Mono.just("Hello World");
     }
 }

@@ -10,6 +10,7 @@ import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.ServiceCaller;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -59,7 +61,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @ActiveProfiles("dev")
-public class DataFlowUserJourneyTest {
+class DataFlowUserJourneyTest {
     private static final MockWebServer dataFlowServer = new MockWebServer();
     @MockBean
     LocalDataStore localDataStore;
@@ -86,26 +88,34 @@ public class DataFlowUserJourneyTest {
     private DataAvailabilityListener dataAvailabilityListener;
 
     @MockBean
+    @Qualifier("hiuUserAuthenticator")
     private Authenticator authenticator;
 
     @MockBean
     private GatewayTokenVerifier gatewayTokenVerifier;
+
     @SuppressWarnings("unused")
     @MockBean
+    @Qualifier("centralRegistryJWKSet")
     private JWKSet centralRegistryJWKSet;
 
+    @SuppressWarnings("unused")
+    @MockBean
+    @Qualifier("identityServiceJWKSet")
+    private JWKSet identityServiceJWKSet;
+
     @AfterAll
-    public static void tearDown() throws IOException {
+    static void tearDown() throws IOException {
         dataFlowServer.shutdown();
     }
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    public void shouldNotifyDataFlowResponse() {
+    void shouldNotifyDataFlowResponse() {
         var entry = entry().build();
         entry.setLink(null);
         entry.setContent("Some Dummy Content XYZ 1");
@@ -130,7 +140,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/data/notification")
+                .uri(Constants.PATH_DATA_TRANSFER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -140,7 +150,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldFetchHealthInformation() {
+    void shouldFetchHealthInformation() {
         var consentRequestId = "consentRequestId";
         var consentId = "consentId";
         var transactionId = "transactionId";
@@ -186,7 +196,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldNotFetchHealthInformationForExpiredConsent() throws JsonProcessingException {
+    void shouldNotFetchHealthInformationForExpiredConsent() throws JsonProcessingException {
         var consentRequestId = "consentRequestId";
         var consentId = "consentId";
         var transactionId = "transactionId";
@@ -208,7 +218,6 @@ public class DataFlowUserJourneyTest {
                 ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,
                 "Consent artefact expired"));
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
-
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
         when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
 
@@ -218,13 +227,13 @@ public class DataFlowUserJourneyTest {
                         .queryParam("limit", "20").build())
                 .header("Authorization", token)
                 .exchange()
-                .expectStatus().is4xxClientError()
+                .expectStatus().is5xxServerError()
                 .expectBody()
                 .json(errorResponseJson);
     }
 
     @Test
-    public void shouldThrowUnauthorized() throws JsonProcessingException {
+    void shouldThrowUnauthorized() throws JsonProcessingException {
         String consentRequestId = "consentRequestId";
         String consentId = "consentId";
         String hipId = "10000005";
@@ -259,7 +268,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
+    void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
         String transactionId = "transactionId";
         var dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId(transactionId).entries(List.of(new Entry())).build();
@@ -272,7 +281,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/data/notification")
+                .uri(Constants.PATH_DATA_TRANSFER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
                 .accept(MediaType.APPLICATION_JSON)
@@ -300,7 +309,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/health-information/hiu/on-request")
+                .uri(Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataFlowRequestResult)
@@ -320,7 +329,7 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/v1/health-information/hiu/on-request")
+                .uri(Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dataFlowRequestResult)
