@@ -50,7 +50,7 @@ public class BinaryResourceProcessor implements HITypeResourceProcessor {
         }
         binaryResource.setData(String.format("/attachments/%s", localPath.getFileName().toString()).getBytes());
         bundleContext.doneProcessing(binaryResource);
-        Date contextDate = processContext.getContextDate();
+        Date contextDate = processContext != null ? processContext.getContextDate() : null;
         if (contextDate != null) {
             bundleContext.trackResource(ResourceType.Binary, binaryResource.getId(), contextDate, "Binary");
         }
