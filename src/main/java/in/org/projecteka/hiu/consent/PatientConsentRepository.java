@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,6 +49,26 @@ public class PatientConsentRepository {
     private static final String SELECT_CONSENT_REQ_IDS = "SELECT consent_request_id, data_request_id, hip_id FROM patient_consent_request " +
             "WHERE data_request_id IN (%s)";
 
+    private static final String DELETE_FROM_PATIENT_CONSENT_REQUEST = "DELETE FROM patient_consent_request " +
+            "WHERE patient_id=$1 RETURNING consent_request_id::text";
+
+    private static final String DELETE_FROM_CONSENT_REQUEST = "DELETE FROM consent_request " +
+            "WHERE consent_request_id IN (%s) RETURNING consent_request_id";
+
+    private static final String DELETE_FROM_CONSENT_ARTEFACT = "DELETE FROM consent_artefact " +
+            "WHERE consent_request_id IN (%s) RETURNING consent_artefact_id";
+
+    private static final String DELETE_FROM_DATA_FLOW_REQUEST = "DELETE FROM data_flow_request " +
+            "WHERE consent_artefact_id IN (%s) RETURNING transaction_id";
+
+    private static final String DELETE_FROM_HEALTH_INFORMATION = "DELETE FROM health_information " +
+            "WHERE transaction_id IN (%s) RETURNING transaction_id";
+
+    private static final String DELETE_FROM_DATA_FLOW_PARTS = "DELETE FROM data_flow_parts " +
+            "WHERE transaction_id IN (%s) RETURNING transaction_id";
+
+    private static final String DELETE_FROM_DATA_FLOW_REQUEST_KEYS = "DELETE FROM data_flow_request_keys " +
+            "WHERE transaction_id IN (%s)";
 
     private final PgPool dbClient;
 
@@ -129,9 +150,150 @@ public class PatientConsentRepository {
                         }));
     }
 
+    public Mono<List<String>> deletePatientConsentRequestFor(String patientId) {
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(DELETE_FROM_PATIENT_CONSENT_REQUEST)
+                        .execute(Tuple.of(patientId),
+                                handler -> {
+                                    if (handler.failed()) {
+                                        logger.error(handler.cause().getMessage(), handler.cause());
+                                        monoSink.error(new Exception("Failed to delete patient consent request"));
+                                        return;
+                                    } else {
+                                        List<String> consentRequestIds = new ArrayList<>();
+                                        handler.result().forEach(row -> consentRequestIds.add(row.getString("consent_request_id")));
+                                        monoSink.success(consentRequestIds);
+                                    }
+                                }));
+    }
+
+    public Mono<List<String>> deleteConsentRequestFor(List<String> consentRequestIds) {
+        if (consentRequestIds.isEmpty()) {
+            return Mono.empty();
+        }
+        var generatedQuery = String.format(DELETE_FROM_CONSENT_REQUEST, joinByComma(consentRequestIds));
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(generatedQuery)
+                        .execute(handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(new Exception("Failed to delete from consent request"));
+                                return;
+                            } else {
+                                List<String> ids = new ArrayList<>();
+                                handler.result().forEach(row -> ids.add(row.getString("consent_request_id")));
+                                monoSink.success(ids);
+
+                            }
+                        }));
+    }
+
+    public Mono<List<String>> deleteConsentArteFactFor(List<String> consentArtefactIds) {
+        if (consentArtefactIds.isEmpty()) {
+            return Mono.empty();
+        }
+        var generatedQuery = String.format(DELETE_FROM_CONSENT_ARTEFACT, joinByComma(consentArtefactIds));
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(generatedQuery)
+                        .execute(handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(new Exception("Failed to delete from consent artefact"));
+                                return;
+                            } else {
+                                List<String> ids = new ArrayList<>();
+                                handler.result().forEach(row -> ids.add(row.getString("consent_artefact_id")));
+                                monoSink.success(ids);
+
+                            }
+                        }));
+    }
+
+    public Mono<List<String>> deleteDataFlowRequestFor(List<String> consentArtefactIds) {
+        if (consentArtefactIds.isEmpty()) {
+            return Mono.empty();
+        }
+        var generatedQuery = String.format(DELETE_FROM_DATA_FLOW_REQUEST, joinByComma(consentArtefactIds));
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(generatedQuery)
+                        .execute(handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(new Exception("Failed to delete from data flow request"));
+                                return;
+                            } else {
+                                List<String> ids = new ArrayList<>();
+                                handler.result().forEach(row -> ids.add(row.getString("transaction_id")));
+                                monoSink.success(ids);
+
+                            }
+                        }));
+    }
+
+    public Mono<List<String>> deleteHealthInformationFor(List<String> transactionIds) {
+        if (transactionIds.isEmpty()) {
+            return Mono.empty();
+        }
+        var generatedQuery = String.format(DELETE_FROM_HEALTH_INFORMATION, joinByComma(transactionIds));
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(generatedQuery)
+                        .execute(handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(new Exception("Failed to delete from Health Information"));
+                                return;
+                            } else {
+                                List<String> ids = new ArrayList<>();
+                                handler.result().forEach(row -> ids.add(row.getString("transaction_id")));
+                                monoSink.success(ids);
+
+                            }
+                        }));
+    }
+
+    public Mono<Void> deleteDataFlowRequestKeysFor(List<String> transactionIds) {
+        if (transactionIds.isEmpty()) {
+            return Mono.empty();
+        }
+        var generatedQuery = String.format(DELETE_FROM_DATA_FLOW_REQUEST_KEYS, joinByComma(transactionIds));
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(generatedQuery)
+                        .execute(handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(new Exception("Failed to delete from data flow parts"));
+                                return;
+                            } else {
+                                monoSink.success();
+
+                            }
+                        }));
+    }
+
+    public Mono<List<String>> deleteDataFlowPartsFor(List<String> transactionIds) {
+        if (transactionIds.isEmpty()) {
+            return Mono.empty();
+        }
+        var generatedQuery = String.format(DELETE_FROM_DATA_FLOW_PARTS, joinByComma(transactionIds));
+        return Mono.create(monoSink ->
+                dbClient.preparedQuery(generatedQuery)
+                        .execute(handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(new Exception("Failed to delete from data flow request keys"));
+                                return;
+                            } else {
+                                List<String> ids = new ArrayList<>();
+                                handler.result().forEach(row -> ids.add(row.getString("transaction_id")));
+                                monoSink.success(ids);
+
+                            }
+                        }));
+    }
+
     public Flux<PatientDataRequestMapping> fetchConsentRequestIds(List<String> dataRequestIds) {
         var generatedQuery = String.format(SELECT_CONSENT_REQ_IDS, joinByComma(dataRequestIds));
-        if(dataRequestIds.isEmpty()){
+        if (dataRequestIds.isEmpty()) {
             return Flux.empty();
         }
         return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)

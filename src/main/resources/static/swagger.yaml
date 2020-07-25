@@ -44,10 +44,10 @@ paths:
                   id:
                     type: string
                     format: uuid
-  /v1/cm/patient/consent-request:
+  /v1/patient/consent-request:
     post:
       tags:
-        - frontend
+        - cm app
       summary: Create patient consent request
       description: Creates a consent request to get data about a patient by patient.
       operationId: createPatientConsentRequest
@@ -293,6 +293,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PatientHealthDataStatus'
+  /v1/patient/health-information/fetch/{consent-request-id}/attachments/{attachment-path}:
+    get:
+      tags:
+        - cm app
+      summary: Get attachment.
+      description: This API can be used to fetch the health information for a consent request once the request is granted by the patient.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+        - name: consent-request-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: attachment-path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Attachment Binary file
   /data/notification:
     post:
       tags:
@@ -420,6 +441,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HIPIds'
+        reloadConsent:
+          type: boolean
     PatientConsentResponse:
       type: object
       additionalProperties:

@@ -451,7 +451,7 @@ class ConsentUserJourneyTest {
         when(gateway.token()).thenReturn(just(randomString()));
         gatewayServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
-        var consentRequestDetails = new PatientConsentRequest(List.of(hipId));
+        var consentRequestDetails = new PatientConsentRequest(List.of(hipId),false);
         var token = randomString();
         var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
         when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
@@ -478,7 +478,7 @@ class ConsentUserJourneyTest {
         when(gateway.token()).thenReturn(just(randomString()));
         gatewayServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
-        var consentRequestDetails = new PatientConsentRequest(List.of(hipId));
+        var consentRequestDetails = new PatientConsentRequest(List.of(hipId),false);
         var token = randomString();
         var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
         when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));

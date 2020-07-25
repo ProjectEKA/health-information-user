@@ -33,7 +33,6 @@ import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
-import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_HIU_NOTIFY;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FIND;
@@ -63,7 +62,7 @@ public class SecurityConfiguration {
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
             Map.entry(HttpMethod.GET, "/cm/hello"),
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
-            Map.entry(HttpMethod.POST, CM_API_PATH_GET_ATTACHMENT),
+            Map.entry(HttpMethod.GET, "/v1/patient/health-information/fetch/**/attachments/**"),
             Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO),
             Map.entry(HttpMethod.POST, API_PATH_GET_HEALTH_INFO_STATUS));
     private static final String[] ALLOWED_LISTS = new String[]{"/**.json",
@@ -198,7 +197,7 @@ public class SecurityConfiguration {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return CM_PATIENT_APIS.stream()
                     .anyMatch(pattern ->
-                            antPathMatcher.matchStart(pattern.getValue(), path) && method == pattern.getKey());
+                            antPathMatcher.match(pattern.getValue(), path) && method == pattern.getKey());
         }
     }
 
