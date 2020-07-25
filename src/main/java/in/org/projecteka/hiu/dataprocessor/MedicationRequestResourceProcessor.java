@@ -7,12 +7,16 @@ import in.org.projecteka.hiu.dataprocessor.model.ProcessContext;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Medication;
 import org.hl7.fhir.r4.model.MedicationRequest;
+import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
 public class MedicationRequestResourceProcessor implements HITypeResourceProcessor {
+    private static final Logger logger = LoggerFactory.getLogger(MedicationRequestResourceProcessor.class);
     @Override
     public boolean supports(ResourceType type) {
         return type.equals(ResourceType.MedicationRequest);
@@ -30,9 +34,42 @@ public class MedicationRequestResourceProcessor implements HITypeResourceProcess
             return;
         }
         MedicationRequest medicationRequest = (MedicationRequest) resource;
+        processReasonReferences(medicationRequest, dataContext, bundleContext, processContext);
         Date date = getPrescribedDate(medicationRequest, bundleContext, null);
-        String title = String.format("Prescribed Medication : %s", getMedicationDisplay(medicationRequest));
+        String title = String.format("Medication Request : %s", getMedicationDisplay(medicationRequest));
         bundleContext.trackResource(ResourceType.MedicationRequest, medicationRequest.getId(), date, title);
+    }
+
+    private void processReasonReferences(MedicationRequest medicationRequest, DataContext dataContext, BundleContext bundleContext, ProcessContext processContext) {
+        if (medicationRequest.hasReasonReference()) {
+            for (Reference reference : medicationRequest.getReasonReference()) {
+                ProcessContext requestCtx = processContext != null ? processContext : getMedRequestContext(medicationRequest, bundleContext);
+                IBaseResource resource = reference.getResource();
+                if (resource == null) {
+                    logger.warn(String.format("Medication reference not found. diagnosticReport id: %s, result reference: %s",
+                            medicationRequest.getId(), reference.getReference()));
+                }
+                if (!(resource instanceof Resource)) {
+                    return;
+                }
+                Resource bundleResource = (Resource) resource;
+                HITypeResourceProcessor resProcessor = bundleContext.findResourceProcessor(bundleResource.getResourceType());
+                if (resProcessor != null) {
+                    resProcessor.process(bundleResource, dataContext, bundleContext, requestCtx);
+                }
+            }
+        }
+    }
+
+    private ProcessContext getMedRequestContext(MedicationRequest request, BundleContext bundleContext) {
+        return new ProcessContext(
+                () -> getPrescribedDate(request, bundleContext, null),
+                request::getId,
+                this::getMedicationRequestResourceType);
+    }
+
+    private ResourceType getMedicationRequestResourceType() {
+        return ResourceType.MedicationRequest;
     }
 
     private String getMedicationDisplay(MedicationRequest medicationRequest) {

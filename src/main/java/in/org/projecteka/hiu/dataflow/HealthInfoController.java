@@ -3,6 +3,10 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
+import in.org.projecteka.hiu.dataflow.model.HealthInformationFetchRequest;
+import in.org.projecteka.hiu.dataflow.model.PatientHealthInformation;
+import in.org.projecteka.hiu.dataflow.model.DataRequestStatusResponse;
+import in.org.projecteka.hiu.dataflow.model.DataRequestStatusCheckRequest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.core.io.FileSystemResource;
@@ -12,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -20,13 +26,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_ATTACHMENT;
+import static in.org.projecteka.hiu.common.Constants.CM_API_PATH_GET_ATTACHMENT;
+import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
+
+@SuppressWarnings("MVCPathVariableInspection")
 @RestController
 @AllArgsConstructor
 public class HealthInfoController {
     private final HealthInfoManager healthInfoManager;
     private final DataFlowServiceProperties serviceProperties;
 
-    @GetMapping("/health-information/fetch/{consent-request-id}")
+    @GetMapping(API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST)
     public Mono<HealthInformation> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @RequestParam(defaultValue = "${hiu.dataflowservice.defaultPageSize}") int limit,
@@ -43,7 +56,22 @@ public class HealthInfoController {
                         .entries(dataEntries).build());
     }
 
-    @GetMapping("/health-information/fetch/{consent-request-id}/attachments/{file-name}")
+    @PostMapping(API_PATH_FETCH_PATIENT_HEALTH_INFO)
+    public Mono<PatientHealthInformation> fetchHealthInformation(@RequestBody HealthInformationFetchRequest dataRequest) {
+        var limit = Math.min(dataRequest.getLimit(serviceProperties.getDefaultPageSize()), serviceProperties.getMaxPageSize());
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
+                .map(Caller::getUsername)
+                .flatMap(username -> healthInfoManager.fetchHealthInformation(
+                        dataRequest.getRequestIds(), username, limit, dataRequest.getOffset()))
+                .map(tuple -> PatientHealthInformation.builder()
+                        .size(tuple.getT2())
+                        .limit(limit)
+                        .offset(dataRequest.getOffset())
+                        .entries(tuple.getT1()).build());
+    }
+
+    @GetMapping(value = {API_PATH_GET_ATTACHMENT, CM_API_PATH_GET_ATTACHMENT})
     public Mono<ResponseEntity<FileSystemResource>> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @PathVariable(value = "file-name") String fileName) {
@@ -54,6 +82,16 @@ public class HealthInfoController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDispositionHeaderValue)
                 .contentType(responseContentType(filePath))
                 .body(new FileSystemResource(filePath)));
+    }
+
+    @PostMapping(API_PATH_GET_HEALTH_INFO_STATUS)
+    public Mono<DataRequestStatusResponse> fetchHealthInformationStatus(@RequestBody DataRequestStatusCheckRequest dataRequest) {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
+                .map(Caller::getUsername)
+                .flatMapMany(username -> healthInfoManager.fetchHealthInformationStatus(dataRequest.getRequestIds(), username))
+                .collectList()
+                .map(DataRequestStatusResponse::new);
     }
 
     @SneakyThrows

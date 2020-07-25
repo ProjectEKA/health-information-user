@@ -1,9 +1,8 @@
 package in.org.projecteka.hiu.dataflow.model;
 
-public enum HealthInfoStatus {
-    RECEIVED,
+public enum DataRequestStatus {
     PROCESSING,
-    SUCCEEDED,
+    PARTIAL,
     ERRORED,
-    PARTIAL
+    SUCCEEDED
 }

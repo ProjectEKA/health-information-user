@@ -20,3 +20,5 @@ hiu:
   gatewayservice:
     baseUrl: http://tmc.gov.in/ncg-gateway/v1
     requestTimeout: 1000
+  authorization:
+    header: authorization

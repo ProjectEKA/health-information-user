@@ -13,9 +13,14 @@ public class Constants {
     public static final String X_CM_ID = "X-CM-ID";
     public static final String PATH_DATA_TRANSFER = "/data/notification";
     public static final String EMPTY_STRING = "";
-    public static final String APP_PATH_PATIENT_CONSENT_REQUEST = "/v1/cm/patient/consent-request";
+    public static final String APP_PATH_PATIENT_CONSENT_REQUEST = "/v1/patient/consent-request";
     public static final String APP_PATH_HIU_CONSENT_REQUESTS = "/v1/hiu/consent-requests";
     public static final String PATIENT_REQUESTED_PURPOSE_CODE = "PATRQT";
+    public static final String API_PATH_FETCH_PATIENT_HEALTH_INFO = "/v1/patient/health-information/fetch";
+    public static final String API_PATH_GET_INFO_FOR_SINGLE_CONSENT_REQUEST = "/health-information/fetch/{consent-request-id}";
+    public static final String API_PATH_GET_ATTACHMENT = "/health-information/fetch/{consent-request-id}/attachments/{file-name}";
+    public static final String CM_API_PATH_GET_ATTACHMENT = "/v1/patient/health-information/fetch/{consent-request-id}/attachments/{file-name}";
+    public static final String API_PATH_GET_HEALTH_INFO_STATUS = "/v1/patient/health-information/status";
     private Constants() {
     }
 }

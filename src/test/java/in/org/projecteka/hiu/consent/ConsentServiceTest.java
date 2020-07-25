@@ -11,6 +11,7 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.DateRange;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
+import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -153,5 +156,38 @@ public class ConsentServiceTest {
         StepVerifier.create(publisher).expectComplete().verify();
         verify(consentRepository).insertConsentArtefact(consentDetail, GRANTED, consentRequestId);
         verify(dataFlowRequestPublisher).broadcastDataFlowRequest(consentId, dateRange, signature, dataPushUrl);
+    }
+
+    @Test
+    void shouldBuildFirstConsentRequestIfConsentDataIsEmpty() {
+        String requesterId = randomString();
+        var hiuProperties = hiuProperties().build();
+        var token = randomString();
+        ConsentService consentService = new ConsentService(
+                hiuProperties,
+                consentRepository,
+                dataFlowRequestPublisher,
+                null,
+                null,
+                gateway,
+                healthInformationPublisher,
+                conceptValidator,
+                gatewayServiceClient,
+                patientConsentRepository,
+                consentServiceProperties,
+                patientRequestCache);
+        ConsentRequestData consentRequestData = consentRequestDetails().build();
+        consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
+        when(patientConsentRepository.getConsentDetails("10000005", requesterId)).thenReturn(Mono.empty());
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
+        when(gateway.token()).thenReturn(Mono.just(token));
+        when(gatewayServiceClient.sendConsentRequest(eq(token), anyString(), any()))
+                .thenReturn(Mono.empty());
+        when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
+
+
+        Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId, new PatientConsentRequest(List.of("10000005"),false));
+
+        StepVerifier.create(request).expectNext(request.block()).verifyComplete();
     }
 }

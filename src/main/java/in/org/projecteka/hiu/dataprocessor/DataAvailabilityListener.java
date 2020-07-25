@@ -88,7 +88,10 @@ public class DataAvailabilityListener {
                 new CompositionResourceProcessor(),
                 new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)),
                 new DocumentReferenceResourceProcessor(),
-                new MedicationRequestResourceProcessor());
+                new MedicationRequestResourceProcessor(),
+                new ConditionResourceProcessor(),
+                new ObservationResourceProcessor(),
+                new BinaryResourceProcessor());
     }
 
     @SneakyThrows

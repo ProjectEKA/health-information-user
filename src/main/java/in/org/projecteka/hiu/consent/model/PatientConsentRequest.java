@@ -12,4 +12,5 @@ import java.util.List;
 @NoArgsConstructor
 public class PatientConsentRequest {
     private List<String> hipIds;
+    private boolean reloadConsent = false;
 }
