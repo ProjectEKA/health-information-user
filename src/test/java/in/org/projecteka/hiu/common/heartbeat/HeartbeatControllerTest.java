@@ -5,7 +5,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
-import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.TestBuilders;
 import in.org.projecteka.hiu.common.heartbeat.model.HeartbeatResponse;
@@ -28,7 +27,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.mockito.Mockito.when;
 
@@ -77,9 +77,9 @@ class HeartbeatControllerTest {
     }
 
     @Test
-    public void shouldGiveCMStatusAsUp() throws JsonProcessingException {
+    public void shouldGiveHIUStatusAsUp() throws JsonProcessingException {
         var heartbeatResponse = HeartbeatResponse.builder()
-                .timeStamp(Instant.now().toString())
+                .timeStamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(Status.UP)
                 .build();
         var heartbeatResponseJson = TestBuilders.OBJECT_MAPPER.writeValueAsString(heartbeatResponse);
@@ -96,9 +96,9 @@ class HeartbeatControllerTest {
     }
 
     @Test
-    public void shouldGiveCMStatusAsDown() throws JsonProcessingException {
+    public void shouldGiveHIUStatusAsDown() throws JsonProcessingException {
         var heartbeatResponse = HeartbeatResponse.builder()
-                .timeStamp(Instant.now().toString())
+                .timeStamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(Status.DOWN)
                 .error(new Error(ErrorCode.SERVICE_DOWN,"Service Down"))
                 .build();

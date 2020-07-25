@@ -61,7 +61,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @ActiveProfiles("dev")
-public class DataFlowUserJourneyTest {
+class DataFlowUserJourneyTest {
     private static final MockWebServer dataFlowServer = new MockWebServer();
     @MockBean
     LocalDataStore localDataStore;
@@ -105,17 +105,17 @@ public class DataFlowUserJourneyTest {
     private JWKSet identityServiceJWKSet;
 
     @AfterAll
-    public static void tearDown() throws IOException {
+    static void tearDown() throws IOException {
         dataFlowServer.shutdown();
     }
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    public void shouldNotifyDataFlowResponse() {
+    void shouldNotifyDataFlowResponse() {
         var entry = entry().build();
         entry.setLink(null);
         entry.setContent("Some Dummy Content XYZ 1");
@@ -150,7 +150,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldFetchHealthInformation() {
+    void shouldFetchHealthInformation() {
         var consentRequestId = "consentRequestId";
         var consentId = "consentId";
         var transactionId = "transactionId";
@@ -196,7 +196,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldNotFetchHealthInformationForExpiredConsent() throws JsonProcessingException {
+    void shouldNotFetchHealthInformationForExpiredConsent() throws JsonProcessingException {
         var consentRequestId = "consentRequestId";
         var consentId = "consentId";
         var transactionId = "transactionId";
@@ -218,7 +218,6 @@ public class DataFlowUserJourneyTest {
                 ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,
                 "Consent artefact expired"));
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
-
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
         when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
 
@@ -234,7 +233,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldThrowUnauthorized() throws JsonProcessingException {
+    void shouldThrowUnauthorized() throws JsonProcessingException {
         String consentRequestId = "consentRequestId";
         String consentId = "consentId";
         String hipId = "10000005";
@@ -269,7 +268,7 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
+    void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
         String transactionId = "transactionId";
         var dataNotificationRequest =
                 DataNotificationRequest.builder().transactionId(transactionId).entries(List.of(new Entry())).build();

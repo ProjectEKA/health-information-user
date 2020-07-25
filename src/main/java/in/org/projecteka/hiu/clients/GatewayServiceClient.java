@@ -11,8 +11,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-import static in.org.projecteka.hiu.clients.PatientSearchException.notFound;
-import static in.org.projecteka.hiu.clients.PatientSearchException.unknown;
+import static in.org.projecteka.hiu.clients.PatientSearchThrowable.notFound;
+import static in.org.projecteka.hiu.clients.PatientSearchThrowable.unknown;
 import static in.org.projecteka.hiu.common.Constants.X_CM_ID;
 import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
 import static java.util.function.Predicate.not;

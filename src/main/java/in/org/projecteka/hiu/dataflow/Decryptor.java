@@ -18,6 +18,8 @@ import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPrivateKeySpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.KeyAgreement;
 import java.math.BigInteger;
@@ -40,6 +42,8 @@ public class Decryptor {
     public static final String CURVE = "curve25519";
     public static final String PROVIDER = BouncyCastleProvider.PROVIDER_NAME;
     public static final String EH_PUBLIC_KEY_PARAMETER = "Ephemeral public key";
+
+    private static final Logger logger = LoggerFactory.getLogger(Decryptor.class);
 
     public Decryptor(){
         Security.addProvider(new BouncyCastleProvider());
@@ -162,7 +166,7 @@ public class Decryptor {
             decryptedData = new String(plainBytes, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException | IllegalStateException |
                 DataLengthException | InvalidCipherTextException ex) {
-            System.out.println(ex.getMessage());
+            logger.error(ex.getMessage(), ex);
         }
         return decryptedData;
     }

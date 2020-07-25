@@ -100,7 +100,7 @@ public class PatientService {
         if (response.getPatient() != null) {
             cache.put(response.getPatient().getId(), Optional.of(response.getPatient().toPatient()));
         }
-        gatewayResponseCache.put(response.getResp().getRequestId(),Optional.of(response));
+        gatewayResponseCache.put(response.getResp().getRequestId(), Optional.of(response));
         return Mono.empty();
     }
 }

@@ -14,6 +14,10 @@ hiu:
     localStoragePath: /tmp/
   userservice:
     jwkUrl: http://localhost:9001/auth/realms/consent-manager/protocol/openid-connect/certs
+  consentservice:
+    consentRequestFromYears: 7
+    consentExpiryInMonths: 2
+    consentRequestDelay: 2
   database:
     host: localhost
     port: 5432

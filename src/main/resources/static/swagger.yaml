@@ -44,7 +44,7 @@ paths:
                   id:
                     type: string
                     format: uuid
-  /patient/consent-request:
+  /v1/patient/consent-request:
     post:
       tags:
         - frontend
@@ -249,7 +249,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthInformation'
-  /patient/health-information/fetch/:
+  /v1/patient/health-information/fetch/:
     post:
       tags:
         - cm app
@@ -272,6 +272,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PatientHealthDataResponse'
+  /v1/patient/health-information/status/:
+    post:
+      tags:
+        - cm app
+      summary: Get health information status.
+      description: This API can be used to check the status of health information against a set of data request ids when CM app request for data.
+      parameters:
+        - $ref: '#/components/parameters/authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientHealthDataFetchRequest'
+      responses:
+        '200':
+          description: Health information statuses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientHealthDataStatus'
   /data/notification:
     post:
       tags:
@@ -399,6 +420,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HIPIds'
+        reloadConsent:
+          type: boolean
     PatientConsentResponse:
       type: object
       additionalProperties:
@@ -677,7 +700,7 @@ components:
           type: string
         status:
           type: string
-          enum: [SUCCEEDED, ERRORED, PROCESSING, TRANS_ERRORED]
+          enum: [SUCCEEDED, ERRORED, PROCESSING]
         data:
           type: object
           description: data is a FHIR bundle. https://www.hl7.org/fhir/bundle.html
@@ -694,3 +717,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PatientHealthDataEntry'
+    PatientHealthDataStatus:
+      type: object
+      properties:
+        statuses:
+          type: array
+          items:
+            type: object
+            properties:
+              requestId:
+                type: string
+              hipId:
+                type: string
+              status:
+                type: string
+                enum: [COMPLETED, PROCESSING]
