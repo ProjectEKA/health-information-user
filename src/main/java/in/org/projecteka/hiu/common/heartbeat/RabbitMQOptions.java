@@ -13,4 +13,7 @@ public class RabbitMQOptions {
     private final String host;
     private final int port;
     private final String queuePrefix;
+    private final String password;
+    private final String username;
 }
+
