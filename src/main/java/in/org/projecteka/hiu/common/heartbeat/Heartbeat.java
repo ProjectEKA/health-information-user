@@ -41,6 +41,8 @@ public class Heartbeat {
         var factory = new ConnectionFactory();
         factory.setHost(rabbitMQOptions.getHost());
         factory.setPort(rabbitMQOptions.getPort());
+        factory.setUsername(rabbitMQOptions.getUsername());
+        factory.setPassword(rabbitMQOptions.getPassword());
         try (Connection connection = factory.newConnection()) {
             return connection.isOpen();
         }
