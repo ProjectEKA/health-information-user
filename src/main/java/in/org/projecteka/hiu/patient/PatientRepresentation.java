@@ -19,6 +19,6 @@ public class PatientRepresentation {
     }
 
     public Patient toPatient() {
-        return new Patient(this.getId(),this.getName(),"");
+        return new Patient(this.getId(), this.getName(), "");
     }
 }

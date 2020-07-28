@@ -115,7 +115,6 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
         if (mediaList.isEmpty()) {
             return;
         }
-        boolean radiologyCategory = isRadiologyCategory(diagnosticReport);
         for (DiagnosticReport.DiagnosticReportMediaComponent media : mediaList) {
             if (!media.hasLink()) {
                 continue;
@@ -127,14 +126,14 @@ public class DiagnosticReportResourceProcessor implements HITypeResourceProcesso
             if (bundleContext.isProcessed(mediaResource)) {
                 continue;
             }
-            processDiagnosticReportMedia(mediaResource, localStoragePath, radiologyCategory);
+            processDiagnosticReportMedia(mediaResource, localStoragePath);
             bundleContext.doneProcessing(mediaResource);
         }
     }
 
-    private void processDiagnosticReportMedia(Media media, Path localStoragePath, boolean radiologyCategory) {
+    private void processDiagnosticReportMedia(Media media, Path localStoragePath) {
         Path savedAttachmentPath = new AttachmentDataTypeProcessor().process(media.getContent(), localStoragePath);
-        if (radiologyCategory && isRadiologyFile(media.getContent())) {
+        if (isRadiologyFile(media.getContent())) {
             uploadToLocalDicomServer(media.getContent(), savedAttachmentPath);
         }
     }

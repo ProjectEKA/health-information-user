@@ -3,9 +3,9 @@ package in.org.projecteka.hiu;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -21,6 +21,8 @@ import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.common.UserAuthenticator;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
+import in.org.projecteka.hiu.common.cache.LoadingCacheGenericAdapter;
 import in.org.projecteka.hiu.common.heartbeat.Heartbeat;
 import in.org.projecteka.hiu.common.heartbeat.RabbitMQOptions;
 import in.org.projecteka.hiu.consent.ConceptValidator;
@@ -88,8 +90,9 @@ import java.net.URL;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.HashMap;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 
 @Configuration
 public class HiuConfiguration {
@@ -143,7 +146,7 @@ public class HiuConfiguration {
             GatewayServiceClient gatewayServiceClient,
             PatientConsentRepository patientConsentRepository,
             ConsentServiceProperties consentServiceProperties,
-            Cache<String, String> patientRequestCache) {
+            CacheAdapter<String, String> patientRequestCache) {
         return new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -161,10 +164,10 @@ public class HiuConfiguration {
 
     @Bean
     public PatientService patientService(GatewayServiceClient gatewayServiceClient,
-                                         Cache<String, Optional<Patient>> cache,
+                                         CacheAdapter<String, Patient> cache,
                                          HiuProperties hiuProperties,
                                          GatewayProperties gatewayProperties,
-                                         Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache) {
+                                         CacheAdapter<String, PatientSearchGatewayResponse> patientSearchCache) {
         return new PatientService(
                 gatewayServiceClient,
                 cache,
@@ -174,53 +177,75 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public Cache<String, Optional<Patient>> cache() {
+    public LoadingCache<String, Patient> patientCache() {
         return CacheBuilder
                 .newBuilder()
                 .maximumSize(50)
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
-                    public Optional<Patient> load(String key) {
-                        return Optional.empty();
+                    public Patient load(String anyKey) {
+                        return Patient.empty();
                     }
                 });
     }
 
     @Bean
-    public Cache<String, DataFlowRequestKeyMaterial> dataFlowCache() {
+    public CacheAdapter<String, Patient> patientCacheAdapter(LoadingCache<String, Patient> patientCache) {
+        return new LoadingCacheGenericAdapter<>(patientCache, Patient.empty());
+    }
+
+    @Bean
+    public LoadingCache<String, DataFlowRequestKeyMaterial> dataFlowCache() {
         return CacheBuilder
                 .newBuilder()
                 .maximumSize(50)
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
-                    public DataFlowRequestKeyMaterial load(String key) {
-                        return DataFlowRequestKeyMaterial.builder().build();
+                    public DataFlowRequestKeyMaterial load(String anyKey) {
+                        return DataFlowRequestKeyMaterial.empty();
                     }
                 });
     }
 
     @Bean
-    public Cache<String, String> patientRequestCache() {
+    public CacheAdapter<String, DataFlowRequestKeyMaterial> dataFlowCacheAdapter(
+            LoadingCache<String, DataFlowRequestKeyMaterial> dataFlowCache) {
+        return new LoadingCacheGenericAdapter<>(dataFlowCache, DataFlowRequestKeyMaterial.empty());
+    }
+
+    @Bean
+    public LoadingCache<String, String> patientRequestCache() {
         return CacheBuilder
                 .newBuilder()
                 .maximumSize(50)
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
                     public String load(String key) {
-                        return "";
+                        return EMPTY_STRING;
                     }
                 });
     }
 
     @Bean
-    public Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache() {
+    public CacheAdapter<String, String> patientRequestCacheAdapter(LoadingCache<String, String> patientRequestCache) {
+        return new LoadingCacheGenericAdapter<>(patientRequestCache, EMPTY_STRING);
+    }
+
+    @Bean
+    public CacheAdapter<String, PatientSearchGatewayResponse> patientSearchCacheAdapter(
+            LoadingCache<String, PatientSearchGatewayResponse> patientSearchCache) {
+        return new LoadingCacheGenericAdapter<>(patientSearchCache, PatientSearchGatewayResponse.empty());
+    }
+
+    @Bean
+    public LoadingCache<String, PatientSearchGatewayResponse> patientSearchCache() {
         return CacheBuilder
                 .newBuilder()
                 .maximumSize(50)
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(new CacheLoader<>() {
-                    public Optional<PatientSearchGatewayResponse> load(String key) {
-                        return Optional.empty();
+                    public PatientSearchGatewayResponse load(String anyKey) {
+                        return PatientSearchGatewayResponse.empty();
                     }
                 });
     }
@@ -344,7 +369,7 @@ public class HiuConfiguration {
             Decryptor decryptor,
             DataFlowProperties dataFlowProperties,
             Gateway gateway,
-            Cache<String, DataFlowRequestKeyMaterial> dataFlowCache,
+            CacheAdapter<String, DataFlowRequestKeyMaterial> dataFlowCache,
             ConsentRepository consentRepository,
             RabbitQueueNames queueNames) {
         return new DataFlowRequestListener(
@@ -389,7 +414,7 @@ public class HiuConfiguration {
                                            DataAvailabilityPublisher dataAvailabilityPublisher,
                                            DataFlowServiceProperties properties,
                                            LocalDataStore localDataStore,
-                                           Cache<String, DataFlowRequestKeyMaterial> dataFlowCache) {
+                                           CacheAdapter<String, DataFlowRequestKeyMaterial> dataFlowCache) {
         return new DataFlowService(
                 dataFlowRepository,
                 dataAvailabilityPublisher,
@@ -404,7 +429,11 @@ public class HiuConfiguration {
                                                HealthInformationRepository healthInformationRepository,
                                                PatientConsentRepository patientConsentRepository,
                                                DataFlowServiceProperties serviceProperties) {
-        return new HealthInfoManager(consentRepository, dataFlowRepository, patientConsentRepository, healthInformationRepository, serviceProperties);
+        return new HealthInfoManager(consentRepository,
+                dataFlowRepository,
+                patientConsentRepository,
+                healthInformationRepository,
+                serviceProperties);
     }
 
     @Bean

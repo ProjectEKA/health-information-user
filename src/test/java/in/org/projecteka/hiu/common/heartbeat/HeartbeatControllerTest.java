@@ -77,7 +77,7 @@ class HeartbeatControllerTest {
     }
 
     @Test
-    public void shouldGiveHIUStatusAsUp() throws JsonProcessingException {
+    void shouldGiveHIUStatusAsUp() throws JsonProcessingException {
         var heartbeatResponse = HeartbeatResponse.builder()
                 .timeStamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(Status.UP)
@@ -96,7 +96,7 @@ class HeartbeatControllerTest {
     }
 
     @Test
-    public void shouldGiveHIUStatusAsDown() throws JsonProcessingException {
+    void shouldGiveHIUStatusAsDown() throws JsonProcessingException {
         var heartbeatResponse = HeartbeatResponse.builder()
                 .timeStamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(Status.DOWN)
@@ -110,7 +110,7 @@ class HeartbeatControllerTest {
                 .uri(Constants.PATH_HEARTBEAT)
                 .exchange()
                 .expectStatus()
-                .isOk()
+                .is5xxServerError()
                 .expectBody()
                 .json(heartbeatResponseJson);
     }

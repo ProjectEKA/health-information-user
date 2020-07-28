@@ -1,35 +1,33 @@
 package in.org.projecteka.hiu.consent;
 
-import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Gateway;
-import in.org.projecteka.hiu.common.GatewayResponse;
-import in.org.projecteka.hiu.consent.model.ConsentArtefact;
-import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
-import in.org.projecteka.hiu.consent.model.DateRange;
-import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.internal.util.reflection.FieldSetter;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
+import static in.org.projecteka.hiu.common.TestBuilders.dateRange;
+import static in.org.projecteka.hiu.common.TestBuilders.gatewayResponse;
+import static in.org.projecteka.hiu.common.TestBuilders.string;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
+import static in.org.projecteka.hiu.consent.TestBuilders.gatewayConsentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
+import static in.org.projecteka.hiu.consent.TestBuilders.permission;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,14 +36,19 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.internal.util.reflection.FieldSetter.setField;
+import static reactor.core.publisher.Mono.empty;
+import static reactor.core.publisher.Mono.just;
 
-public class ConsentServiceTest {
+class ConsentServiceTest {
     @Mock
-    Cache<String, Optional<Patient>> cache;
+    CacheAdapter<String, Patient> cache;
     @Mock
-    Cache<String, String> patientRequestCache;
+    CacheAdapter<String, String> patientRequestCache;
     @Mock
-    Cache<String, Optional<PatientSearchGatewayResponse>> patientSearchCache;
+    CacheAdapter<String, PatientSearchGatewayResponse> patientSearchCache;
+    @Mock
+    CacheAdapter<String, String> gatewayCache;
     @Mock
     private ConsentRepository consentRepository;
     @Mock
@@ -66,18 +69,14 @@ public class ConsentServiceTest {
     private GatewayServiceClient gatewayServiceClient;
     @Mock
     private HiuProperties hiuProperties;
-    @Mock
-    private GatewayConsentArtefactResponse gatewayConsentArtefactResponse;
-    @Mock
-    private ConsentArtefactResponse consentArtefactResponse;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         initMocks(this);
     }
 
     @Test
-    public void shouldSaveAndPostConsentRequest() {
+    void shouldSaveAndPostConsentRequest() {
         String requesterId = randomString();
         var hiuProperties = hiuProperties().build();
         var token = randomString();
@@ -96,10 +95,10 @@ public class ConsentServiceTest {
                 patientRequestCache);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
-        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
-        when(gateway.token()).thenReturn(Mono.just(token));
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
+        when(gateway.token()).thenReturn(just(token));
         when(gatewayServiceClient.sendConsentRequest(eq(token), anyString(), any()))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
 
         Mono<Void> request = consentService.createRequest(requesterId, consentRequestData);
@@ -110,8 +109,6 @@ public class ConsentServiceTest {
     @Test
     void shouldHandleConsentArtefactResponse() throws NoSuchFieldException {
         var requestId = UUID.randomUUID();
-        var mockCache = Mockito.mock(Cache.class);
-        var mockGatewayResponse = Mockito.mock(GatewayResponse.class);
         var consentRequestId = UUID.randomUUID().toString();
         ConsentService consentService = new ConsentService(
                 hiuProperties,
@@ -126,32 +123,31 @@ public class ConsentServiceTest {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache);
-        FieldSetter.setField(consentService,
-                consentService.getClass().getDeclaredField("gatewayResponseCache"), mockCache);
-        var consentDetail = Mockito.mock(ConsentArtefact.class);
+        setField(consentService, consentService.getClass().getDeclaredField("gatewayResponseCache"), gatewayCache);
         var consentId = UUID.randomUUID().toString();
-        var cacheMap = new ConcurrentHashMap<>();
-        cacheMap.put(requestId.toString(), consentRequestId);
-        var dateRange = Mockito.mock(DateRange.class);
-        var signature = "temp";
-        var dataPushUrl = "tempUrl";
-        var permission = Mockito.mock(in.org.projecteka.hiu.consent.model.consentmanager.Permission.class);
-        when(gatewayConsentArtefactResponse.getConsent()).thenReturn(consentArtefactResponse);
-        when(gatewayConsentArtefactResponse.getResp()).thenReturn(mockGatewayResponse);
-        when(consentArtefactResponse.getConsentDetail()).thenReturn(consentDetail);
-        when(consentDetail.getConsentId()).thenReturn(consentId);
-        when(consentDetail.getPermission()).thenReturn(permission);
-        when(permission.getDateRange()).thenReturn(dateRange);
-        when(consentArtefactResponse.getSignature()).thenReturn(signature);
-        when(consentArtefactResponse.getStatus()).thenReturn(GRANTED);
-        when(mockCache.asMap()).thenReturn(cacheMap);
-        when(mockGatewayResponse.getRequestId()).thenReturn(requestId.toString());
-        when(consentRepository.insertConsentArtefact(consentDetail, GRANTED, consentRequestId)).thenReturn(Mono.empty());
+        var dateRange = dateRange().build();
+        var signature = string();
+        var dataPushUrl = string();
+        var gatewayResponse = gatewayResponse().requestId(requestId.toString()).build();
+        var permission = permission().dateRange(dateRange).build();
+        var consentDetail = consentArtefact().permission(permission).consentId(consentId).build();
+        var consentArtefactResponse = consentArtefactResponse()
+                .consentDetail(consentDetail)
+                .signature(signature)
+                .status(GRANTED)
+                .build();
+        var gatewayConsentArtefactResponse = gatewayConsentArtefactResponse()
+                .consent(consentArtefactResponse)
+                .error(null)
+                .resp(gatewayResponse)
+                .build();
+        when(gatewayCache.get(requestId.toString())).thenReturn(just(consentRequestId));
+        when(consentRepository.insertConsentArtefact(consentDetail, GRANTED, consentRequestId)).thenReturn(empty());
         when(hiuProperties.getDataPushUrl()).thenReturn(dataPushUrl);
         when(dataFlowRequestPublisher.broadcastDataFlowRequest(consentId, dateRange, signature, dataPushUrl))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
 
-        Mono<Void> publisher = consentService.handleConsentArtefact(gatewayConsentArtefactResponse);
+        var publisher = consentService.handleConsentArtefact(gatewayConsentArtefactResponse);
 
         StepVerifier.create(publisher).expectComplete().verify();
         verify(consentRepository).insertConsentArtefact(consentDetail, GRANTED, consentRequestId);
@@ -178,16 +174,17 @@ public class ConsentServiceTest {
                 patientRequestCache);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
-        when(patientConsentRepository.getConsentDetails("10000005", requesterId)).thenReturn(Mono.empty());
-        when(conceptValidator.validatePurpose(anyString())).thenReturn(Mono.just(true));
-        when(gateway.token()).thenReturn(Mono.just(token));
+        when(patientConsentRepository.getConsentDetails("10000005", requesterId)).thenReturn(empty());
+        when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
+        when(gateway.token()).thenReturn(just(token));
         when(gatewayServiceClient.sendConsentRequest(eq(token), anyString(), any()))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
 
 
-        Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId, new PatientConsentRequest(List.of("10000005"),false));
+        Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,
+                new PatientConsentRequest(List.of("10000005"), false));
 
-        StepVerifier.create(request).expectNext(request.block()).verifyComplete();
+        StepVerifier.create(request).expectNextCount(1).verifyComplete();
     }
 }

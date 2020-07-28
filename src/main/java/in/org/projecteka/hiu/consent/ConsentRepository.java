@@ -29,6 +29,7 @@ import static in.org.projecteka.hiu.common.Serializer.to;
 public class ConsentRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsentRepository.class);
+    public static final String STATUS = "status";
 
     private final String CONSENT_REQUEST = "consent_request";
     private static final String SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT = "SELECT consent_artefact_id, " +
@@ -201,7 +202,7 @@ public class ConsentRepository {
         map.put("hipName", row.getString(2));
         map.put("requester", row.getString(3));
         map.put("consentExpiryDate", row.getString(4));
-        map.put("status", row.getString(5));
+        map.put(STATUS, row.getString(5));
         return map;
     }
 
@@ -286,7 +287,7 @@ public class ConsentRepository {
                                 monoSink.success();
                                 return;
                             }
-                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString("status")));
+                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString(STATUS)));
                         }));
     }
 
@@ -304,7 +305,7 @@ public class ConsentRepository {
                                 monoSink.success();
                                 return;
                             }
-                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString("status")));
+                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString(STATUS)));
                         }));
     }
 
@@ -341,7 +342,7 @@ public class ConsentRepository {
                                 }
                                 Map<String, Object> resultMap = new HashMap<>();
                                 resultMap.put("consentRequest", consentRequest);
-                                resultMap.put("status", ConsentStatus.valueOf(result.getString("status")));
+                                resultMap.put(STATUS, ConsentStatus.valueOf(result.getString(STATUS)));
                                 resultMap.put("consentRequestId", result.getString("consent_request_id"));
                                 fluxSink.next(resultMap);
                             }
@@ -377,8 +378,7 @@ public class ConsentRepository {
                                 monoSink.success();
                                 return;
                             }
-                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString("status")));
-
+                            monoSink.success(ConsentStatus.valueOf(iterator.next().getString(STATUS)));
                         }));
     }
 
