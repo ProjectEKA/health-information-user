@@ -69,6 +69,7 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
@@ -97,7 +98,6 @@ import reactor.netty.resources.ConnectionProvider;
 
 import java.io.IOException;
 import java.net.URL;
-import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
@@ -645,11 +645,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public static byte[] sharedSecret() {
-        SecureRandom random = new SecureRandom();
-        byte[] sharedSecret = new byte[32];
-        random.nextBytes(sharedSecret);
-        return sharedSecret;
+    byte[] sharedSecret(@Value("${hiu.secret}") String secret) {
+        return secret.getBytes();
     }
 
     @Bean
