@@ -7,8 +7,10 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.Patient;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import org.jeasy.random.EasyRandom;
 
 public class TestBuilders {
@@ -62,7 +64,16 @@ public class TestBuilders {
     public static ConsentArtefact.ConsentArtefactBuilder consentArtefact() {
         return easyRandom.nextObject(ConsentArtefact.ConsentArtefactBuilder.class);
     }
+
     public static String randomString() {
         return easyRandom.nextObject(String.class);
+    }
+
+    public static Permission.PermissionBuilder permission() {
+        return easyRandom.nextObject(Permission.PermissionBuilder.class);
+    }
+
+    public static GatewayConsentArtefactResponse.GatewayConsentArtefactResponseBuilder gatewayConsentArtefactResponse() {
+        return easyRandom.nextObject(GatewayConsentArtefactResponse.GatewayConsentArtefactResponseBuilder.class);
     }
 }

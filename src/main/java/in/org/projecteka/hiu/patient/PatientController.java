@@ -23,7 +23,8 @@ public class PatientController {
 
     @GetMapping(APP_PATH_PATIENTS_ID)
     public Mono<SearchRepresentation> findUserWith(@PathVariable(name = "id") String consentManagerUserId) {
-        return patientService.findPatientWith(consentManagerUserId).map(patient -> new SearchRepresentation(from(patient)));
+        return patientService.findPatientWith(consentManagerUserId)
+                .map(patient -> new SearchRepresentation(from(patient)));
     }
 
     @ResponseStatus(HttpStatus.ACCEPTED)
