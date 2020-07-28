@@ -21,7 +21,7 @@ public class Constants {
     public static final String API_PATH_GET_ATTACHMENT = "/health-information/fetch/{consent-request-id}/attachments/{file-name}";
     public static final String CM_API_PATH_GET_ATTACHMENT = "/v1/patient/health-information/fetch/{consent-request-id}/attachments/{file-name}";
     public static final String API_PATH_GET_HEALTH_INFO_STATUS = "/v1/patient/health-information/status";
-    public static final String AUTH_PASSWORD = "/v1/ha/auth_password";
+    public static final String VALIDATE_TOKEN = "/v1/ha/validate_token";
     private Constants() {
     }
 }

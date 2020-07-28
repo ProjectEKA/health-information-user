@@ -507,7 +507,7 @@ public class HiuConfiguration {
         return new CMAccountServiceAuthenticator(sessionServiceClient);
     }
 
-    @ConditionalOnProperty(value = "consentmanager.loginMethod", havingValue = "both", matchIfMissing = true)
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
     @Bean
     public Authenticator cmPatientAccountServiceAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                                               ConfigurableJWTProcessor<com.nimbusds.jose.proc.SecurityContext> jwtProcessor,

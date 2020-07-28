@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.common;
 import com.nimbusds.jose.JWSObject;
 import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.user.SessionServiceClient;
+import in.org.projecteka.hiu.user.TokenValidationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -29,7 +30,7 @@ public class CMAccountServiceAuthenticator  implements Authenticator{
             var jwsObject = JWSObject.parse(parts[1]);
 
             var jsonObject = jwsObject.getPayload().toJSONObject();
-            return sessionServiceClient.validateToken(token)
+            return sessionServiceClient.validateToken(TokenValidationRequest.builder().authToken(parts[1]).build())
                     .flatMap(isValid -> {
                         if (isValid) {
                             return Mono.just(Caller.builder().username(jsonObject.getAsString("sub"))
