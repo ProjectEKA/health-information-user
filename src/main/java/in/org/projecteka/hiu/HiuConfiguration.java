@@ -502,13 +502,13 @@ public class HiuConfiguration {
     }
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
-    @Bean
+    @Bean("userAuthenticator")
     public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient) {
         return new CMAccountServiceAuthenticator(sessionServiceClient);
     }
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
-    @Bean
+    @Bean("userAuthenticator")
     public Authenticator cmPatientAccountServiceAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                                               ConfigurableJWTProcessor<com.nimbusds.jose.proc.SecurityContext> jwtProcessor,
                                                               SessionServiceClient sessionServiceClient) {
