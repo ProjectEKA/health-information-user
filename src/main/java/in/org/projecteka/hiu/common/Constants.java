@@ -23,7 +23,12 @@ public class Constants {
     public static final String API_PATH_GET_HEALTH_INFO_STATUS = "/v1/patient/health-information/status";
 
     public static final String STATUS = "status";
+    public static final String DELIMITER = "@";
 
     private Constants() {
+    }
+
+    public static String getCmSuffix(String patientId) {
+        return patientId.split(DELIMITER)[1];
     }
 }

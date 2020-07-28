@@ -57,6 +57,8 @@ import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_IN
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static java.lang.Thread.sleep;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -77,10 +79,16 @@ class ConsentUserJourneyTest {
     private WebTestClient webTestClient;
 
     @MockBean
+    @Qualifier("patientRequestCache")
     private CacheAdapter<String, String> patientRequestCache;
 
     @MockBean
+    @Qualifier("gatewayResponseCache")
+    private CacheAdapter<String, String> gatewayResponseCache;
+
+    @MockBean
     private ConsentRepository consentRepository;
+
     @MockBean
     private PatientConsentRepository patientConsentRepository;
     @SuppressWarnings("unused")
@@ -203,7 +211,7 @@ class ConsentUserJourneyTest {
         when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
                 .thenReturn(just(ConsentStatus.POSTED));
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                ConsentStatus.REQUESTED,
+                REQUESTED,
                 "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(empty());
         when(patientConsentRepository.updatePatientConsentRequest(any(), any(), any()))
@@ -278,7 +286,7 @@ class ConsentUserJourneyTest {
         when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
                 .thenReturn(Mono.create(MonoSink::success));
         when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                ConsentStatus.REQUESTED,
+                REQUESTED,
                 "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(empty());
         when(patientConsentRepository.updatePatientConsentRequest(any(), any(), any()))
@@ -324,26 +332,22 @@ class ConsentUserJourneyTest {
                 "  }\n" +
                 "}";
         var token = randomString();
-        var caller = ServiceCaller.builder()
-                .clientId("abc@ncg")
-                .roles(List.of(Role.values()))
-                .build();
+        var caller = ServiceCaller.builder().clientId("abc@ncg").roles(List.of(Role.values())).build();
         when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
-        var patient = Patient.builder()
-                .id("heenapatel@ncg")
-                .build();
-        ConsentRequest consentRequest = ConsentRequest.builder().patient(patient).status(ConsentStatus.REQUESTED).build();
+        var patient = Patient.builder().id("heenapatel@ncg").build();
+        when(gatewayResponseCache.put(any(), any())).thenReturn(empty());
+        var consentRequest = ConsentRequest.builder().patient(patient).status(REQUESTED).build();
         when(consentRepository.get(consentRequestId)).thenReturn(just(consentRequest));
         when(gateway.token()).thenReturn(just(randomString()));
         var consent = consentArtefactResponse()
-                .status(ConsentStatus.GRANTED)
+                .status(GRANTED)
                 .consentDetail(ConsentArtefact.builder()
                         .consentId(consentId)
                         .permission(Permission.builder().build())
                         .build())
                 .build();
         gatewayServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
-        when(consentRepository.updateConsentRequestStatus(ConsentStatus.GRANTED, consentRequestId)).thenReturn(empty());
+        when(consentRepository.updateConsentRequestStatus(GRANTED, consentRequestId)).thenReturn(empty());
         when(consentRepository.insertConsentArtefact(
                 eq(consent.getConsentDetail()),
                 eq(consent.getStatus()),

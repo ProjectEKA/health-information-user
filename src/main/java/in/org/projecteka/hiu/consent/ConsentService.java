@@ -1,7 +1,5 @@
 package in.org.projecteka.hiu.consent;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
@@ -9,7 +7,6 @@ import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
-import in.org.projecteka.hiu.common.cache.LoadingCacheGenericAdapter;
 import in.org.projecteka.hiu.consent.model.Consent;
 import in.org.projecteka.hiu.consent.model.ConsentNotification;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
@@ -40,7 +37,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
@@ -48,6 +44,7 @@ import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static in.org.projecteka.hiu.common.Constants.PATIENT_REQUESTED_PURPOSE_CODE;
 import static in.org.projecteka.hiu.common.Constants.STATUS;
+import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.ERRORED;
@@ -72,11 +69,10 @@ public class ConsentService {
     private final DataFlowRequestPublisher dataFlowRequestPublisher;
     private final DataFlowDeletePublisher dataFlowDeletePublisher;
     private final PatientService patientService;
-    private final Gateway gateway;
     private final HealthInformationPublisher healthInformationPublisher;
     private final ConceptValidator conceptValidator;
     private final GatewayServiceClient gatewayServiceClient;
-    private CacheAdapter<String, String> gatewayResponseCache;
+    private final CacheAdapter<String, String> responseCache;
     private final Map<ConsentStatus, ConsentTask> consentTasks;
     private final PatientConsentRepository patientConsentRepository;
     private final CacheAdapter<String, String> patientRequestCache;
@@ -87,19 +83,18 @@ public class ConsentService {
                           DataFlowRequestPublisher dataFlowRequestPublisher,
                           DataFlowDeletePublisher dataFlowDeletePublisher,
                           PatientService patientService,
-                          Gateway gateway,
                           HealthInformationPublisher healthInformationPublisher,
                           ConceptValidator conceptValidator,
                           GatewayServiceClient gatewayServiceClient,
                           PatientConsentRepository patientConsentRepository,
                           ConsentServiceProperties consentServiceProperties,
-                          CacheAdapter<String, String> patientRequestCache) {
+                          CacheAdapter<String, String> patientRequestCache,
+                          CacheAdapter<String, String> responseCache) {
         this.hiuProperties = hiuProperties;
         this.consentRepository = consentRepository;
         this.dataFlowRequestPublisher = dataFlowRequestPublisher;
         this.dataFlowDeletePublisher = dataFlowDeletePublisher;
         this.patientService = patientService;
-        this.gateway = gateway;
         this.healthInformationPublisher = healthInformationPublisher;
         this.conceptValidator = conceptValidator;
         this.gatewayServiceClient = gatewayServiceClient;
@@ -107,6 +102,7 @@ public class ConsentService {
         this.consentServiceProperties = consentServiceProperties;
         consentTasks = new HashMap<>();
         this.patientRequestCache = patientRequestCache;
+        this.responseCache = responseCache;
     }
 
     private Mono<Void> validateConsentRequest(ConsentRequestData consentRequestData) {
@@ -127,7 +123,6 @@ public class ConsentService {
     public Mono<Map<String, String>> handlePatientConsentRequest(String requesterId,
                                                                  PatientConsentRequest consentRequest) {
         Map<String, String> response = new HashMap<>();
-
         return Flux.fromIterable(filterEmptyAndNullValues(consentRequest.getHipIds()))
                 .flatMap(hipId -> validatePatientConsentRequest(requesterId, hipId, consentRequest.isReloadConsent())
                         .flatMap(consentRequestData -> {
@@ -243,23 +238,16 @@ public class ConsentService {
             String requesterId,
             ConsentRequestData hiRequest,
             UUID gatewayRequestId) {
-
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
-        return gateway.token()
-                .flatMap(token -> gatewayServiceClient.sendConsentRequest(
-                        token, getCmSuffix(hiRequest.getConsent()),
-                        ConsentRequest.builder()
-                                .requestId(gatewayRequestId)
-                                .timestamp(now(UTC))
-                                .consent(reqInfo)
-                                .build()))
-                .then(consentRepository.insertConsentRequestToGateway(
-                        hiRequest.getConsent().toConsentRequest(gatewayRequestId.toString(), requesterId)));
-    }
-
-    private String getCmSuffix(Consent consent) {
-        String[] parts = consent.getPatient().getId().split("@");
-        return parts[1];
+        var patientId = hiRequest.getConsent().getPatient().getId();
+        var consentRequest = ConsentRequest.builder()
+                .requestId(gatewayRequestId)
+                .timestamp(now(UTC))
+                .consent(reqInfo)
+                .build();
+        var hiuConsentRequest = hiRequest.getConsent().toConsentRequest(gatewayRequestId.toString(), requesterId);
+        return gatewayServiceClient.sendConsentRequest(getCmSuffix(patientId), consentRequest)
+                .then(defer(() -> consentRepository.insertConsentRequestToGateway(hiuConsentRequest)));
     }
 
     public Mono<Void> updatePostedRequest(ConsentRequestInitResponse response) {
@@ -364,7 +352,7 @@ public class ConsentService {
             return empty();
         }
         if (consentArtefactResponse.getConsent() != null) {
-            return gatewayResponseCache.get(consentArtefactResponse.getResp().getRequestId())
+            return responseCache.get(consentArtefactResponse.getResp().getRequestId())
                     .flatMap(requestId -> consentRepository.insertConsentArtefact(
                             consentArtefactResponse.getConsent().getConsentDetail(),
                             consentArtefactResponse.getConsent().getStatus(),
@@ -388,20 +376,7 @@ public class ConsentService {
 
     @PostConstruct
     private void postConstruct() {
-        var cache = CacheBuilder
-                .newBuilder()
-                .maximumSize(50)
-                .expireAfterWrite(1, TimeUnit.HOURS)
-                .build(new CacheLoader<String, String>() {
-                    public String load(String key) {
-                        return EMPTY_STRING;
-                    }
-                });
-        // have to move it to configuration
-        gatewayResponseCache = new LoadingCacheGenericAdapter<>(cache, EMPTY_STRING);
-        consentTasks.put(GRANTED, new GrantedConsentTask(
-                consentRepository, gatewayServiceClient, gateway,
-                gatewayResponseCache));
+        consentTasks.put(GRANTED, new GrantedConsentTask(consentRepository, gatewayServiceClient, responseCache));
         consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
         consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
         consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));
