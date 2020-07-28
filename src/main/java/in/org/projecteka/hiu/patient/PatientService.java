@@ -1,12 +1,12 @@
 package in.org.projecteka.hiu.patient;
 
-import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.DelayTimeoutException;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.patient.model.FindPatientQuery;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
@@ -19,24 +19,25 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
 import static in.org.projecteka.hiu.common.ErrorMappings.get;
+import static reactor.core.publisher.Mono.defer;
 import static reactor.core.publisher.Mono.error;
 import static reactor.core.publisher.Mono.just;
+import static reactor.core.publisher.Mono.justOrEmpty;
 
 @AllArgsConstructor
 public class PatientService {
     private static final Logger logger = LoggerFactory.getLogger(PatientService.class);
     private final GatewayServiceClient gatewayServiceClient;
-    private final Cache<String, Optional<Patient>> cache;
+    private final CacheAdapter<String, Patient> cache;
     private final HiuProperties hiuProperties;
     private final GatewayProperties gatewayProperties;
-    private final Cache<String, Optional<PatientSearchGatewayResponse>> gatewayResponseCache;
+    private final CacheAdapter<String, PatientSearchGatewayResponse> gatewayResponseCache;
 
     private static Mono<? extends Patient> apply(PatientSearchGatewayResponse response) {
         if (response.getPatient() != null) {
@@ -74,16 +75,12 @@ public class PatientService {
     }
 
     private Mono<Patient> getFromCache(String key, Supplier<Mono<Patient>> function) {
-        return cache.asMap().getOrDefault(key, Optional.empty())
-                .map(Mono::just)
-                .orElseGet(function);
+        return cache.get(key).switchIfEmpty(defer(function));
     }
 
     private Mono<PatientSearchGatewayResponse> getFromCache(UUID requestId,
                                                             Supplier<Mono<PatientSearchGatewayResponse>> function) {
-        return gatewayResponseCache.asMap().getOrDefault(requestId.toString(), Optional.empty())
-                .map(Mono::just)
-                .orElseGet(function);
+        return gatewayResponseCache.get(requestId.toString()).switchIfEmpty(defer(function));
     }
 
     private String getCmSuffix(String id) {
@@ -92,15 +89,15 @@ public class PatientService {
 
     public Mono<Void> onFindPatient(PatientSearchGatewayResponse response) {
         if (response.getError() != null) {
-            logger.error(String.format("[PatientService] Received error response from find-patient. HIU RequestId=%s, Error code = %d, message=%s",
+            logger.error("[PatientService] Received error response from find-patient." +
+                            "HIU RequestId={}, Error code = {}, message={}",
                     response.getResp().getRequestId(),
                     response.getError().getCode(),
-                    response.getError().getMessage()));
+                    response.getError().getMessage());
         }
-        if (response.getPatient() != null) {
-            cache.put(response.getPatient().getId(), Optional.of(response.getPatient().toPatient()));
-        }
-        gatewayResponseCache.put(response.getResp().getRequestId(), Optional.of(response));
-        return Mono.empty();
+
+        return justOrEmpty(response.getPatient())
+                .flatMap(patient -> cache.put(patient.getId(), patient.toPatient()))
+                .then(defer(() -> gatewayResponseCache.put(response.getResp().getRequestId(), response)));
     }
 }

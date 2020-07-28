@@ -5,7 +5,6 @@ import in.org.projecteka.hiu.common.RespError;
 import lombok.Builder;
 import lombok.Value;
 
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -16,6 +15,9 @@ public class DataFlowRequestResult {
     LocalDateTime timestamp;
     HIRequest hiRequest;
     RespError error;
-    @NotNull
     GatewayResponse resp;
+
+    public GatewayResponse getResp() {
+        return resp == null ? GatewayResponse.builder().build() : resp;
+    }
 }

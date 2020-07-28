@@ -1,7 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.cache.Cache;
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.DestinationsConfig;
@@ -10,6 +9,7 @@ import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
@@ -49,11 +49,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_INIT;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
@@ -77,7 +77,8 @@ class ConsentUserJourneyTest {
     private WebTestClient webTestClient;
 
     @MockBean
-    private Cache<String, String> patientRequestCache;
+    private CacheAdapter<String, String> patientRequestCache;
+
     @MockBean
     private ConsentRepository consentRepository;
     @MockBean
@@ -197,11 +198,13 @@ class ConsentUserJourneyTest {
                 "    \"requestId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
                 "  }\n" +
                 "}";
-        var cacheMap = new ConcurrentHashMap<String, String>();
-        cacheMap.put("3fa85f64-5717-4562-b3fc-2c963f66afa6", "3fa85f64-5717-4562-b3fc-2c963f66afa7");
-        when(patientRequestCache.asMap()).thenReturn(cacheMap);
-        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6")).thenReturn(just(ConsentStatus.POSTED));
-        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6", ConsentStatus.REQUESTED, "f29f0e59-8388-4698-9fe6-05db67aeac46"))
+        when(patientRequestCache.get("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
+                .thenReturn(just("3fa85f64-5717-4562-b3fc-2c963f66afa7"));
+        when(consentRepository.consentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
+                .thenReturn(just(ConsentStatus.POSTED));
+        when(consentRepository.updateConsentRequestStatus("3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                ConsentStatus.REQUESTED,
+                "f29f0e59-8388-4698-9fe6-05db67aeac46"))
                 .thenReturn(empty());
         when(patientConsentRepository.updatePatientConsentRequest(any(), any(), any()))
                 .thenReturn(empty());
@@ -214,7 +217,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
+                .uri(PATH_CONSENT_REQUESTS_ON_INIT)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
@@ -248,7 +251,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
+                .uri(PATH_CONSENT_REQUESTS_ON_INIT)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
@@ -260,9 +263,8 @@ class ConsentUserJourneyTest {
 
     @Test
     void shouldThrowConsentRequestNotFound() {
-        var cacheMap = new ConcurrentHashMap<String, String>();
-        cacheMap.put("3fa85f64-5717-4562-b3fc-2c963f66afa6", "3fa85f64-5717-4562-b3fc-2c963f66afa7");
-        when(patientRequestCache.asMap()).thenReturn(cacheMap);
+        when(patientRequestCache.get("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
+                .thenReturn(just("3fa85f64-5717-4562-b3fc-2c963f66afa7"));
         String responseFromCM = "{\n" +
                 "  \"requestId\": \"5f7a535d-a3fd-416b-b069-c97d021fbacd\",\n" +
                 "  \"timestamp\": \"2020-06-01T12:54:32.862Z\",\n" +
@@ -292,7 +294,7 @@ class ConsentUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri(Constants.PATH_CONSENT_REQUESTS_ON_INIT)
+                .uri(PATH_CONSENT_REQUESTS_ON_INIT)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(responseFromCM)
@@ -451,7 +453,7 @@ class ConsentUserJourneyTest {
         when(gateway.token()).thenReturn(just(randomString()));
         gatewayServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
-        var consentRequestDetails = new PatientConsentRequest(List.of(hipId),false);
+        var consentRequestDetails = new PatientConsentRequest(List.of(hipId), false);
         var token = randomString();
         var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
         when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
@@ -478,11 +480,10 @@ class ConsentUserJourneyTest {
         when(gateway.token()).thenReturn(just(randomString()));
         gatewayServer.enqueue(
                 new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(202));
-        var consentRequestDetails = new PatientConsentRequest(List.of(hipId),false);
+        var consentRequestDetails = new PatientConsentRequest(List.of(hipId), false);
         var token = randomString();
         var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
         when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
-
 
         webTestClient
                 .post()

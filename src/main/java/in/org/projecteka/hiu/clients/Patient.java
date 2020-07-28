@@ -13,4 +13,8 @@ public class Patient {
     private String identifier;
     private String firstName;
     private String lastName;
+
+    public static Patient empty() {
+        return Patient.builder().build();
+    }
 }

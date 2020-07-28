@@ -33,7 +33,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -47,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestResult;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
@@ -56,6 +56,7 @@ import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -141,9 +142,9 @@ class DataFlowUserJourneyTest {
         webTestClient
                 .post()
                 .uri(Constants.PATH_DATA_TRANSFER)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
-                .accept(MediaType.APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
                 .isAccepted();
@@ -168,7 +169,6 @@ class DataFlowUserJourneyTest {
         var token = randomString();
         var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
         when(authenticator.verify(token)).thenReturn(Mono.just(caller));
-
         Map<String, Object> healthInfo = new HashMap<>();
         String content = "Some dummy content";
         healthInfo.put("data", content);
@@ -248,12 +248,10 @@ class DataFlowUserJourneyTest {
         var token = randomString();
         var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
         when(authenticator.verify(token)).thenReturn(Mono.just(caller));
-
         var errorResponse = new ErrorRepresentation(new Error(
                 ErrorCode.UNAUTHORIZED_REQUESTER,
                 "Requester is not authorized to perform this action"));
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
-
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
 
         webTestClient
@@ -282,9 +280,9 @@ class DataFlowUserJourneyTest {
         webTestClient
                 .post()
                 .uri(Constants.PATH_DATA_TRANSFER)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
-                .accept(MediaType.APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
                 .isBadRequest()
@@ -309,11 +307,11 @@ class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri(Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
+                .uri(PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
                 .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(APPLICATION_JSON)
                 .bodyValue(dataFlowRequestResult)
-                .accept(MediaType.APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
                 .isAccepted();
@@ -329,11 +327,11 @@ class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri(Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
+                .uri(PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
                 .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(APPLICATION_JSON)
                 .bodyValue(dataFlowRequestResult)
-                .accept(MediaType.APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
                 .isAccepted();
