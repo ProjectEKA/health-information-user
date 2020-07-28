@@ -1,12 +1,14 @@
 package in.org.projecteka.hiu;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.Optional;
 
 @AllArgsConstructor
 @Getter
+@Builder
 public class Caller {
     private final String username;
     private final Boolean isServiceAccount;

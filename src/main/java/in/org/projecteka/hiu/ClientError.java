@@ -7,13 +7,14 @@ import org.springframework.http.HttpStatus;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_ARTEFACT_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_REQUEST_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.FAILED_TO_NOTIFY_CM;
+import static in.org.projecteka.hiu.ErrorCode.INVALID_TOKEN;
+import static in.org.projecteka.hiu.ErrorCode.NETWORK_SERVICE_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
 import static in.org.projecteka.hiu.ErrorCode.QUEUE_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
 import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.GATEWAY_TIMEOUT;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -109,5 +110,15 @@ public class ClientError extends Throwable {
 
     public static ClientError patientNotFound() {
         return new ClientError(NOT_FOUND, new ErrorRepresentation(new Error(ErrorCode.PATIENT_NOT_FOUND,"Patient not found")));
+    }
+
+    public static ClientError unAuthorized() {
+        return new ClientError(UNAUTHORIZED,
+                new ErrorRepresentation(new Error(INVALID_TOKEN, "Token verification failed")));
+    }
+
+    public static ClientError networkServiceCallFailed() {
+        return new ClientError(INTERNAL_SERVER_ERROR,
+                new ErrorRepresentation(new Error(NETWORK_SERVICE_ERROR, CANNOT_PROCESS_REQUEST_TRY_LATER)));
     }
 }

@@ -11,11 +11,14 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import in.org.projecteka.hiu.clients.AccountServiceProperties;
 import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.CMAccountServiceAuthenticator;
+import in.org.projecteka.hiu.common.CMPatientAccountServiceAuthenticator;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
@@ -49,6 +52,7 @@ import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
+import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.UserRepository;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
@@ -490,10 +494,32 @@ public class HiuConfiguration {
         return new DefaultJWTProcessor<>();
     }
 
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak")
     @Bean("userAuthenticator")
     public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                            ConfigurableJWTProcessor<SecurityContext> jwtProcessor) {
         return new CMPatientAuthenticator(jwkSet, jwtProcessor);
+    }
+
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
+    @Bean
+    public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient) {
+        return new CMAccountServiceAuthenticator(sessionServiceClient);
+    }
+
+    @ConditionalOnProperty(value = "consentmanager.loginMethod", havingValue = "both", matchIfMissing = true)
+    @Bean
+    public Authenticator cmPatientAccountServiceAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
+                                                              ConfigurableJWTProcessor<com.nimbusds.jose.proc.SecurityContext> jwtProcessor,
+                                                              SessionServiceClient sessionServiceClient) {
+        return new CMPatientAccountServiceAuthenticator(new CMPatientAuthenticator(jwkSet, jwtProcessor),
+                new CMAccountServiceAuthenticator(sessionServiceClient));
+    }
+
+    @Bean
+    public SessionServiceClient sessionServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
+                                                        AccountServiceProperties AccountServiceProperties) {
+        return new SessionServiceClient(builder,AccountServiceProperties.getUrl());
     }
 
     @Bean
