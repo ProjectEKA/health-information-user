@@ -1,67 +1,65 @@
 package in.org.projecteka.hiu.consent;
 
-import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
-import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.ConsentNotification;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import reactor.core.publisher.Flux;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
+import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
+import static reactor.core.publisher.Flux.fromIterable;
+import static reactor.core.publisher.Mono.defer;
+import static reactor.core.publisher.Mono.error;
 
 public class GrantedConsentTask extends ConsentTask {
+    private static final Logger logger = LoggerFactory.getLogger(GrantedConsentTask.class);
     private final GatewayServiceClient gatewayClient;
-    private final Gateway gateway;
-    private final Cache<String, String> gatewayResponseCache;
+    private final CacheAdapter<String, String> gatewayResponseCache;
 
     public GrantedConsentTask(ConsentRepository consentRepository,
                               GatewayServiceClient gatewayClient,
-                              Gateway gateway,
-                              Cache<String, String> gatewayResponseCache) {
+                              CacheAdapter<String, String> gatewayResponseCache) {
         super(consentRepository);
         this.gatewayClient = gatewayClient;
-        this.gateway = gateway;
         this.gatewayResponseCache = gatewayResponseCache;
     }
 
     private Mono<Void> perform(ConsentArtefactReference reference, String consentRequestId, String cmSuffix) {
         var requestId = UUID.randomUUID();
-        gatewayResponseCache.put(requestId.toString(), consentRequestId);
-        return gateway.token()
-                .flatMap(token -> {
+        return gatewayResponseCache.put(requestId.toString(), consentRequestId)
+                .then(defer(() -> {
                     var consentArtefactRequest = ConsentArtefactRequest
                             .builder()
                             .consentId(reference.getId())
                             .timestamp(LocalDateTime.now(ZoneOffset.UTC))
                             .requestId(requestId)
                             .build();
-                    return gatewayClient.requestConsentArtefact(consentArtefactRequest, cmSuffix, token);
-                });
+                    return gatewayClient.requestConsentArtefact(consentArtefactRequest, cmSuffix);
+                }));
     }
 
     @Override
     public Mono<Void> perform(ConsentNotification consentNotification, LocalDateTime timeStamp) {
-        return consentRepository.get(consentNotification.getConsentRequestId())
-                .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
-                .flatMap(consentRequest -> {
-                    var cmSuffix = getCmSuffix(consentRequest.getPatient().getId());
-                    return consentRepository.updateConsentRequestStatus(
-                            ConsentStatus.GRANTED, consentNotification.getConsentRequestId())
-                            .then(Flux.fromIterable(consentNotification.getConsentArtefacts())
-                                    .flatMap(reference -> perform(reference, consentNotification.getConsentRequestId(), cmSuffix))
-                                    .then());
-                });
-    }
-
-    private String getCmSuffix(String patientId) {
-        String[] parts = patientId.split("@");
-        return parts[1];
+        var consentRequestId = consentNotification.getConsentRequestId();
+        return consentRepository.get(consentRequestId)
+                .switchIfEmpty(defer(() -> {
+                    logger.error("Response came for unknown consent request {}", consentRequestId);
+                    return error(ClientError.consentRequestNotFound());
+                }))
+                .flatMap(consentRequest -> consentRepository.updateConsentRequestStatus(GRANTED,
+                        consentRequestId).thenReturn(consentRequest))
+                .map(consentRequest -> getCmSuffix(consentRequest.getPatient().getId()))
+                .flatMapMany(cmSuffix -> fromIterable(consentNotification.getConsentArtefacts())
+                        .flatMap(reference -> perform(reference, consentRequestId, cmSuffix)))
+                .ignoreElements();
     }
 }

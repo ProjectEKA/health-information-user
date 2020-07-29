@@ -6,6 +6,7 @@ hiu:
   dataPushUrl: ${DATA_PUSH_URL}
   consentNotificationUrl: ${CONSENT_NOTIFICATION_URL}
   valueSets: classpath:/static/ValueSet/valuesets.json
+  secret: ${HIU_SECRET:RiPzliMKlBf67mgLpvn6LBg2Fz5OqBBmJNzi4nQ9YMZy0pq2uu}
   consentmanager:
     suffix: ${CONSENT_MANAGEMENT_SUFFIX}
     url: ${CONSENT_MANAGEMENT_URL}
@@ -46,6 +47,13 @@ hiu:
     consentRequestDelay: ${MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES:10}
   authorization:
     header: ${AUTHORIZATION_HEADER:Authorization}
+  #Valid values are guava(for local), redis
+  cache-method: ${CACHE_METHOD:guava}
+  redis:
+    #Will not be used if cacheMethod is guava
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:password}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}

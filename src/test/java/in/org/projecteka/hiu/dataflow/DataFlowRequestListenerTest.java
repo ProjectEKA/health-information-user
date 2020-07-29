@@ -4,12 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.cache.Cache;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
@@ -26,7 +26,14 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import reactor.core.publisher.Mono;
 
-import static org.mockito.Mockito.*;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static reactor.core.publisher.Mono.empty;
 
 class DataFlowRequestListenerTest {
     @Mock
@@ -54,7 +61,7 @@ class DataFlowRequestListenerTest {
     private Gateway gateway;
 
     @Mock
-    private Cache<String, DataFlowRequestKeyMaterial> dataFlowCache;
+    private CacheAdapter<String, DataFlowRequestKeyMaterial> dataFlowCache;
 
     @Mock
     private ConsentRepository consentRepository;
@@ -80,7 +87,6 @@ class DataFlowRequestListenerTest {
     }
 
     private byte[] convertToByteArray(DataFlowRequest dataFlowRequest) throws JsonProcessingException {
-
         return new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -89,11 +95,10 @@ class DataFlowRequestListenerTest {
 
     @Test
     void shouldInitiateDataFlowRequestAndPutInCache() throws JsonProcessingException {
-        var dataFlowRequest = TestBuilders.dataFlowRequest().build();
+        var dataFlowRequest = dataFlowRequest().build();
         var dataFlowRequestBytes = convertToByteArray(dataFlowRequest);
         var messageListenerCaptor = ArgumentCaptor.forClass(MessageListener.class);
         var mockMessage = Mockito.mock(Message.class);
-
         when(destinationsConfig.getQueues().get(queueNames.getDataFlowRequestQueue())).thenReturn(destinationInfo);
         when(messageListenerContainerFactory
                 .createMessageListenerContainer(destinationInfo.getRoutingKey())).thenReturn(messageListenerContainer);
@@ -103,9 +108,10 @@ class DataFlowRequestListenerTest {
         when(mockMessage.getBody()).thenReturn(dataFlowRequestBytes);
         when(gateway.token()).thenReturn(Mono.just("temp"));
         when(dataFlowClient.initiateDataFlowRequest(any(GatewayDataFlowRequest.class),anyString(),anyString()))
-                .thenReturn(Mono.empty());
+                .thenReturn(empty());
         when(consentRepository.getPatientId(anyString())).thenReturn(Mono.just("temp@ncg"));
-        when(dataFlowRepository.addDataFlowRequest(anyString(),anyString(),any())).thenReturn(Mono.empty());
+        when(dataFlowRepository.addDataFlowRequest(anyString(),anyString(),any())).thenReturn(empty());
+        when(dataFlowCache.put(any(), any())).thenReturn(empty());
 
         dataFlowRequestListener.subscribe();
         verify(messageListenerContainer,times(1)).start();
@@ -113,6 +119,7 @@ class DataFlowRequestListenerTest {
                 .setupMessageListener(messageListenerCaptor.capture());
 
         MessageListener messageListener = messageListenerCaptor.getValue();
+
         messageListener.onMessage(mockMessage);
         verify(dataFlowClient,times(1)).initiateDataFlowRequest(any(),any(),any());
         verify(dataFlowRepository,times(1)).addDataFlowRequest(anyString(),anyString(),any());
