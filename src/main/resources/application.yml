@@ -46,6 +46,13 @@ hiu:
     consentRequestDelay: ${MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES:10}
   authorization:
     header: ${AUTHORIZATION_HEADER:Authorization}
+  accountservice:
+    usingUnsecureSSL: ${Account_Service_Uses_Unsecure_SSL}
+    url: ${Account_Service_Url}
+    identifiers:
+      - MOBILE
+    expiryInMinutes: ${OTP_EXPIRY_IN_MINUTES}
+  loginMethod: ${LOGIN_METHOD}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
