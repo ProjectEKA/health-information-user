@@ -135,7 +135,7 @@ public class ConsentService {
                                             requesterId)
                                             .doOnSuccess(discard -> response.put(hipId, dataRequestId.toString()))
                                             .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(),
-                                                    dataRequestId.toString())));
+                                                    dataRequestId.toString()).subscribe()));
                         }))
                 .then(just(response));
     }
@@ -198,8 +198,8 @@ public class ConsentService {
                                                 if (HealthInfoStatus.valueOf(dataFlowStatus).equals(SUCCEEDED)
                                                         || HealthInfoStatus.valueOf(dataFlowStatus).equals(PARTIAL)) {
                                                     return latestResourceDate == null
-                                                           ? buildConsentRequest(requesterId, hipId, fromDate)
-                                                           : buildConsentRequest(requesterId, hipId, latestResourceDate);
+                                                            ? buildConsentRequest(requesterId, hipId, fromDate)
+                                                            : buildConsentRequest(requesterId, hipId, latestResourceDate);
                                                 }
                                                 if (HealthInfoStatus.valueOf(dataFlowStatus)
                                                         .equals(HealthInfoStatus.ERRORED)) {
@@ -328,13 +328,13 @@ public class ConsentService {
             String consentRequestId) {
         var consent = consentRequest.toBuilder().status(reqStatus).build();
         return reqStatus.equals(ConsentStatus.POSTED)
-               ? just(consent)
-               : consentRepository.getConsentDetails(consentRequestId)
-                       .take(1)
-                       .next()
-                       .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
-                       .switchIfEmpty(just(reqStatus))
-                       .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
+                ? just(consent)
+                : consentRepository.getConsentDetails(consentRequestId)
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
+                .switchIfEmpty(just(reqStatus))
+                .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
     public Mono<Void> handleNotification(HiuConsentNotificationRequest hiuNotification) {
