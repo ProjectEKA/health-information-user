@@ -2,8 +2,10 @@ package in.org.projecteka.hiu.common;
 
 import com.nimbusds.jose.JWSObject;
 import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.TokenValidationRequest;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -12,13 +14,11 @@ import java.text.ParseException;
 
 import static java.lang.String.format;
 
-public class CMAccountServiceAuthenticator  implements Authenticator{
+@AllArgsConstructor
+public class CMAccountServiceAuthenticator implements Authenticator {
     private final SessionServiceClient sessionServiceClient;
+    private final ConsentManagerServiceProperties consentManagerServiceProperties;
     private final Logger logger = LoggerFactory.getLogger(CMAccountServiceAuthenticator.class);
-
-    public CMAccountServiceAuthenticator(SessionServiceClient sessionServiceClient) {
-        this.sessionServiceClient = sessionServiceClient;
-    }
 
     @Override
     public Mono<Caller> verify(String token) {
@@ -33,7 +33,8 @@ public class CMAccountServiceAuthenticator  implements Authenticator{
             return sessionServiceClient.validateToken(TokenValidationRequest.builder().authToken(parts[1]).build())
                     .flatMap(isValid -> {
                         if (isValid) {
-                            return Mono.just(Caller.builder().username(jsonObject.getAsString("sub"))
+                            return Mono.just(Caller.builder().username(jsonObject.getAsString("UserName") +
+                                    consentManagerServiceProperties.getSuffix())
                                     .isServiceAccount(false).build());
                         }
                         return Mono.empty();
