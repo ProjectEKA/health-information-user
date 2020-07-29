@@ -34,19 +34,20 @@ public class GatewayServiceClient {
         this.gateway = gateway;
     }
 
-    public Mono<Void> sendConsentRequest(String token, String cmSuffix, ConsentRequest request) {
-        return webClient
-                .post()
-                .uri(GATEWAY_PATH_CONSENT_REQUESTS_INIT)
-                .header(AUTHORIZATION, token)
-                .header(X_CM_ID, cmSuffix)
-                .body(Mono.just(request),
-                        ConsentRequest.class)
-                .retrieve()
-                .onStatus(not(HttpStatus::is2xxSuccessful),
-                        clientResponse -> Mono.error(creationFailed()))
-                .toBodilessEntity()
-                .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout()))
+    public Mono<Void> sendConsentRequest(String cmSuffix, ConsentRequest request) {
+        return gateway.token()
+                .flatMap(token -> webClient
+                        .post()
+                        .uri(GATEWAY_PATH_CONSENT_REQUESTS_INIT)
+                        .header(AUTHORIZATION, token)
+                        .header(X_CM_ID, cmSuffix)
+                        .body(Mono.just(request),
+                                ConsentRequest.class)
+                        .retrieve()
+                        .onStatus(not(HttpStatus::is2xxSuccessful),
+                                clientResponse -> Mono.error(creationFailed()))
+                        .toBodilessEntity()
+                        .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
     }
 
@@ -68,19 +69,20 @@ public class GatewayServiceClient {
                         .thenReturn(Boolean.TRUE));
     }
 
-    public Mono<Void> requestConsentArtefact(ConsentArtefactRequest request, String cmSuffix, String token) {
-        return webClient
-                .post()
-                .uri(GATEWAY_PATH_CONSENT_ARTEFACT_FETCH)
-                .header(AUTHORIZATION, token)
-                .header(X_CM_ID, cmSuffix)
-                .body(Mono.just(request),
-                        ConsentArtefactRequest.class)
-                .retrieve()
-                .onStatus(not(HttpStatus::is2xxSuccessful),
-                        clientResponse -> Mono.error(creationFailed()))
-                .toBodilessEntity()
-                .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout()))
+    public Mono<Void> requestConsentArtefact(ConsentArtefactRequest request, String cmSuffix) {
+        return gateway.token()
+                .flatMap(token -> webClient
+                        .post()
+                        .uri(GATEWAY_PATH_CONSENT_ARTEFACT_FETCH)
+                        .header(AUTHORIZATION, token)
+                        .header(X_CM_ID, cmSuffix)
+                        .body(Mono.just(request),
+                                ConsentArtefactRequest.class)
+                        .retrieve()
+                        .onStatus(not(HttpStatus::is2xxSuccessful),
+                                clientResponse -> Mono.error(creationFailed()))
+                        .toBodilessEntity()
+                        .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
     }
 }

@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.3.1.RELEASE'
+    id 'org.springframework.boot' version '2.3.2.RELEASE'
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
     id 'java'
     id "org.sonarqube" version "3.0"
@@ -55,7 +55,7 @@ dependencies {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
     testImplementation "com.squareup.okhttp3:okhttp:4.8.0"
-    testImplementation "com.squareup.okhttp3:mockwebserver:4.7.2"
+    testImplementation "com.squareup.okhttp3:mockwebserver:4.8.0"
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.jeasy:easy-random-core:4.2.0'
     implementation 'ca.uhn.hapi.fhir:hapi-fhir-base:4.2.0'
@@ -64,6 +64,8 @@ dependencies {
     implementation 'com.nimbusds:nimbus-jose-jwt:8.19'
     implementation 'org.passay:passay:1.6.0'
     implementation 'io.vavr:vavr:0.10.3'
+    implementation 'io.lettuce:lettuce-core:5.3.2.RELEASE'
+    implementation 'org.springframework.data:spring-data-redis'
 }
 
 test {

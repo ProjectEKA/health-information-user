@@ -22,6 +22,14 @@ public class Constants {
     public static final String CM_API_PATH_GET_ATTACHMENT = "/v1/patient/health-information/fetch/{consent-request-id}/attachments/{file-name}";
     public static final String API_PATH_GET_HEALTH_INFO_STATUS = "/v1/patient/health-information/status";
     public static final String VALIDATE_TOKEN = "/v1/ha/validate_token";
+
+    public static final String STATUS = "status";
+    public static final String DELIMITER = "@";
+
     private Constants() {
+    }
+
+    public static String getCmSuffix(String patientId) {
+        return patientId.split(DELIMITER)[1];
     }
 }
