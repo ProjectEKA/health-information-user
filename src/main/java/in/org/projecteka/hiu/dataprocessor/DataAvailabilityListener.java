@@ -1,12 +1,14 @@
 package in.org.projecteka.hiu.dataprocessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
@@ -22,11 +24,11 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_PROCESS_QUEUE;
 
 @AllArgsConstructor
 public class DataAvailabilityListener {
@@ -36,9 +38,10 @@ public class DataAvailabilityListener {
     private final DataFlowRepository dataFlowRepository;
     private final LocalDicomServerProperties dicomServerProperties;
     private final HealthInformationClient healthInformationClient;
-    private final CentralRegistry centralRegistry;
+    private final Gateway gateway;
     private final HiuProperties hiuProperties;
     private final ConsentRepository consentRepository;
+    private final RabbitQueueNames queueNames;
 
     private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
 
@@ -47,7 +50,7 @@ public class DataAvailabilityListener {
     public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
-                .get(DATA_FLOW_PROCESS_QUEUE);
+                .get(queueNames.getDataFlowProcessQueue());
         if (destinationInfo == null) {
             throw queueNotFound();
         }
@@ -67,7 +70,7 @@ public class DataAvailabilityListener {
                         new Decryptor(),
                         allResourceProcessors(),
                         healthInformationClient,
-                        centralRegistry,
+                        gateway,
                         hiuProperties,
                         consentRepository);
                 healthDataProcessor.process(dataAvailableMessage);
@@ -81,12 +84,21 @@ public class DataAvailabilityListener {
     }
 
     private List<HITypeResourceProcessor> allResourceProcessors() {
-        return Collections.singletonList(new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)));
+        return Arrays.asList(
+                new CompositionResourceProcessor(),
+                new DiagnosticReportResourceProcessor(new OrthancDicomWebServer(dicomServerProperties)),
+                new DocumentReferenceResourceProcessor(),
+                new MedicationRequestResourceProcessor(),
+                new ConditionResourceProcessor(),
+                new ObservationResourceProcessor(),
+                new BinaryResourceProcessor());
     }
 
     @SneakyThrows
     private DataAvailableMessage deserializeMessage(Message msg) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false);
         return mapper.readValue(msg.getBody(), DataAvailableMessage.class);
     }
 }

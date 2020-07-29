@@ -11,10 +11,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.*;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
 
 public class RevokedConsentTask extends ConsentTask {
-    private HealthInformationPublisher healthInformationPublisher;
+    private final HealthInformationPublisher healthInformationPublisher;
 
     public RevokedConsentTask(ConsentRepository consentRepository, HealthInformationPublisher healthInformationPublisher) {
         super(consentRepository);

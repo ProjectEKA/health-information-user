@@ -7,12 +7,16 @@ import org.springframework.http.HttpStatus;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_ARTEFACT_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_REQUEST_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.FAILED_TO_NOTIFY_CM;
+import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
 import static in.org.projecteka.hiu.ErrorCode.QUEUE_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
 import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
-import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.GATEWAY_TIMEOUT;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @Getter
 @ToString
@@ -34,12 +38,12 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError consentArtefactNotFound() {
-        return new ClientError(NOT_FOUND,
+        return new ClientError(INTERNAL_SERVER_ERROR,
                 new ErrorRepresentation(new Error(CONSENT_ARTEFACT_NOT_FOUND, "Cannot find the consent artefact")));
     }
 
     public static ClientError consentArtefactGone() {
-        return new ClientError(HttpStatus.GONE,
+        return new ClientError(INTERNAL_SERVER_ERROR,
                 new ErrorRepresentation(new Error(ErrorCode.CONSENT_ARTEFACT_NOT_FOUND, "Consent artefact expired")));
     }
 
@@ -58,9 +62,9 @@ public class ClientError extends Throwable {
                         "Requester is not authorized to perform this action")));
     }
 
-    public static ClientError unauthorized() {
-        return new ClientError(FORBIDDEN,
-                new ErrorRepresentation(new Error(ErrorCode.UNAUTHORIZED,
+    public static ClientError invalidHealthInformationRequest() {
+        return new ClientError(BAD_REQUEST,
+                new ErrorRepresentation(new Error(ErrorCode.INVALID_REQUEST,
                         "Action can't be performed, consent request is not granted yet")));
     }
 
@@ -75,7 +79,7 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError validationFailed() {
-        return new ClientError(NOT_FOUND,
+        return new ClientError(INTERNAL_SERVER_ERROR,
                 new ErrorRepresentation(new Error(VALIDATION_FAILED, "Validation Failed")));
     }
 
@@ -94,7 +98,7 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError consentRequestAlreadyUpdated() {
-        return new ClientError(CONFLICT,
+        return new ClientError(INTERNAL_SERVER_ERROR,
                 new ErrorRepresentation(new Error(VALIDATION_FAILED, "Consent request is already updated.")));
     }
 

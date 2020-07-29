@@ -6,6 +6,7 @@ hiu:
   dataPushUrl: ${DATA_PUSH_URL}
   consentNotificationUrl: ${CONSENT_NOTIFICATION_URL}
   valueSets: classpath:/static/ValueSet/valuesets.json
+  secret: ${HIU_SECRET:RiPzliMKlBf67mgLpvn6LBg2Fz5OqBBmJNzi4nQ9YMZy0pq2uu}
   consentmanager:
     suffix: ${CONSENT_MANAGEMENT_SUFFIX}
     url: ${CONSENT_MANAGEMENT_URL}
@@ -13,11 +14,10 @@ hiu:
     defaultPageSize: ${DEFAULT_PAGE_SIZE}
     maxPageSize: ${MAX_PAGE_SIZE}
     localStoragePath: ${LOCAL_STORAGE_PATH}
-  centralregistry:
-    url: ${CENTRAL_REGISTRY_URL}
-    clientId: ${HIU_CLIENT_ID}
-    clientSecret: ${HIU_CLIENT_SECRET}
-    jwkUrl: ${CENTRAL_REGISTRY_JWK_URL}
+    #Time in minutes
+    consentRequestWaitTime: ${DATA_FLOW_CONSENT_REQUEST_WAIT_TIME}
+    consentArtefactWaitTime: ${DATA_FLOW_CONSENT_ARTEFACT_WAIT_TIME}
+    dataPartWaitTime: ${DATA_FLOW_PART_WAIT_TIME}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}
@@ -27,16 +27,41 @@ hiu:
     poolSize: ${DB_CONNECTION_POOL_SIZE}
   dataflow:
     offsetInDays: ${OFFSET_IN_DAYS}
+    usingGateway: ${USING_GATEWAY}
   dicomserver:
     url: ${ORTHANC_SERVER_URL}
     user: ${ORTHANC_USERNAME}
     password: ${ORTHANC_PASSWORD}
+  userservice:
+    jwkUrl: ${IDENTITY_JWK_URL}
   gatewayservice:
     baseUrl: ${GATEWAY_BASE_URL}
     requestTimeout: ${GATEWAY_REQUEST_TIMEOUT}
+    clientId: ${HIU_CLIENT_ID}
+    clientSecret: ${HIU_CLIENT_SECRET}
+    jwkUrl: ${GATEWAY_JWK_URL}
+  consentservice:
+    consentRequestFromYears: ${CONSENT_REQUEST_FROM_YEARS:7}
+    consentExpiryInMonths: ${CONSETN_EXPIRY_IN_MONTHS:2}
+    defaultPageSize: ${DEFAULT_CR_PAGE_SIZE:200}
+    consentRequestDelay: ${MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES:10}
+  authorization:
+    header: ${AUTHORIZATION_HEADER:Authorization}
+  #Valid values are guava(for local), redis
+  cache-method: ${CACHE_METHOD:guava}
+  redis:
+    #Will not be used if cacheMethod is guava
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:password}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    queuePrefix: ${RABBITMQ_PREFIX}
   codec:
     max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
+webclient:
+  keepAlive: ${HIU_KEEP_ALIVE:true}

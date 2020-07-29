@@ -1,7 +1,10 @@
 package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.ClientError;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.TokenUtils;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResult;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
 import in.org.projecteka.hiu.dataflow.model.Entry;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
@@ -12,15 +15,13 @@ import reactor.core.publisher.Mono;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.ZoneId;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
+
+import static reactor.core.publisher.Mono.defer;
 
 @AllArgsConstructor
 public class DataFlowService {
@@ -31,9 +32,11 @@ public class DataFlowService {
     private final DataAvailabilityPublisher dataAvailabilityPublisher;
     private final DataFlowServiceProperties dataFlowServiceProperties;
     private final LocalDataStore localDataStore;
+    private final CacheAdapter<String, DataFlowRequestKeyMaterial> dataFlowCache;
+
     private static final Logger logger = LoggerFactory.getLogger(DataFlowService.class);
 
-    public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest, String senderId) {
+    public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest) {
         List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry ->
                 !(hasLink(entry) || hasContent(entry))).collect(Collectors.toList());
 
@@ -42,7 +45,7 @@ public class DataFlowService {
         }
 
         int dataFlowPartNo = 1;
-        return validateAndRetrieveRequestedConsent(dataNotificationRequest.getTransactionId(), senderId)
+        return validateAndRetrieveRequestedConsent(dataNotificationRequest.getTransactionId())
                 .flatMap(consentRequestId -> serializeDataTransferred(dataNotificationRequest, consentRequestId,
                         dataFlowPartNo))
                 .flatMap(contentReference -> saveDataAvailability(contentReference, dataFlowPartNo))
@@ -59,6 +62,27 @@ public class DataFlowService {
 
     private Mono<Void> notifyDataProcessor(Map<String, String> contentRef) {
         return dataAvailabilityPublisher.broadcastDataAvailability(contentRef);
+    }
+
+    public Mono<Void> updateDataFlowRequest(DataFlowRequestResult dataFlowRequestResult) {
+        String requestId = dataFlowRequestResult.getResp().getRequestId();
+        if (dataFlowRequestResult.getError() != null) {
+            logger.error("[DataFlowService] Received error response for data flow request. HIU " +
+                            "requestId={}, error_code= {}, message= {}",
+                    requestId,
+                    dataFlowRequestResult.getError().getCode(),
+                    dataFlowRequestResult.getError().getMessage());
+            return Mono.empty();
+        }
+        if (dataFlowRequestResult.getHiRequest() == null) {
+            return Mono.empty();
+        }
+        var transactionId = dataFlowRequestResult.getHiRequest().getTransactionId().toString();
+        var sessionStatus = dataFlowRequestResult.getHiRequest().getSessionStatus();
+        return dataFlowRepository.updateDataRequest(transactionId, sessionStatus, requestId)
+                .then(defer(() -> dataFlowCache.get(requestId)))
+                .flatMap(dataFlowRequestKeyMaterial ->
+                        dataFlowRepository.addKeys(transactionId, dataFlowRequestKeyMaterial));
     }
 
     private Mono<Map<String, String>> serializeDataTransferred(DataNotificationRequest dataNotificationRequest,
@@ -88,35 +112,16 @@ public class DataFlowService {
         return String.format("%s", TokenUtils.encode(consentRequestId));
     }
 
-    private Mono<String> validateAndRetrieveRequestedConsent(String transactionId, String senderId) {
-        //TODO: possibly validate the senderId
-        return dataFlowRepository.retrieveDataFlowRequest(transactionId).flatMap(
-                dataMap -> {
-                    if (hasConsentArtefactExpired((String) dataMap.get("consentExpiryDate"))) {
-                        return Mono.error(ClientError.consentArtefactGone());
-                    }
-                    return Mono.just((String) dataMap.get("consentRequestId"));
-                }
-        );
+    private Mono<String> validateAndRetrieveRequestedConsent(String transactionId) {
+        return dataFlowRepository.retrieveDataFlowRequest(transactionId)
+                .filter(dataMap -> !hasConsentArtefactExpired((LocalDateTime) dataMap.get("consentExpiryDate")))
+                .switchIfEmpty(Mono.error(ClientError.consentArtefactGone()))
+                .map(dataMap -> (String) dataMap.get("consentRequestId"))
+                .doOnError(throwable -> logger.error(throwable.getMessage(), throwable));
     }
 
-    private boolean hasConsentArtefactExpired(String dataEraseAt) {
-        Date today = new Date();
-        Date expiryDate = toDate(dataEraseAt);
-        return expiryDate != null && expiryDate.before(today);
-    }
-
-    private Date toDate(String dateExpiryAt) {
-        Date date = null;
-        try {
-            var withMillSeconds = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+0000'");
-            withMillSeconds.setTimeZone(TimeZone.getTimeZone(ZoneId.of("GMT")));
-            date = withMillSeconds.parse(dateExpiryAt);
-            return date;
-        } catch (ParseException e) {
-            logger.error(e.getMessage());
-        }
-        return date;
+    private boolean hasConsentArtefactExpired(LocalDateTime dataEraseAt) {
+        return dataEraseAt != null && dataEraseAt.isBefore(LocalDateTime.now());
     }
 
     private boolean hasContent(Entry entry) {

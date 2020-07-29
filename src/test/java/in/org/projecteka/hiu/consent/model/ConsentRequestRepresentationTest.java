@@ -23,13 +23,14 @@ class ConsentRequestRepresentationTest {
         var patient = patient().identifier(consentRequest.getPatient().getId()).build();
         var expected = new ConsentRequestRepresentation(
                 consentRequest.getId(),
+                consentRequest.getId(),
                 new PatientRepresentation(patient.getIdentifier(), patient.getFirstName(), patient.getLastName()),
                 consentRequest.getStatus(),
                 expiryAt,
                 todayAt,
                 todayAt);
 
-        var consentRequestRepresentation = toConsentRequestRepresentation(patient, consentRequest);
+        var consentRequestRepresentation = toConsentRequestRepresentation(patient, consentRequest,consentRequest.getId());
 
         assertThat(consentRequestRepresentation).isEqualTo(expected);
     }

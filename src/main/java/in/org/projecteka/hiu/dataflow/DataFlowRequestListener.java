@@ -1,12 +1,18 @@
 package in.org.projecteka.hiu.dataflow;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
-import in.org.projecteka.hiu.common.CentralRegistry;
+import in.org.projecteka.hiu.common.Gateway;
+import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
+import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyStructure;
 import lombok.AllArgsConstructor;
@@ -18,10 +24,12 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
-import static in.org.projecteka.hiu.HiuConfiguration.DATA_FLOW_REQUEST_QUEUE;
-
+import static reactor.core.publisher.Mono.defer;
 
 @AllArgsConstructor
 public class DataFlowRequestListener {
@@ -32,14 +40,17 @@ public class DataFlowRequestListener {
     private final DataFlowRepository dataFlowRepository;
     private final Decryptor decryptor;
     private final DataFlowProperties dataFlowProperties;
-    private final CentralRegistry centralRegistry;
+    private final Gateway gateway;
+    private final CacheAdapter<String, DataFlowRequestKeyMaterial> dataFlowCache;
+    private final ConsentRepository consentRepository;
+    private final RabbitQueueNames queueNames;
 
     @PostConstruct
     @SneakyThrows
     public void subscribe() {
         DestinationsConfig.DestinationInfo destinationInfo = destinationsConfig
                 .getQueues()
-                .get(DATA_FLOW_REQUEST_QUEUE);
+                .get(queueNames.getDataFlowRequestQueue());
         if (destinationInfo == null) {
             throw queueNotFound();
         }
@@ -58,15 +69,19 @@ public class DataFlowRequestListener {
                 dataFlowRequest.setKeyMaterial(keyMaterial);
 
                 logger.info("Initiating data flow request to consent manager");
-                centralRegistry.token()
-                        .flatMap(token -> dataFlowClient.initiateDataFlowRequest(dataFlowRequest, token)
-                                .flatMap(dataFlowRequestResponse ->
-                                        dataFlowRepository.addDataRequest(dataFlowRequestResponse.getTransactionId(),
-                                                consentId,
-                                                dataFlowRequest)
-                                                .then(dataFlowRepository.addKeys(
-                                                        dataFlowRequestResponse.getTransactionId(),
-                                                        dataRequestKeyMaterial)))).block();
+                gateway.token()
+                        .flatMap(token -> {
+                            var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);
+                            String requestId = gatewayDataFlowRequest.getRequestId().toString();
+                            return consentRepository.getPatientId(consentId)
+                                    .flatMap(patientId -> dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest,
+                                            token,
+                                            getCmSuffix(patientId)))
+                                    .then(defer(() -> dataFlowRepository.addDataFlowRequest(requestId,
+                                            consentId,
+                                            dataFlowRequest)))
+                                    .then(defer(() -> dataFlowCache.put(requestId, dataRequestKeyMaterial)));
+                        }).block();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.fatal("Exception on key creation {exception}", exception);
@@ -77,6 +92,17 @@ public class DataFlowRequestListener {
         mlc.setupMessageListener(messageListener);
 
         mlc.start();
+    }
+
+
+    private GatewayDataFlowRequest getDataFlowRequest(DataFlowRequest dataFlowRequest) {
+        var requestId = UUID.randomUUID();
+        var timestamp = LocalDateTime.now(ZoneOffset.UTC);
+        return new GatewayDataFlowRequest(requestId, timestamp, dataFlowRequest);
+    }
+
+    private String getCmSuffix(String patientId) {
+        return patientId.split("@")[1];
     }
 
     private DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial() throws Exception {
@@ -110,7 +136,10 @@ public class DataFlowRequestListener {
 
     @SneakyThrows
     private DataFlowRequest convertToDataFlowRequest(byte[] message) {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(message, DataFlowRequest.class);
+        var objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return objectMapper.readValue(message, DataFlowRequest.class);
     }
 }

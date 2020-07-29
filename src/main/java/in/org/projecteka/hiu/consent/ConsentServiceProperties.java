@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu;
+package in.org.projecteka.hiu.consent;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -8,11 +8,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "hiu.gatewayservice")
+@ConfigurationProperties(prefix = "hiu.consentservice")
 @Data
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @AllArgsConstructor
-public class GatewayServiceProperties {
-    private String baseUrl;
-    private int requestTimeout;
+public class ConsentServiceProperties {
+    private int consentRequestFromYears;
+    private int consentExpiryInMonths;
+    private long defaultPageSize;
+    private int consentRequestDelay;
 }

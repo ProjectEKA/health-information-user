@@ -14,10 +14,7 @@ hiu:
     maxPageSize: 100
     localStoragePath: /tmp/
   centralregistry:
-    url: http://host.docker.internal:8080
-    clientId: 10000005
-    clientSecret: b435af20-5006-4932-bca7-74aabdf8a78d
-    jwkUrl: http://host.docker.internal:8080/certs
+    url: http://localhost:8080
   database:
     host: localhost
     port: 5432
@@ -27,16 +24,22 @@ hiu:
     poolSize: 5
   dataflow:
     offsetInDays: 2
+    usingGateway: true
   dicomserver:
     url: http://localhost:8042
     user: orthanc
     password: orthanc
   gatewayservice:
-    baseUrl: http://localhost:8000/v1
+    baseUrl: http://localhost:8080/v0.5
     requestTimeout: 2000
+    clientId: 10000005
+    clientSecret: 95ca9a9d-1473-4172-9d87-0fd4d87ee1d6
+    jwkUrl: http://localhost:8080/v0.5/certs
 spring:
   rabbitmq:
     host: localhost
     port: 5672
+    username: guest
+    password: guest
   codec:
     max-in-memory-size: 500MB

@@ -3,6 +3,7 @@ hiu:
   name: Max Health Care
   dataPushUrl: localhost:8080
   consentNotificationUrl: localhost:8080
+  secret: CPv1AQ3NmSgFhoHSAFkpq24WLf6pc1MB3gcltz90fZv093rNRD
   consentmanager:
     url: http://consent-manager
   dataflowservice:
@@ -20,3 +21,5 @@ hiu:
   gatewayservice:
     baseUrl: http://tmc.gov.in/ncg-gateway/v1
     requestTimeout: 1000
+  authorization:
+    header: authorization

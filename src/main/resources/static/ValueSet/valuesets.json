@@ -30,8 +30,8 @@
               "display": "Disease Specific Healthcare Research"
             },
             {
-              "code": "COVID19-IMMUNOPASS",
-              "display": "Covid19 Immunity Pass"
+              "code": "PATRQT",
+              "display": "Self Requested"
             }
           ]
         }
@@ -67,6 +67,18 @@
             {
               "code": "MedicationRequest",
               "display": "Prescribed Medications"
+            },
+            {
+              "code": "DocumentReference",
+              "display": "Clinical Documents"
+            },
+            {
+              "code": "DischargeSummary",
+              "display": "Discharge Summary"
+            },
+            {
+              "code": "Prescription",
+              "display": "Prescription"
             }
           ]
         }

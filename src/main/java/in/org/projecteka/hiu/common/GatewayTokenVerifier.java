@@ -14,21 +14,27 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
-import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.ServiceCaller;
+import in.org.projecteka.hiu.user.Role;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Mono;
 
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 
-public class CentralRegistryTokenVerifier {
+public class GatewayTokenVerifier {
     private final ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
-    private final Logger logger = Logger.getLogger(CentralRegistryTokenVerifier.class);
+    private final Logger logger = Logger.getLogger(GatewayTokenVerifier.class);
 
-    public CentralRegistryTokenVerifier(JWKSet jwkSet) {
+    public GatewayTokenVerifier(JWKSet jwkSet) {
         var immutableJWKSet = new ImmutableJWKSet<>(jwkSet);
         jwtProcessor = new DefaultJWTProcessor<>();
         jwtProcessor.setJWSTypeVerifier(new DefaultJOSEObjectTypeVerifier<>(JOSEObjectType.JWT));
@@ -38,10 +44,10 @@ public class CentralRegistryTokenVerifier {
         jwtProcessor.setJWSKeySelector(keySelector);
         jwtProcessor.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier<>(
                 new JWTClaimsSet.Builder().build(),
-                new HashSet<>(Arrays.asList("sub", "iat", "exp", "scope", "clientId"))));
+                new HashSet<>(Arrays.asList("sub", "iat", "exp", "scope", "clientId", "realm_access"))));
     }
 
-    public Mono<Caller> verify(String token) {
+    public Mono<ServiceCaller> verify(String token) {
         try {
             var parts = token.split(" ");
             if (parts.length == 2) {
@@ -49,7 +55,8 @@ public class CentralRegistryTokenVerifier {
                 return Mono.justOrEmpty(jwtProcessor.process(credentials, null))
                         .flatMap(jwtClaimsSet -> {
                             try {
-                                return Mono.just(new Caller(jwtClaimsSet.getStringClaim("clientId"), true, null, true));
+                                var clientId = jwtClaimsSet.getStringClaim("clientId");
+                                return Mono.just(new ServiceCaller(clientId, getRoles(jwtClaimsSet)));
                             } catch (ParseException e) {
                                 logger.error(e);
                                 return Mono.empty();
@@ -62,5 +69,15 @@ public class CentralRegistryTokenVerifier {
             logger.error("Unauthorized access", e);
             return Mono.empty();
         }
+    }
+
+    private List<Role> getRoles(JWTClaimsSet jwtClaimsSet) {
+        var realmAccess = (JSONObject) jwtClaimsSet.getClaim("realm_access");
+        return ((JSONArray) realmAccess.get("roles"))
+                .stream()
+                .map(Object::toString)
+                .map(mayBeRole -> Role.valueOfIgnoreCase(mayBeRole).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(toList());
     }
 }

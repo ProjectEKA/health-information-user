@@ -8,7 +8,10 @@ import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
-import in.org.projecteka.hiu.common.CentralRegistryTokenVerifier;
+import in.org.projecteka.hiu.ServiceCaller;
+import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.Constants;
+import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
@@ -17,6 +20,7 @@ import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.HealthInformation;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
+import in.org.projecteka.hiu.user.Role;
 import okhttp3.mockwebserver.MockWebServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -25,10 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -36,22 +40,29 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequestResult;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.entry;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.keyMaterial;
+import static in.org.projecteka.hiu.dataflow.TestBuilders.string;
+import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @ActiveProfiles("dev")
-public class DataFlowUserJourneyTest {
+class DataFlowUserJourneyTest {
     private static final MockWebServer dataFlowServer = new MockWebServer();
     @MockBean
     LocalDataStore localDataStore;
@@ -76,24 +87,36 @@ public class DataFlowUserJourneyTest {
     @SuppressWarnings("unused")
     @MockBean
     private DataAvailabilityListener dataAvailabilityListener;
+
     @MockBean
-    private CentralRegistryTokenVerifier centralRegistryTokenVerifier;
+    @Qualifier("hiuUserAuthenticator")
+    private Authenticator authenticator;
+
+    @MockBean
+    private GatewayTokenVerifier gatewayTokenVerifier;
+
     @SuppressWarnings("unused")
     @MockBean
+    @Qualifier("centralRegistryJWKSet")
     private JWKSet centralRegistryJWKSet;
 
+    @SuppressWarnings("unused")
+    @MockBean
+    @Qualifier("identityServiceJWKSet")
+    private JWKSet identityServiceJWKSet;
+
     @AfterAll
-    public static void tearDown() throws IOException {
+    static void tearDown() throws IOException {
         dataFlowServer.shutdown();
     }
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    public void shouldNotifyDataFlowResponse() {
+    void shouldNotifyDataFlowResponse() {
         var entry = entry().build();
         entry.setLink(null);
         entry.setContent("Some Dummy Content XYZ 1");
@@ -108,11 +131,8 @@ public class DataFlowUserJourneyTest {
                         .keyMaterial(keyMaterial)
                         .build();
         Map<String, Object> flowRequestMap = new HashMap<>();
-        var token = randomString();
         flowRequestMap.put("consentRequestId", "consentRequestId");
-        flowRequestMap.put("consentExpiryDate", "9999-04-15T16:55:00.352+0000");
-
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        flowRequestMap.put("consentExpiryDate", LocalDateTime.parse("9999-04-15T16:55:00"));
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         when(dataFlowRepository.retrieveDataFlowRequest(transactionId)).thenReturn(Mono.just(flowRequestMap));
@@ -121,18 +141,17 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/data/notification")
-                .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON)
+                .uri(Constants.PATH_DATA_TRANSFER)
+                .contentType(APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
-                .accept(MediaType.APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
                 .isAccepted();
     }
 
     @Test
-    public void shouldFetchHealthInformation() {
+    void shouldFetchHealthInformation() {
         var consentRequestId = "consentRequestId";
         var consentId = "consentId";
         var transactionId = "transactionId";
@@ -143,10 +162,13 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("consentId", consentId);
         consentDetailsMap.put("hipId", hipId);
         consentDetailsMap.put("hipName", hipName);
-        consentDetailsMap.put("requester", "1");
+        consentDetailsMap.put("requester", "testUser");
         consentDetailsMap.put("status", "GRANTED");
-        consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48.363+00:00");
+        consentDetailsMap.put("consentExpiryDate", "9999-01-15T08:47:48");
         consentDetails.add(consentDetailsMap);
+        var token = randomString();
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
         Map<String, Object> healthInfo = new HashMap<>();
         String content = "Some dummy content";
         healthInfo.put("data", content);
@@ -163,7 +185,7 @@ public class DataFlowUserJourneyTest {
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
                         .queryParam("limit", "20").build())
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(HealthInformation.class)
@@ -174,26 +196,28 @@ public class DataFlowUserJourneyTest {
     }
 
     @Test
-    public void shouldNotFetchHealthInformationForExpiredConsent() throws JsonProcessingException {
+    void shouldNotFetchHealthInformationForExpiredConsent() throws JsonProcessingException {
         var consentRequestId = "consentRequestId";
         var consentId = "consentId";
         var transactionId = "transactionId";
         var hipId = "10000005";
         var hipName = "Max health care";
+        var token = randomString();
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
         List<Map<String, String>> consentDetails = new ArrayList<>();
         Map<String, String> consentDetailsMap = new HashMap<>();
         consentDetailsMap.put("consentId", consentId);
         consentDetailsMap.put("hipId", hipId);
         consentDetailsMap.put("hipName", hipName);
-        consentDetailsMap.put("requester", "1");
+        consentDetailsMap.put("requester", "testUser");
         consentDetailsMap.put("status", "GRANTED");
-        consentDetailsMap.put("consentExpiryDate", "2019-01-15T08:47:48.363+0000");
+        consentDetailsMap.put("consentExpiryDate", "2019-01-15T08:47:48");
         consentDetails.add(consentDetailsMap);
         var errorResponse = new ErrorRepresentation(new Error(
                 ErrorCode.CONSENT_ARTEFACT_NOT_FOUND,
                 "Consent artefact expired"));
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
-
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
         when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
 
@@ -201,15 +225,15 @@ public class DataFlowUserJourneyTest {
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
                         .queryParam("limit", "20").build())
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .exchange()
-                .expectStatus().is4xxClientError()
+                .expectStatus().is5xxServerError()
                 .expectBody()
                 .json(errorResponseJson);
     }
 
     @Test
-    public void shouldThrowUnauthorized() throws JsonProcessingException {
+    void shouldThrowUnauthorized() throws JsonProcessingException {
         String consentRequestId = "consentRequestId";
         String consentId = "consentId";
         String hipId = "10000005";
@@ -219,39 +243,33 @@ public class DataFlowUserJourneyTest {
         consentDetailsMap.put("consentId", consentId);
         consentDetailsMap.put("hipId", hipId);
         consentDetailsMap.put("hipName", hipName);
-        consentDetailsMap.put("requester", "2");
+        consentDetailsMap.put("requester", "tempUser");
         consentDetails.add(consentDetailsMap);
-
+        var token = randomString();
+        var caller = new Caller("testUser", false, Role.ADMIN.toString(), true);
+        when(authenticator.verify(token)).thenReturn(Mono.just(caller));
         var errorResponse = new ErrorRepresentation(new Error(
                 ErrorCode.UNAUTHORIZED_REQUESTER,
                 "Requester is not authorized to perform this action"));
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
-
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
 
         webTestClient
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
                         .queryParam("limit", "20").build())
-                .header("Authorization", "MQ==")
+                .header("Authorization", token)
                 .exchange()
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .json(errorResponseJson);
     }
 
-
     @Test
-    public void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
-        Entry entry = new Entry();
-        entry.setLink(null);
-        List<Entry> entries = new ArrayList<>();
-        entries.add(entry);
+    void shouldThrowBadRequestErrorIfLinkAndContentAreEmpty() throws JsonProcessingException {
         String transactionId = "transactionId";
-        DataNotificationRequest dataNotificationRequest =
-                DataNotificationRequest.builder().transactionId(transactionId).entries(entries).build();
-        var token = randomString();
-        when(centralRegistryTokenVerifier.verify(token)).thenReturn(Mono.just(new Caller("", true, "", true)));
+        var dataNotificationRequest =
+                DataNotificationRequest.builder().transactionId(transactionId).entries(List.of(new Entry())).build();
         when(dataFlowRepository.insertDataPartAvailability(transactionId, 1, HealthInfoStatus.RECEIVED))
                 .thenReturn(Mono.empty());
         var errorResponse = new ErrorRepresentation(new Error(
@@ -261,14 +279,61 @@ public class DataFlowUserJourneyTest {
 
         webTestClient
                 .post()
-                .uri("/data/notification")
-                .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON)
+                .uri(Constants.PATH_DATA_TRANSFER)
+                .contentType(APPLICATION_JSON)
                 .bodyValue(dataNotificationRequest)
-                .accept(MediaType.APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .expectStatus().isBadRequest()
+                .expectStatus()
+                .isBadRequest()
                 .expectBody()
                 .json(errorResponseJson);
+    }
+
+    @Test
+    void shouldUpdateDataFlowRequest() {
+        var token = string();
+        var clientId = string();
+        var dataFlowRequestResult = dataFlowRequestResult().error(null).build();
+        var transactionId = dataFlowRequestResult.getHiRequest().getTransactionId().toString();
+        when(gatewayTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new ServiceCaller(clientId, (List.of(GATEWAY)))));
+        when(dataFlowRepository.updateDataRequest(
+                transactionId,
+                dataFlowRequestResult.getHiRequest().getSessionStatus(),
+                dataFlowRequestResult.getResp().getRequestId()
+        )).thenReturn(Mono.empty());
+        when(dataFlowRepository.addKeys(eq(transactionId), any())).thenReturn(Mono.empty());
+
+        webTestClient
+                .post()
+                .uri(PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
+                .header("Authorization", token)
+                .contentType(APPLICATION_JSON)
+                .bodyValue(dataFlowRequestResult)
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    void shouldNotUpdateDataFlowRequest() {
+        var token = string();
+        var clientId = string();
+        var dataFlowRequestResult = dataFlowRequestResult().hiRequest(null).build();
+        when(gatewayTokenVerifier.verify(token))
+                .thenReturn(Mono.just(new ServiceCaller(clientId, (List.of(GATEWAY)))));
+
+        webTestClient
+                .post()
+                .uri(PATH_HEALTH_INFORMATION_HIU_ON_REQUEST)
+                .header("Authorization", token)
+                .contentType(APPLICATION_JSON)
+                .bodyValue(dataFlowRequestResult)
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
     }
 }

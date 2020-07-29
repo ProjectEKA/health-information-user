@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.consent.model;
 
+import in.org.projecteka.hiu.consent.model.consentmanager.HIP;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,5 +22,5 @@ public class ConsentRequest {
     private Permission permission;
     private ConsentStatus status;
     private LocalDateTime createdDate;
-    private String consentNotificationUrl;
+    private HIP hip;
 }

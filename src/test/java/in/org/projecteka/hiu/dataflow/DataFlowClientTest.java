@@ -1,17 +1,18 @@
 package in.org.projecteka.hiu.dataflow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import in.org.projecteka.hiu.ConsentManagerServiceProperties;
-import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResponse;
+import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.dataflow.model.DateRange;
+import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.http.codec.json.Jackson2JsonEncoder;
@@ -19,19 +20,27 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.test.StepVerifier;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
+import java.util.UUID;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
 import static in.org.projecteka.hiu.dataflow.TestBuilders.string;
 import static in.org.projecteka.hiu.dataflow.Utils.toDate;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 public class DataFlowClientTest {
     private DataFlowClient dataFlowClient;
     private MockWebServer mockWebServer;
 
+    @Mock
+    GatewayProperties gatewayProperties;
+
     @BeforeEach
     public void init() {
+        MockitoAnnotations.initMocks(this);
         mockWebServer = new MockWebServer();
         ExchangeStrategies strategies = ExchangeStrategies
                 .builder()
@@ -46,42 +55,28 @@ public class DataFlowClientTest {
 
                 }).build();
         WebClient.Builder webClientBuilder = WebClient.builder().exchangeStrategies(strategies);
-        ConsentManagerServiceProperties consentManagerServiceProperties =
-                new ConsentManagerServiceProperties(mockWebServer.url("").toString(), "@ncg");
-        dataFlowClient = new DataFlowClient(webClientBuilder, consentManagerServiceProperties);
+        dataFlowClient = new DataFlowClient(webClientBuilder, gatewayProperties);
     }
 
     @Test
-    void shouldCreateConsentRequest() throws JsonProcessingException, InterruptedException {
-        String transactionId = "transactionId";
-        var dataFlowRequestResponse =
-                DataFlowRequestResponse.builder().transactionId(transactionId).build();
-        ObjectMapper objectMapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        var dataFlowRequestResponseJson = objectMapper.writeValueAsString(dataFlowRequestResponse);
+    void shouldCreateConsentRequestUsingGateway() throws InterruptedException {
         var dataFlowRequest = dataFlowRequest()
                 .dateRange(DateRange.builder()
                         .from(toDate("2020-01-14T08:47:48"))
                         .to(toDate("2020-01-20T08:47:48")).build())
                 .build();
+        var gatewayDataFlowRequest = new GatewayDataFlowRequest(UUID.randomUUID(),
+                LocalDateTime.now(ZoneOffset.UTC),
+                dataFlowRequest);
         mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "application/json")
-                .setBody(dataFlowRequestResponseJson));
+                .setResponseCode(202));
+        when(gatewayProperties.getBaseUrl()).thenReturn(mockWebServer.url("").toString());
 
-        StepVerifier.create(dataFlowClient.initiateDataFlowRequest(dataFlowRequest, string()))
-                .assertNext(
-                        response -> {
-                            assertThat(response.getTransactionId()).isEqualTo(transactionId);
-                        })
+        StepVerifier.create(dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest, string(), string()))
                 .verifyComplete();
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         assertThat(Objects.requireNonNull(recordedRequest.getRequestUrl()).toString())
-                .isEqualTo(mockWebServer.url("") + "health-information/request");
-        assertThat(recordedRequest.getBody().readUtf8())
-                .isEqualTo(objectMapper.writeValueAsString(dataFlowRequest));
+                .isEqualTo(mockWebServer.url("") + "health-information/cm/request");
     }
-
 }

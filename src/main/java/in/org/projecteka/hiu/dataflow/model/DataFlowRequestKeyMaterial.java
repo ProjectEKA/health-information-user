@@ -13,4 +13,8 @@ public class DataFlowRequestKeyMaterial {
     private String privateKey;
     private String publicKey;
     private String randomKey;
+
+    public static DataFlowRequestKeyMaterial empty() {
+        return DataFlowRequestKeyMaterial.builder().build();
+    }
 }
