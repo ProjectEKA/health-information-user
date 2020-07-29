@@ -28,7 +28,7 @@ class RedisGenericAdapterTest {
     @BeforeEach
     public void init() {
         initMocks(this);
-        genericAdapter = new RedisGenericAdapter<>(redisOperations, EXPIRATION_IN_MINUTES, "with_prefix");
+        genericAdapter = new RedisGenericAdapter<>(redisOperations, ofMinutes(EXPIRATION_IN_MINUTES), "with_prefix");
     }
 
     @Test
@@ -76,9 +76,9 @@ class RedisGenericAdapterTest {
     void existsWithoutPrefix() {
         var key = string();
         when(redisOperations.hasKey(key)).thenReturn(just(true));
-        var stringRedisGenericAdapter = new RedisGenericAdapter<>(redisOperations, EXPIRATION_IN_MINUTES, null);
+        var stringAdapter = new RedisGenericAdapter<>(redisOperations, ofMinutes(EXPIRATION_IN_MINUTES), null);
 
-        create(stringRedisGenericAdapter.exists(key))
+        create(stringAdapter.exists(key))
                 .assertNext(exist -> assertThat(exist).isTrue())
                 .verifyComplete();
     }
