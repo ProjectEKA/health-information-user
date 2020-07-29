@@ -5,13 +5,15 @@ import org.springframework.data.redis.core.ReactiveRedisOperations;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 import static java.lang.String.format;
 import static java.time.Duration.ofMinutes;
 
 @AllArgsConstructor
 public class RedisGenericAdapter<T> implements CacheAdapter<String, T> {
     private final ReactiveRedisOperations<String, T> redisOperations;
-    private final int expirationInMinutes;
+    private final Duration expiration;
     private final String prefix;
 
     private String prefixThe(String key) {
@@ -25,7 +27,7 @@ public class RedisGenericAdapter<T> implements CacheAdapter<String, T> {
 
     @Override
     public Mono<Void> put(String key, T value) {
-        return redisOperations.opsForValue().set(prefixThe(key), value, ofMinutes(expirationInMinutes)).then();
+        return redisOperations.opsForValue().set(prefixThe(key), value, expiration).then();
     }
 
     @Override

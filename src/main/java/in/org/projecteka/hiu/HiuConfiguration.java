@@ -103,6 +103,8 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
+import static java.time.Duration.ofDays;
+import static java.time.Duration.ofMinutes;
 
 @Configuration
 public class HiuConfiguration {
@@ -219,7 +221,7 @@ public class HiuConfiguration {
     @Bean
     public CacheAdapter<String, Patient> redisPatientGatewayResponse(
             ReactiveRedisOperations<String, Patient> stringReactiveRedisOperations) {
-        return new RedisGenericAdapter<>(stringReactiveRedisOperations, 5, "hiu-patient");
+        return new RedisGenericAdapter<>(stringReactiveRedisOperations, ofDays(1), "hiu-patient");
     }
 
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
@@ -257,7 +259,7 @@ public class HiuConfiguration {
     @Bean
     public CacheAdapter<String, DataFlowRequestKeyMaterial> redisDataFlowAdapter(
             ReactiveRedisOperations<String, DataFlowRequestKeyMaterial> stringReactiveRedisOperations) {
-        return new RedisGenericAdapter<>(stringReactiveRedisOperations, 5, "hiu-data-flow-key");
+        return new RedisGenericAdapter<>(stringReactiveRedisOperations, ofMinutes(30), "hiu-data-flow-key");
     }
 
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
@@ -288,14 +290,14 @@ public class HiuConfiguration {
     @Bean("gatewayResponseCache")
     public CacheAdapter<String, String> redisGatewayResponseAdapter(
             ReactiveRedisOperations<String, String> stringReactiveRedisOperations) {
-        return new RedisGenericAdapter<>(stringReactiveRedisOperations, 5, "hiu-gateway-response");
+        return new RedisGenericAdapter<>(stringReactiveRedisOperations, ofMinutes(10), "hiu-gateway-response");
     }
 
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
     @Bean("patientRequestCache")
     public CacheAdapter<String, String> redisPatientRequestAdapter(
             ReactiveRedisOperations<String, String> stringReactiveRedisOperations) {
-        return new RedisGenericAdapter<>(stringReactiveRedisOperations, 5, "hiu-patient-request");
+        return new RedisGenericAdapter<>(stringReactiveRedisOperations, ofMinutes(10), "hiu-patient-request");
     }
 
     @Bean({"gatewayResponseCache", "patientRequestCache"})
@@ -339,7 +341,7 @@ public class HiuConfiguration {
     @Bean
     public CacheAdapter<String, PatientSearchGatewayResponse> redisPatientSearchResponse(
             ReactiveRedisOperations<String, PatientSearchGatewayResponse> stringReactiveRedisOperations) {
-        return new RedisGenericAdapter<>(stringReactiveRedisOperations, 5, "hiu-patient-gateway-response");
+        return new RedisGenericAdapter<>(stringReactiveRedisOperations, ofMinutes(30), "hiu-patient-gateway-response");
     }
 
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
