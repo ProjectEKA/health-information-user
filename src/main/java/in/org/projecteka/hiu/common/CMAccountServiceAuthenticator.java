@@ -33,7 +33,7 @@ public class CMAccountServiceAuthenticator implements Authenticator {
             return sessionServiceClient.validateToken(TokenValidationRequest.builder().authToken(parts[1]).build())
                     .flatMap(isValid -> {
                         if (isValid) {
-                            return Mono.just(Caller.builder().username(jsonObject.getAsString("UserName") +
+                            return Mono.just(Caller.builder().username(jsonObject.getAsString("healthId") +
                                     consentManagerServiceProperties.getSuffix())
                                     .isServiceAccount(false).build());
                         }
