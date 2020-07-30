@@ -107,6 +107,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
@@ -656,7 +657,7 @@ public class HiuConfiguration {
         } catch (SSLException e) {
             e.printStackTrace();
         }
-        return new ReactorClientHttpConnector(httpClient);
+        return new ReactorClientHttpConnector(Objects.requireNonNull(httpClient));
     }
 
     @Bean

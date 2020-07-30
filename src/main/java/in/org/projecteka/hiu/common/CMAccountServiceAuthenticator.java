@@ -18,7 +18,7 @@ import static java.lang.String.format;
 public class CMAccountServiceAuthenticator implements Authenticator {
     private final SessionServiceClient sessionServiceClient;
     private final ConsentManagerServiceProperties consentManagerServiceProperties;
-    private final Logger logger = LoggerFactory.getLogger(CMAccountServiceAuthenticator.class);
+    private static final Logger logger = LoggerFactory.getLogger(CMAccountServiceAuthenticator.class);
 
     @Override
     public Mono<Caller> verify(String token) {
@@ -32,7 +32,7 @@ public class CMAccountServiceAuthenticator implements Authenticator {
             var jsonObject = jwsObject.getPayload().toJSONObject();
             return sessionServiceClient.validateToken(TokenValidationRequest.builder().authToken(parts[1]).build())
                     .flatMap(isValid -> {
-                        if (isValid) {
+                        if (Boolean.TRUE.equals(isValid)) {
                             return Mono.just(Caller.builder().username(jsonObject.getAsString("healthId") +
                                     consentManagerServiceProperties.getSuffix())
                                     .isServiceAccount(false).build());

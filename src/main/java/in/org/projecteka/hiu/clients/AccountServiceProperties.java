@@ -16,5 +16,4 @@ public class AccountServiceProperties {
         private final String url;
         private final List<String> identifiers;
         private final int expiryInMinutes;
-
 }
