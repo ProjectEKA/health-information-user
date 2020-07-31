@@ -20,15 +20,12 @@ class CMAccountServiceAuthenticatorTest {
     @Mock
     SessionServiceClient sessionServiceClient;
 
-    @Mock
-    ConsentManagerServiceProperties consentManagerServiceProperties;
-
     CMAccountServiceAuthenticator authenticator;
 
     @BeforeEach
     void setUp() {
         initMocks(this);
-        authenticator = new CMAccountServiceAuthenticator(sessionServiceClient, consentManagerServiceProperties);
+        authenticator = new CMAccountServiceAuthenticator(sessionServiceClient);
     }
 
     @Test
@@ -49,12 +46,11 @@ class CMAccountServiceAuthenticatorTest {
                 "xATOZMZUFD7grzj4umg09kO5g7wB84rJYswho";
         String testToken = String.format("%s %s", "Bearer", accessToken);
         Caller expectedCaller = Caller.builder()
-                .username("hina.patel@pmjay")
+                .username("hina.patel")
                 .isServiceAccount(false)
                 .build();
 
         when(sessionServiceClient.validateToken(any(TokenValidationRequest.class))).thenReturn(Mono.just(true));
-        when(consentManagerServiceProperties.getSuffix()).thenReturn("@pmjay");
 
         StepVerifier.create(authenticator.verify(testToken))
                .expectNext(expectedCaller)

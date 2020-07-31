@@ -640,9 +640,8 @@ public class HiuConfiguration {
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
     @Bean("userAuthenticator")
-    public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient,
-                                                            ConsentManagerServiceProperties consentManagerServiceProperties) {
-        return new CMAccountServiceAuthenticator(sessionServiceClient, consentManagerServiceProperties);
+    public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient) {
+        return new CMAccountServiceAuthenticator(sessionServiceClient);
     }
 
     @Bean

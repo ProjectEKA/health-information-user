@@ -17,7 +17,6 @@ import static java.lang.String.format;
 @AllArgsConstructor
 public class CMAccountServiceAuthenticator implements Authenticator {
     private final SessionServiceClient sessionServiceClient;
-    private final ConsentManagerServiceProperties consentManagerServiceProperties;
     private static final Logger logger = LoggerFactory.getLogger(CMAccountServiceAuthenticator.class);
 
     @Override
@@ -33,8 +32,7 @@ public class CMAccountServiceAuthenticator implements Authenticator {
             return sessionServiceClient.validateToken(TokenValidationRequest.builder().authToken(parts[1]).build())
                     .flatMap(isValid -> {
                         if (Boolean.TRUE.equals(isValid)) {
-                            return Mono.just(Caller.builder().username(jsonObject.getAsString("healthId") +
-                                    consentManagerServiceProperties.getSuffix())
+                            return Mono.just(Caller.builder().username(jsonObject.getAsString("healthId"))
                                     .isServiceAccount(false).build());
                         }
                         return Mono.empty();
