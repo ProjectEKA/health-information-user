@@ -1,7 +1,6 @@
 package in.org.projecteka.hiu.common;
 
 import in.org.projecteka.hiu.Caller;
-import in.org.projecteka.hiu.ConsentManagerServiceProperties;
 import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.TokenValidationRequest;
 import org.junit.jupiter.api.BeforeEach;
