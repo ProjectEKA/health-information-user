@@ -16,11 +16,15 @@ import static java.lang.String.format;
 
 @AllArgsConstructor
 public class GatewayAuthenticationClient {
-    private final WebClient.Builder builder;
+    private final WebClient webclient;
     private final Logger logger = Logger.getLogger(GatewayAuthenticationClient.class);
 
+    public GatewayAuthenticationClient(WebClient.Builder webClient, String baseUrl) {
+        this.webclient = webClient.baseUrl(baseUrl).build();
+    }
+
     public Mono<Token> getTokenFor(String clientId, String clientSecret) {
-        return builder.build()
+        return webclient
                 .post()
                 .uri("/sessions")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -42,6 +42,13 @@ hiu:
     clientId: 10000002
     clientSecret: ${CLIENT_SECRET}
     jwkUrl: http://localhost:8000/v0.5/certs
+  accountservice:
+    usingUnsecureSSL: true
+    url: ${ACCOUNT_SERVICE_URL}
+    identifiers:
+      - MOBILE
+    expiryInMinutes: 5
+  loginMethod: keycloak
 spring:
   rabbitmq:
     host: localhost

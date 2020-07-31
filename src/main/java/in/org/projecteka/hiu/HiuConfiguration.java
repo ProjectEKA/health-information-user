@@ -11,11 +11,13 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import in.org.projecteka.hiu.clients.AccountServiceProperties;
 import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
+import in.org.projecteka.hiu.common.CMAccountServiceAuthenticator;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
@@ -53,7 +55,11 @@ import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
+import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.UserRepository;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -96,10 +102,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
@@ -581,7 +589,7 @@ public class HiuConfiguration {
     public GatewayAuthenticationClient centralRegistryClient(
             @Qualifier("customBuilder") WebClient.Builder builder,
             GatewayProperties gatewayProperties) {
-        return new GatewayAuthenticationClient(builder.baseUrl(gatewayProperties.getBaseUrl()));
+        return new GatewayAuthenticationClient(builder, gatewayProperties.getBaseUrl());
     }
 
     @Bean
@@ -623,10 +631,41 @@ public class HiuConfiguration {
         return new DefaultJWTProcessor<>();
     }
 
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak", matchIfMissing = true)
     @Bean("userAuthenticator")
     public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                            ConfigurableJWTProcessor<SecurityContext> jwtProcessor) {
         return new CMPatientAuthenticator(jwkSet, jwtProcessor);
+    }
+
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
+    @Bean("userAuthenticator")
+    public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient) {
+        return new CMAccountServiceAuthenticator(sessionServiceClient);
+    }
+
+    @Bean
+    public ReactorClientHttpConnector reactorClientHttpConnector() {
+        HttpClient httpClient = null;
+        try {
+            SslContext sslContext = SslContextBuilder
+                    .forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .build();
+            httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
+        } catch (SSLException e) {
+            e.printStackTrace();
+        }
+        return new ReactorClientHttpConnector(Objects.requireNonNull(httpClient));
+    }
+
+    @Bean
+    public SessionServiceClient sessionServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
+                                                     AccountServiceProperties accountServiceProperties) {
+        if (accountServiceProperties.isUsingUnsecureSSL()) {
+            builder.clientConnector(reactorClientHttpConnector());
+        }
+        return new SessionServiceClient(builder, accountServiceProperties.getUrl());
     }
 
     @Bean

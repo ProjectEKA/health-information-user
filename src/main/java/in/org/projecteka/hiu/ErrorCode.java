@@ -20,6 +20,8 @@ public enum ErrorCode {
     INVALID_DATA_FROM_GATEWAY(4422),
     NO_RESULT_FROM_GATEWAY(4504),
     PATIENT_NOT_FOUND(4407),
+    NETWORK_SERVICE_ERROR(4505),
+    INVALID_TOKEN(4402),
     SERVICE_DOWN(4503);
 
     private final int value;
