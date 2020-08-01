@@ -57,6 +57,8 @@ import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
 import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.UserRepository;
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.SocketOptions;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
@@ -85,6 +87,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -111,6 +114,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
+import static io.lettuce.core.ReadFrom.REPLICA_PREFERRED;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
 
@@ -135,9 +139,18 @@ public class HiuConfiguration {
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
     @Bean
     ReactiveRedisConnectionFactory redisConnection(RedisOptions redisOptions) {
+        var hiu = "HIU-Redis-Client";
+        var clientOptions = ClientOptions.builder()
+                .socketOptions(SocketOptions.builder().keepAlive(redisOptions.isKeepAliveEnabled()).build())
+                .build();
+        var clientConfiguration = LettuceClientConfiguration.builder()
+                .clientName(hiu)
+                .clientOptions(clientOptions)
+                .readFrom(REPLICA_PREFERRED)
+                .build();
         var configuration = new RedisStandaloneConfiguration(redisOptions.getHost(), redisOptions.getPort());
         configuration.setPassword(redisOptions.getPassword());
-        return new LettuceConnectionFactory(configuration);
+        return new LettuceConnectionFactory(configuration, clientConfiguration);
     }
 
     @Bean

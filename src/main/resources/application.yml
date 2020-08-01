@@ -54,6 +54,7 @@ hiu:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:password}
+    keep-alive-enabled: ${KEEP_ALIVE_ENABLED:false}
   accountservice:
     usingUnsecureSSL: ${Account_Service_Uses_Unsecure_SSL:true}
     url: ${Account_Service_Url}
