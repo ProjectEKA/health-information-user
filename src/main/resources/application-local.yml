@@ -45,9 +45,6 @@ hiu:
   accountservice:
     usingUnsecureSSL: true
     url: ${ACCOUNT_SERVICE_URL}
-    identifiers:
-      - MOBILE
-    expiryInMinutes: 5
   loginMethod: keycloak
 spring:
   rabbitmq:
