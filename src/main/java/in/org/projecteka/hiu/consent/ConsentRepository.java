@@ -22,6 +22,7 @@ import java.util.Map;
 import static in.org.projecteka.hiu.ClientError.consentArtefactNotFound;
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
+import static in.org.projecteka.hiu.common.Constants.STATUS;
 import static in.org.projecteka.hiu.common.Serializer.from;
 import static in.org.projecteka.hiu.common.Serializer.to;
 
@@ -29,7 +30,6 @@ import static in.org.projecteka.hiu.common.Serializer.to;
 public class ConsentRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsentRepository.class);
-    public static final String STATUS = "status";
 
     private final String CONSENT_REQUEST = "consent_request";
     private static final String SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT = "SELECT consent_artefact_id, " +

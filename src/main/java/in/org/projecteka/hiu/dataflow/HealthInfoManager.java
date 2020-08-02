@@ -5,16 +5,14 @@ import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
 import in.org.projecteka.hiu.dataflow.model.DataEntry;
 import in.org.projecteka.hiu.dataflow.model.DataPartDetail;
-import in.org.projecteka.hiu.dataflow.model.PatientDataEntry;
-import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
 import in.org.projecteka.hiu.dataflow.model.DataRequestStatus;
 import in.org.projecteka.hiu.dataflow.model.HealthInfoStatus;
-import in.org.projecteka.hiu.dataflow.model.PatientDataRequestMapping;
+import in.org.projecteka.hiu.dataflow.model.PatientDataEntry;
 import in.org.projecteka.hiu.dataflow.model.PatientDataRequestDetail;
+import in.org.projecteka.hiu.dataflow.model.PatientDataRequestMapping;
+import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
 import in.org.projecteka.hiu.dataprocessor.model.EntryStatus;
-
 import lombok.AllArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -22,14 +20,28 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.consentArtefactGone;
 import static in.org.projecteka.hiu.ClientError.invalidHealthInformationRequest;
 import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
+import static in.org.projecteka.hiu.common.Constants.STATUS;
+import static in.org.projecteka.hiu.dataflow.model.DataRequestStatus.ERRORED;
+import static in.org.projecteka.hiu.dataflow.model.DataRequestStatus.PROCESSING;
+import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.PARTIAL;
+import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.RECEIVED;
+import static java.time.LocalDateTime.now;
+import static java.time.ZoneOffset.UTC;
+import static java.util.UUID.fromString;
+import static org.springframework.util.StringUtils.hasText;
+import static org.springframework.util.StringUtils.isEmpty;
+import static reactor.core.publisher.Flux.fromIterable;
+import static reactor.core.publisher.Mono.error;
 
 @AllArgsConstructor
 public class HealthInfoManager {
@@ -43,11 +55,11 @@ public class HealthInfoManager {
     public Flux<DataEntry> fetchHealthInformation(String consentRequestId, String requesterId) {
         return consentRepository.getConsentDetails(consentRequestId)
                 .filter(consentDetail -> isValidRequester(requesterId, consentDetail))
-                .switchIfEmpty(Flux.error(unauthorizedRequester()))
+                .switchIfEmpty(error(unauthorizedRequester()))
                 .filter(this::isGrantedConsent)
-                .switchIfEmpty(Flux.error(invalidHealthInformationRequest()))
+                .switchIfEmpty(error(invalidHealthInformationRequest()))
                 .filter(this::isConsentNotExpired)
-                .switchIfEmpty(Flux.error(consentArtefactGone()))
+                .switchIfEmpty(error(consentArtefactGone()))
                 .flatMap(consentDetail -> dataFlowRepository.getTransactionId(consentDetail.get("consentId"))
                         .flatMapMany(transactionId -> getDataEntries(
                                 transactionId,
@@ -55,15 +67,17 @@ public class HealthInfoManager {
                                 consentDetail.get("hipName"))));
     }
 
-    public Mono<Tuple2<List<PatientDataEntry>, Integer>> fetchHealthInformation(List<String> dataRequestIds, String requesterId,
-                                                                                int limit, int offset) {
+    public Mono<Tuple2<List<PatientDataEntry>, Integer>> fetchHealthInformation(List<String> dataRequestIds,
+                                                                                String requesterId,
+                                                                                int limit,
+                                                                                int offset) {
         return patientConsentRepository.fetchConsentRequestIds(dataRequestIds)
                 .map(PatientDataRequestMapping::getConsentRequestId)
                 .collectList()
                 .flatMapMany(dataFlowRepository::fetchDataPartDetails)
                 .collectList()
                 .filter(dataParts -> isValidRequester(dataParts, requesterId))
-                .switchIfEmpty(Mono.error(unauthorizedRequester()))
+                .switchIfEmpty(error(unauthorizedRequester()))
                 .flatMap(dataParts -> getDataEntries(limit, offset, dataParts));
     }
 
@@ -71,7 +85,9 @@ public class HealthInfoManager {
         return dataParts.stream().allMatch(dataPart -> dataPart.getRequester().equals(requesterId));
     }
 
-    private Mono<Tuple2<List<PatientDataEntry>, Integer>> getDataEntries(int limit, int offset, List<DataPartDetail> dataParts) {
+    private Mono<Tuple2<List<PatientDataEntry>, Integer>> getDataEntries(int limit,
+                                                                         int offset,
+                                                                         List<DataPartDetail> dataParts) {
         HashMap<String, PatientDataEntry.PatientDataEntryBuilder> dataEntries = new HashMap<>();
         dataParts.forEach(dataPartDetail -> {
             dataEntries.put(dataPartDetail.getTransactionId(), PatientDataEntry.builder()
@@ -82,7 +98,7 @@ public class HealthInfoManager {
         var transactionIds = List.copyOf(dataEntries.keySet());
         return healthInformationRepository.getHealthInformation(transactionIds, limit, offset)
                 .map(healthInfo -> dataEntries.get(healthInfo.get("transaction_id").toString())
-                        .status(toStatus((String) healthInfo.get("status")))
+                        .status(toStatus((String) healthInfo.get(STATUS)))
                         .data(healthInfo.get("data")).build())
                 .collectList()
                 .zipWith(healthInformationRepository.getTotalCountOfEntries(transactionIds));
@@ -108,8 +124,9 @@ public class HealthInfoManager {
                                 .hipId(dataRequestDetail.getHipId())
                                 .requestId(dataRequestDetail.getDataRequestId());
 
-                        if (StringUtils.isEmpty(dataRequestDetail.getConsentRequestId())) {
-                            logger.info("Consent request is not yet created for data request id {}", dataRequestDetail.getDataRequestId());
+                        if (isEmpty(dataRequestDetail.getConsentRequestId())) {
+                            logger.info("Consent request is not yet created for data request id {}",
+                                    dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getPatientDataRequestedAt(),
@@ -118,8 +135,9 @@ public class HealthInfoManager {
                             return;
                         }
 
-                        if (StringUtils.isEmpty(dataRequestDetail.getConsentArtefactId())) {
-                            logger.info("Consent artefact is not yet received for data request id {}", dataRequestDetail.getDataRequestId());
+                        if (isEmpty(dataRequestDetail.getConsentArtefactId())) {
+                            logger.info("Consent artefact is not yet received for data request id {}",
+                                    dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getConsentRequestedAt(),
@@ -129,7 +147,8 @@ public class HealthInfoManager {
                         }
 
                         if (Objects.isNull(dataRequestDetail.getDataPartStatus())) {
-                            logger.info("Data is not yet received for data request id {}", dataRequestDetail.getDataRequestId());
+                            logger.info("Data is not yet received for data request id {}",
+                                    dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getDataFlowRequestedAt(),
@@ -138,37 +157,36 @@ public class HealthInfoManager {
                             return;
                         }
 
-                        logger.info("Data recieved  for data request id {}", dataRequestDetail.getDataRequestId());
+                        logger.info("Data received  for data request id {}", dataRequestDetail.getDataRequestId());
                         patientHealthInfoStatuses.add(statusBuilder.status(getStatusFor(dataRequestDetails)).build());
                     });
 
-                    return Flux.fromIterable(patientHealthInfoStatuses);
+                    return fromIterable(patientHealthInfoStatuses);
                 });
     }
 
     //TODO: If someone knows a better way to do it please update this.
-    private boolean isUUID(String maybeUUID){
+    private boolean isUUID(String maybeUUID) {
         try {
-            UUID.fromString(maybeUUID);
+            fromString(maybeUUID);
             return true;
-        }catch(Exception e) {
+        } catch (Exception e) {
             return false;
         }
     }
 
     private DataRequestStatus getStatusAgainstDate(LocalDateTime dateTime, Integer withinMinutes) {
-        return LocalDateTime.now(ZoneOffset.UTC).isAfter(dateTime.plusMinutes(withinMinutes))
-                ? DataRequestStatus.ERRORED
-                : DataRequestStatus.PROCESSING;
+        return now(UTC).isAfter(dateTime.plusMinutes(withinMinutes)) ? ERRORED : PROCESSING;
     }
 
     private DataRequestStatus getStatusFor(List<PatientDataRequestDetail> dataRequestDetails) {
-        var statuses = dataRequestDetails.stream().map(PatientDataRequestDetail::getDataPartStatus)
+        var statuses = dataRequestDetails.stream()
+                .map(PatientDataRequestDetail::getDataPartStatus)
                 .collect(Collectors.toList());
         if (isProcessing(statuses)) {
             return DataRequestStatus.PROCESSING;
         }
-        if(isErrored(statuses)){
+        if (isErrored(statuses)) {
             return DataRequestStatus.ERRORED;
         }
         if (isPartial(statuses)) {
@@ -178,7 +196,7 @@ public class HealthInfoManager {
     }
 
     private boolean isPartial(List<HealthInfoStatus> statuses) {
-        return statuses.stream().anyMatch(status -> status.equals(HealthInfoStatus.PARTIAL));
+        return statuses.stream().anyMatch(status -> status.equals(PARTIAL));
     }
 
     private boolean isErrored(List<HealthInfoStatus> statuses) {
@@ -186,16 +204,17 @@ public class HealthInfoManager {
     }
 
     private boolean isProcessing(List<HealthInfoStatus> statuses) {
-        return statuses.stream().anyMatch(status -> status.equals(HealthInfoStatus.PROCESSING) || status.equals(HealthInfoStatus.RECEIVED));
+        return statuses.stream()
+                .anyMatch(status -> status.equals(HealthInfoStatus.PROCESSING) || status.equals(RECEIVED));
     }
 
     private boolean isConsentNotExpired(Map<String, String> consentDetail) {
         var consentExpiryDate = LocalDateTime.parse(consentDetail.get("consentExpiryDate"));
-        return consentExpiryDate.isAfter(LocalDateTime.now(ZoneOffset.UTC));
+        return consentExpiryDate.isAfter(now(UTC));
     }
 
     private boolean isGrantedConsent(Map<String, String> consentDetail) {
-        return consentDetail.get("status").equals(ConsentStatus.GRANTED.toString());
+        return consentDetail.get(STATUS).equals(ConsentStatus.GRANTED.toString());
     }
 
     private boolean isValidRequester(String requesterId, Map<String, String> consentDetail) {
@@ -207,13 +226,13 @@ public class HealthInfoManager {
                 .map(healthInfo -> DataEntry.builder()
                         .hipId(hipId)
                         .hipName(hipName)
-                        .status(toStatus((String) healthInfo.get("status")))
+                        .status(toStatus((String) healthInfo.get(STATUS)))
                         .data(healthInfo.get("data"))
                         .build());
     }
 
     private EntryStatus toStatus(String status) {
-        if ((status != null) && !"".equals(status)) {
+        if (hasText(status)) {
             return EntryStatus.valueOf(status);
         }
         return null;
