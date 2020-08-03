@@ -33,7 +33,6 @@ jobs:
         env:
           IMAGE_NAME: nha20/jas-health-information-user
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          #docker build -t $IMAGE_NAME:$RELEASE_VERSION -t $IMAGE_NAME:latest .
         run: docker build -t $IMAGE_NAME:$RELEASE_VERSION -t $IMAGE_NAME:latest .
       - name: Push Docker Container to Registry
         env:
