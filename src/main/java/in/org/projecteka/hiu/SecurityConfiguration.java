@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -128,14 +129,18 @@ public class SecurityConfiguration {
             if (isSafe(path)) {
                 return empty();
             }
-            var token = exchange.getRequest().getHeaders().getFirst(authHeader);
-
-            if (isEmpty(token)) {
-                return error(unauthorizedRequester());
-            }
 
             if (isCMPatientRequest(path, exchange.getRequest().getMethod())) {
-                return checkUserToken(token).switchIfEmpty(error(unauthorizedRequester()));
+                var patientToken = exchange.getRequest().getHeaders().getFirst(authHeader);
+                return isEmpty(patientToken)
+                        ? error(unauthorizedRequester())
+                        : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
+            }
+
+            var token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
+            if(isEmpty(token)){
+                return error(unauthorizedRequester());
             }
 
             if (isGatewayOnlyRequest(path)) {

@@ -130,13 +130,13 @@ public class HealthInfoManager {
                                         serviceProperties.getDataFlowRequestWaitTime()))
                                 .build();
 
-                        if (StringUtils.isEmpty(dataRequestDetail.getConsentRequestId())) {
+                        if (isEmpty(dataRequestDetail.getConsentRequestId())) {
                             logger.info("Consent request is not yet created for data request id {}", dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(healthInfoStatus);
                             return;
                         }
 
-                        if (StringUtils.isEmpty(dataRequestDetail.getConsentArtefactId())) {
+                        if (isEmpty(dataRequestDetail.getConsentArtefactId())) {
                             logger.info("Consent artefact is not yet received for data request id {}", dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(healthInfoStatus);
                             return;
