@@ -18,6 +18,7 @@ import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CMAccountServiceAuthenticator;
+import in.org.projecteka.hiu.common.CMPatientAccountAuthenticator;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
@@ -660,11 +661,20 @@ public class HiuConfiguration {
         return new DefaultJWTProcessor<>();
     }
 
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak", matchIfMissing = true)
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak")
     @Bean("userAuthenticator")
     public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                            ConfigurableJWTProcessor<SecurityContext> jwtProcessor) {
         return new CMPatientAuthenticator(jwkSet, jwtProcessor);
+    }
+
+    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
+    @Bean("userAuthenticator")
+    public Authenticator CMPatientAccountAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
+                                                ConfigurableJWTProcessor<SecurityContext> jwtProcessor,
+                                                SessionServiceClient sessionServiceClient) {
+        return new CMPatientAccountAuthenticator(new CMAccountServiceAuthenticator(sessionServiceClient),
+                new CMPatientAuthenticator(jwkSet, jwtProcessor));
     }
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
