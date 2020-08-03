@@ -13,8 +13,7 @@ hiu:
     maxPageSize: 100
     localStoragePath: /tmp/
     #Time in minutes
-    consentRequestWaitTime: 1
-    consentArtefactWaitTime: 1
+    dataFlowRequestWaitTime: 1
     dataPartWaitTime: 1
   userservice:
     jwkUrl: http://localhost:9001/auth/realms/consent-manager/protocol/openid-connect/certs

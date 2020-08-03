@@ -124,25 +124,27 @@ public class HealthInfoManager {
                                 .hipId(dataRequestDetail.getHipId())
                                 .requestId(dataRequestDetail.getDataRequestId());
 
+                        PatientHealthInfoStatus healthInfoStatus = statusBuilder
+                                .status(getStatusAgainstDate(
+                                        dataRequestDetail.getPatientDataRequestedAt(),
+                                        serviceProperties.getDataFlowRequestWaitTime()))
+                                .build();
+
                         if (isEmpty(dataRequestDetail.getConsentRequestId())) {
-                            logger.info("Consent request is not yet created for data request id {}",
-                                    dataRequestDetail.getDataRequestId());
-                            patientHealthInfoStatuses.add(statusBuilder
-                                    .status(getStatusAgainstDate(
-                                            dataRequestDetail.getPatientDataRequestedAt(),
-                                            serviceProperties.getConsentRequestWaitTime()))
-                                    .build());
+                            logger.info("Consent request is not yet created for data request id {}", dataRequestDetail.getDataRequestId());
+                            patientHealthInfoStatuses.add(healthInfoStatus);
                             return;
                         }
 
                         if (isEmpty(dataRequestDetail.getConsentArtefactId())) {
-                            logger.info("Consent artefact is not yet received for data request id {}",
-                                    dataRequestDetail.getDataRequestId());
-                            patientHealthInfoStatuses.add(statusBuilder
-                                    .status(getStatusAgainstDate(
-                                            dataRequestDetail.getConsentRequestedAt(),
-                                            serviceProperties.getConsentArtefactWaitTime()))
-                                    .build());
+                            logger.info("Consent artefact is not yet received for data request id {}", dataRequestDetail.getDataRequestId());
+                            patientHealthInfoStatuses.add(healthInfoStatus);
+                            return;
+                        }
+
+                        if(Objects.isNull(dataRequestDetail.getDataFlowRequestedAt())){
+                            logger.info("Data flow is not yet requested for data request id {}", dataRequestDetail.getDataRequestId());
+                            patientHealthInfoStatuses.add(healthInfoStatus);
                             return;
                         }
 
