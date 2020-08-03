@@ -74,7 +74,7 @@ public class ConceptValidatorTest {
     @Test
     public void validateHiType() {
         StepVerifier
-                .create(validator.validateHITypes(Arrays.asList(HIType.CONDITION.getValue(), "DiagnosticReport", "Observation", "MedicationRequest")))
+                .create(validator.validateHITypes(Arrays.asList(HIType.OP_CONSULTATION_NOTE.getValue(), "DiagnosticReport")))
                 .expectNext(true)
                 .expectComplete()
                 .verify();
