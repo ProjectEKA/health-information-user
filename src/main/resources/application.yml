@@ -15,9 +15,8 @@ hiu:
     maxPageSize: ${MAX_PAGE_SIZE}
     localStoragePath: ${LOCAL_STORAGE_PATH}
     #Time in minutes
-    consentRequestWaitTime: ${DATA_FLOW_CONSENT_REQUEST_WAIT_TIME}
-    consentArtefactWaitTime: ${DATA_FLOW_CONSENT_ARTEFACT_WAIT_TIME}
-    dataPartWaitTime: ${DATA_FLOW_PART_WAIT_TIME}
+    dataFlowRequestWaitTime: ${DATA_FLOW_REQUEST_WAIT_TIME:1}
+    dataPartWaitTime: ${DATA_FLOW_PART_WAIT_TIME:1440}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}
@@ -54,6 +53,8 @@ hiu:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:password}
+    keep-alive-enabled: ${KEEP_ALIVE_ENABLED:false}
+    retry: ${REDIS_RETRY:0}
   accountservice:
     usingUnsecureSSL: ${Account_Service_Uses_Unsecure_SSL:true}
     url: ${Account_Service_Url}
