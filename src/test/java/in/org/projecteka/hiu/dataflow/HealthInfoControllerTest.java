@@ -109,8 +109,7 @@ class HealthInfoControllerTest {
         MockitoAnnotations.initMocks(this);
         when(serviceProperties.getDefaultPageSize()).thenReturn(20);
         when(serviceProperties.getMaxPageSize()).thenReturn(20);
-        when(serviceProperties.getConsentRequestWaitTime()).thenReturn(2);
-        when(serviceProperties.getConsentArtefactWaitTime()).thenReturn(2);
+        when(serviceProperties.getDataFlowRequestWaitTime()).thenReturn(2);
         when(serviceProperties.getDataPartWaitTime()).thenReturn(2);
     }
 
@@ -307,7 +306,7 @@ class HealthInfoControllerTest {
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .consentArtefactId(null)
-                .consentRequestedAt(LocalDateTime.now(ZoneOffset.UTC))
+                .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1))
                 .build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
@@ -388,7 +387,7 @@ class HealthInfoControllerTest {
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .consentArtefactId(null)
-                .consentRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
+                .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
                 .build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));

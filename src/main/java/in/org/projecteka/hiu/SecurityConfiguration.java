@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static in.org.projecteka.hiu.ClientError.authenticationFailed;
 import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
@@ -130,21 +128,20 @@ public class SecurityConfiguration {
             if (isSafe(path)) {
                 return empty();
             }
+            var token = exchange.getRequest().getHeaders().getFirst(authHeader);
+
+            if (isEmpty(token)) {
+                return error(unauthorizedRequester());
+            }
 
             if (isCMPatientRequest(path, exchange.getRequest().getMethod())) {
-                var patientToken = exchange.getRequest().getHeaders().getFirst(authHeader);
-                return isEmpty(patientToken)
-                       ? error(unauthorizedRequester())
-                       : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
+                return checkUserToken(token).switchIfEmpty(error(unauthorizedRequester()));
             }
-
-            var token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
             if (isGatewayOnlyRequest(path)) {
-                return isEmpty(token)
-                       ? error(authenticationFailed())
-                       : checkGateway(token).switchIfEmpty(error(unauthorizedRequester()));
+                return checkGateway(token).switchIfEmpty(error(unauthorizedRequester()));
             }
+
             return check(token).switchIfEmpty(error(unauthorizedRequester()));
         }
 

@@ -15,7 +15,6 @@ public class PatientDataRequestDetail {
     private final String consentRequestId;
     private final String consentArtefactId;
     private final LocalDateTime patientDataRequestedAt;
-    private final LocalDateTime consentRequestedAt;
     private final LocalDateTime dataFlowRequestedAt;
     private final HealthInfoStatus dataPartStatus;
 }

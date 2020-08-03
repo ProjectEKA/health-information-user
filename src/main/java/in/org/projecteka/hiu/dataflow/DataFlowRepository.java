@@ -65,7 +65,6 @@ public class DataFlowRepository {
     private static final String FETCH_PATIENT_DATA_REQUEST_DETAILS = "SELECT " +
             "pcr.hip_id, pcr.data_request_id::text, " +
             "pcr.date_created AS patient_data_requested_at, " +
-            "pcr.date_modified AS consent_requested_at, " +
             "dfr.date_created AS data_flow_requested_at, " +
             "dfp.status AS data_part_status, pcr.consent_request_id::text, ca.consent_artefact_id " +
             "FROM patient_consent_request pcr " +
@@ -294,7 +293,6 @@ public class DataFlowRepository {
                                 .hipId(row.getString("hip_id"))
                                 .dataRequestId(row.getString("data_request_id"))
                                 .patientDataRequestedAt(row.getLocalDateTime("patient_data_requested_at"))
-                                .consentRequestedAt(row.getLocalDateTime("consent_requested_at"))
                                 .dataFlowRequestedAt(row.getLocalDateTime("data_flow_requested_at"))
                                 .dataPartStatus(HealthInfoStatus.fromString(row.getString("data_part_status")))
                                 .consentRequestId(row.getString("consent_request_id"))
