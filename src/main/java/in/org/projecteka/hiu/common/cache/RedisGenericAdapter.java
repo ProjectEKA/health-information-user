@@ -45,45 +45,32 @@ public class RedisGenericAdapter<T> implements CacheAdapter<String, T> {
         return StringUtils.hasText(prefix) ? format("%s_%s", prefix, key) : key;
     }
 
-    @Override
-    public Mono<T> get(String key) {
-        return defer(() -> redisOperations.opsForValue().get(prefixThe(key)))
+    private <U> Mono<U> retryable(Mono<U> producer) {
+        return defer(() -> producer)
                 .doOnError(error -> logger.error(error.getMessage(), error))
                 .retryWhen(Retry
                         .backoff(retry, Duration.ofMillis(100)).jitter(0d)
                         .doAfterRetry(rs -> logger.error(RETRIED_AT, now()))
                         .onRetryExhaustedThrow((spec, rs) -> rs.failure()));
+    }
+
+    @Override
+    public Mono<T> get(String key) {
+        return retryable(redisOperations.opsForValue().get(prefixThe(key)));
     }
 
     @Override
     public Mono<Void> put(String key, T value) {
-        return defer(() -> redisOperations.opsForValue().set(prefixThe(key), value, expiration))
-                .doOnError(error -> logger.error(error.getMessage(), error))
-                .retryWhen(Retry
-                        .backoff(retry, Duration.ofMillis(100)).jitter(0d)
-                        .doAfterRetry(rs -> logger.error(RETRIED_AT, now()))
-                        .onRetryExhaustedThrow((spec, rs) -> rs.failure()))
-                .then();
+        return retryable(redisOperations.opsForValue().set(prefixThe(key), value, expiration)).then();
     }
 
     @Override
     public Mono<Void> invalidate(String key) {
-        return defer(() -> redisOperations.expire(prefixThe(key), ofMinutes(0)))
-                .doOnError(error -> logger.error(error.getMessage(), error))
-                .retryWhen(Retry
-                        .backoff(retry, Duration.ofMillis(100)).jitter(0d)
-                        .doAfterRetry(rs -> logger.error(RETRIED_AT, now()))
-                        .onRetryExhaustedThrow((spec, rs) -> rs.failure()))
-                .then();
+        return retryable(redisOperations.expire(prefixThe(key), ofMinutes(0))).then();
     }
 
     @Override
     public Mono<Boolean> exists(String key) {
-        return defer(() -> redisOperations.hasKey(prefixThe(key)))
-                .doOnError(error -> logger.error(error.getMessage(), error))
-                .retryWhen(Retry
-                        .fixedDelay(retry, Duration.ofMillis(100)).jitter(0d)
-                        .doAfterRetry(rs -> logger.error(RETRIED_AT, now()))
-                        .onRetryExhaustedThrow((spec, rs) -> rs.failure()));
+        return retryable(redisOperations.hasKey(prefixThe(key)));
     }
 }

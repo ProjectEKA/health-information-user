@@ -137,4 +137,27 @@ class RedisGenericAdapterTest {
                 .assertNext(exist -> assertThat(exist).isTrue())
                 .verifyComplete();
     }
+
+    @Test
+    void putWithRetry() {
+        var key = string();
+        var value = string();
+        var expiration = ofMinutes(EXPIRATION_IN_MINUTES);
+        when(redisOperations.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.set("pre_" + key, value, expiration)).thenAnswer(new Answer<Mono<Boolean>>() {
+            private int numberOfTimesCalled = 0;
+
+            @Override
+            public Mono<Boolean> answer(InvocationOnMock invocation) {
+                return defer(() -> {
+                    if (numberOfTimesCalled++ == RETRY) {
+                        return just(true);
+                    }
+                    return error(new Exception("Connection error"));
+                });
+            }
+        });
+
+        create(retryableAdapter.put(key, value)).verifyComplete();
+    }
 }
