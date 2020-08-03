@@ -53,24 +53,12 @@
           "system": "http://projecteka.in/ValueSet/health-info-type",
           "concept": [
             {
-              "code": "Condition",
-              "display": "Complaints/Encounter Diagnosis"
-            },
-            {
-              "code": "Observation",
-              "display": "Clinical Notes/Examination"
+              "code": "OPConsultation",
+              "display": "OP Consultation"
             },
             {
               "code": "DiagnosticReport",
               "display": "Diagnostic Reports"
-            },
-            {
-              "code": "MedicationRequest",
-              "display": "Prescribed Medications"
-            },
-            {
-              "code": "DocumentReference",
-              "display": "Clinical Documents"
             },
             {
               "code": "DischargeSummary",

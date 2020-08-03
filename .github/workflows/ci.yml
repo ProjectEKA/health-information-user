@@ -3,7 +3,7 @@ name: HIU master build
 on:
   push:
     branches:
-      - master
+      - hiu-fork
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,16 +26,16 @@ jobs:
       - name: Docker Registry
         env:
           DOCKER_REGISTRY_URL: docker.io
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_NHA_PASSWORD }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_NHA_USERNAME }}
         run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY_URL
       - name: Build docker image
         env:
-          CONTAINER_REPO_NAME: health-information-user
+          IMAGE_NAME: nha20/jas-health-information-user
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        run: docker build -t $DOCKER_USERNAME/$CONTAINER_REPO_NAME:$RELEASE_VERSION .
+        run: docker build -t $IMAGE_NAME:$RELEASE_VERSION -t $IMAGE_NAME:latest .
       - name: Push Docker Container to Registry
         env:
-          CONTAINER_REPO_NAME: health-information-user
+          IMAGE_NAME: nha20/jas-health-information-user
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        run: docker push $DOCKER_USERNAME/$CONTAINER_REPO_NAME:$RELEASE_VERSION
+        run: docker push $IMAGE_NAME
