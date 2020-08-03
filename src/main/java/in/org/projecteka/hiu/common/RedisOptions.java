@@ -15,4 +15,6 @@ public class RedisOptions {
     private final String host;
     private final int port;
     private final String password;
+    private final boolean keepAliveEnabled;
+    private final int retry;
 }
