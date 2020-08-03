@@ -15,8 +15,8 @@ hiu:
     maxPageSize: ${MAX_PAGE_SIZE}
     localStoragePath: ${LOCAL_STORAGE_PATH}
     #Time in minutes
-    dataFlowRequestWaitTime: ${DATA_FLOW_REQUEST_WAIT_TIME}
-    dataPartWaitTime: ${DATA_FLOW_PART_WAIT_TIME}
+    dataFlowRequestWaitTime: ${DATA_FLOW_REQUEST_WAIT_TIME:1}
+    dataPartWaitTime: ${DATA_FLOW_PART_WAIT_TIME:1440}
   database:
     host: ${POSTGRES_HOST}
     port: ${POSTGRES_PORT}
