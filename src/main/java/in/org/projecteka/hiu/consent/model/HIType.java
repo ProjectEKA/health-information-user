@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum HIType {
-    OP_CONSULTATION_NOTE("OPConsultationNote"),
+    OP_CONSULTATION("OPConsultation"),
     DIAGNOSTIC_REPORT("DiagnosticReport"),
     PRESCRIPTION("Prescription"),
     DISCHARGE_SUMMARY("DischargeSummary");

@@ -53,8 +53,8 @@
           "system": "http://projecteka.in/ValueSet/health-info-type",
           "concept": [
             {
-              "code": "OPConsultationNote",
-              "display": "OP Consultation Note"
+              "code": "OPConsultation",
+              "display": "OP Consultation"
             },
             {
               "code": "DiagnosticReport",
