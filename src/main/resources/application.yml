@@ -58,7 +58,7 @@ hiu:
   accountservice:
     usingUnsecureSSL: ${Account_Service_Uses_Unsecure_SSL:true}
     url: ${Account_Service_Url}
-  loginMethod: ${LOGIN_METHOD}
+  loginMethod: ${LOGIN_METHOD:both}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}

@@ -670,7 +670,7 @@ public class HiuConfiguration {
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
     @Bean("userAuthenticator")
-    public Authenticator CMPatientAccountAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
+    public Authenticator cmPatientAccountAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                                 ConfigurableJWTProcessor<SecurityContext> jwtProcessor,
                                                 SessionServiceClient sessionServiceClient) {
         return new CMPatientAccountAuthenticator(new CMAccountServiceAuthenticator(sessionServiceClient),
