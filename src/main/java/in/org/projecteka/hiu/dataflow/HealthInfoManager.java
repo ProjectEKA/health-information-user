@@ -104,9 +104,9 @@ public class HealthInfoManager {
                 .zipWith(healthInformationRepository.getTotalCountOfEntries(transactionIds));
     }
 
-    public String getTransactionIdForConsentRequest(String consentRequestId) {
+    public Mono<String> getTransactionIdForConsentRequest(String consentRequestId) {
         return consentRepository.getConsentArtefactId(consentRequestId)
-                .flatMap(dataFlowRepository::getTransactionId).block();
+                .flatMap(dataFlowRepository::getTransactionId);
     }
 
     public Flux<PatientHealthInfoStatus> fetchHealthInformationStatus(List<String> dataRequestIds) {

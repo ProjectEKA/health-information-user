@@ -75,13 +75,19 @@ public class HealthInfoController {
     public Mono<ResponseEntity<FileSystemResource>> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @PathVariable(value = "file-name") String fileName) {
-        String transactionId = healthInfoManager.getTransactionIdForConsentRequest(consentRequestId);
-        Path filePath = Paths.get(serviceProperties.getLocalStoragePath(), TokenUtils.encode(consentRequestId), TokenUtils.encode(transactionId), fileName);
-        String contentDispositionHeaderValue = String.format("attachment; %s", filePath.getFileName().toString());
-        return Mono.just(ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, contentDispositionHeaderValue)
-                .contentType(responseContentType(filePath))
-                .body(new FileSystemResource(filePath)));
+        return healthInfoManager.getTransactionIdForConsentRequest(consentRequestId)
+                .map(transactionId -> Paths.get(
+                        serviceProperties.getLocalStoragePath(),
+                        TokenUtils.encode(consentRequestId),
+                        TokenUtils.encode(transactionId), fileName))
+                .map(filePath -> {
+                    var contentDispositionHeaderValue = String.format("attachment; %s", filePath.getFileName().toString());
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.CONTENT_DISPOSITION, contentDispositionHeaderValue)
+                            .contentType(responseContentType(filePath))
+                            .body(new FileSystemResource(filePath));
+                });
+
     }
 
     @PostMapping(API_PATH_GET_HEALTH_INFO_STATUS)
