@@ -25,7 +25,7 @@ public class SessionServiceClient {
         return webClient
                 .post()
                 .uri(uriBuilder -> uriBuilder.path(VALIDATE_TOKEN).build())
-                .header(X_TOKEN_HEADER_NAME, BEARER + request)
+                .header(X_TOKEN_HEADER_NAME, BEARER + request.getAuthToken())
                 .header(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                 .body(Mono.just(request),TokenValidationRequest.class)
                 .accept(APPLICATION_JSON)
