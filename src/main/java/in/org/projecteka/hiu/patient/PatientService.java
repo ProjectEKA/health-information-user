@@ -1,6 +1,5 @@
 package in.org.projecteka.hiu.patient;
 
-import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
@@ -16,15 +15,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import static in.org.projecteka.hiu.ClientError.gatewayTimeOut;
+import static in.org.projecteka.hiu.ClientError.unknownError;
+import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
 import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
 import static in.org.projecteka.hiu.common.ErrorMappings.get;
+import static java.time.Duration.ofMillis;
 import static reactor.core.publisher.Mono.defer;
 import static reactor.core.publisher.Mono.error;
 import static reactor.core.publisher.Mono.just;
@@ -39,28 +41,28 @@ public class PatientService {
     private final GatewayProperties gatewayProperties;
     private final CacheAdapter<String, PatientSearchGatewayResponse> gatewayResponseCache;
 
-    private static Mono<? extends Patient> apply(PatientSearchGatewayResponse response) {
+    private static Mono<Patient> apply(PatientSearchGatewayResponse response) {
         if (response.getPatient() != null) {
             return just(response.getPatient().toPatient());
         }
         if (response.getError() != null) {
             return error(get(response.getError().getCode()));
         }
-        return error(ClientError.unknownError());
+        logger.error("Gateway response: {}", response);
+        return error(unknownError());
     }
 
     public Mono<Patient> findPatientWith(String id) {
         return getFromCache(id, () ->
         {
-            logger.info("patient details for: {}", id);
+            logger.info("about to get patient details from CM for: {}", id);
             var cmSuffix = getCmSuffix(id);
             var request = getFindPatientRequest(id);
             return scheduleThis(gatewayServiceClient.findPatientWith(request, cmSuffix))
-                    .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout()))
-                    .responseFrom(discard ->
-                            Mono.defer(() -> getFromCache(request.getRequestId(), Mono::empty)))
-                    .onErrorResume(DelayTimeoutException.class, discard -> error(ClientError.gatewayTimeOut()))
-                    .onErrorResume(TimeoutException.class, discard -> error(ClientError.gatewayTimeOut()))
+                    .timeout(ofMillis(gatewayProperties.getRequestTimeout()))
+                    .responseFrom(discard -> defer(() -> getFromCache(request.getRequestId())))
+                    .onErrorResume(DelayTimeoutException.class, discard -> error(gatewayTimeOut()))
+                    .onErrorResume(TimeoutException.class, discard -> error(gatewayTimeOut()))
                     .flatMap(PatientService::apply);
         });
     }
@@ -78,13 +80,8 @@ public class PatientService {
         return cache.get(key).switchIfEmpty(defer(function));
     }
 
-    private Mono<PatientSearchGatewayResponse> getFromCache(UUID requestId,
-                                                            Supplier<Mono<PatientSearchGatewayResponse>> function) {
-        return gatewayResponseCache.get(requestId.toString()).switchIfEmpty(defer(function));
-    }
-
-    private String getCmSuffix(String id) {
-        return id.split("@")[1];
+    private Mono<PatientSearchGatewayResponse> getFromCache(UUID requestId) {
+        return gatewayResponseCache.get(requestId.toString());
     }
 
     public Mono<Void> onFindPatient(PatientSearchGatewayResponse response) {
