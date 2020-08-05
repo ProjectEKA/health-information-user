@@ -96,7 +96,7 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError gatewayTimeOut() {
-        return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY,  "Could not connect to Gateway")));
+        return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY, "Could not connect to Gateway")));
     }
 
     public static ClientError consentRequestAlreadyUpdated() {
@@ -105,11 +105,12 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError unknownError() {
-        return new ClientError(INTERNAL_SERVER_ERROR, new ErrorRepresentation(new Error(ErrorCode.UNKNOWN_ERROR,"Unknown error")));
+        return new ClientError(INTERNAL_SERVER_ERROR, new ErrorRepresentation(new Error(UNKNOWN_ERROR,
+                "Unknown error")));
     }
 
     public static ClientError patientNotFound() {
-        return new ClientError(NOT_FOUND, new ErrorRepresentation(new Error(ErrorCode.PATIENT_NOT_FOUND,"Patient not found")));
+        return new ClientError(NOT_FOUND, new ErrorRepresentation(new Error(ErrorCode.PATIENT_NOT_FOUND, "Patient not found")));
     }
 
     public static ClientError unAuthorized() {
