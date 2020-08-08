@@ -5,9 +5,11 @@ import in.org.projecteka.hiu.common.RespError;
 import in.org.projecteka.hiu.patient.PatientRepresentation;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.UUID;
 
+@ToString
 @Data
 @Builder
 public class PatientSearchGatewayResponse {

@@ -13,6 +13,8 @@ import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static reactor.core.publisher.Mono.error;
+
 @AllArgsConstructor
 public class CustomScheduler<T> {
     private static final Logger logger = LoggerFactory.getLogger(CustomScheduler.class);
@@ -54,11 +56,9 @@ public class CustomScheduler<T> {
                 .map(iteration -> calculateDuration(minimum, maximum, iteration))
                 .concatMap(delay -> {
                     if (Instant.now().isAfter(finish)) {
-                        return Mono.error(new DelayTimeoutException());
+                        return error(new DelayTimeoutException());
                     }
-                    return Mono
-                            .delay(delay)
-                            .doOnSubscribe(logDelay(delay));
+                    return Mono.delay(delay).doOnSubscribe(logDelay(delay));
                 });
     }
 

@@ -9,14 +9,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-
 import static in.org.projecteka.hiu.clients.PatientSearchThrowable.notFound;
 import static in.org.projecteka.hiu.clients.PatientSearchThrowable.unknown;
 import static in.org.projecteka.hiu.common.Constants.X_CM_ID;
 import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
+import static java.time.Duration.ofMillis;
 import static java.util.function.Predicate.not;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static reactor.core.publisher.Mono.error;
+import static reactor.core.publisher.Mono.just;
 
 public class GatewayServiceClient {
     private static final String GATEWAY_PATH_CONSENT_REQUESTS_INIT = "/consent-requests/init";
@@ -41,13 +43,11 @@ public class GatewayServiceClient {
                         .uri(GATEWAY_PATH_CONSENT_REQUESTS_INIT)
                         .header(AUTHORIZATION, token)
                         .header(X_CM_ID, cmSuffix)
-                        .body(Mono.just(request),
-                                ConsentRequest.class)
+                        .body(just(request), ConsentRequest.class)
                         .retrieve()
-                        .onStatus(not(HttpStatus::is2xxSuccessful),
-                                clientResponse -> Mono.error(creationFailed()))
+                        .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(creationFailed()))
                         .toBodilessEntity()
-                        .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout())))
+                        .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
     }
 
@@ -58,14 +58,12 @@ public class GatewayServiceClient {
                         .uri("/patients/find")
                         .header(AUTHORIZATION, token)
                         .header(X_CM_ID, cmSuffix)
-                        .body(Mono.just(request),
-                                FindPatientRequest.class)
+                        .body(just(request), FindPatientRequest.class)
                         .retrieve()
-                        .onStatus(httpStatus -> httpStatus == HttpStatus.NOT_FOUND,
-                                clientResponse -> Mono.error(notFound()))
-                        .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> Mono.error(unknown()))
+                        .onStatus(httpStatus -> httpStatus == NOT_FOUND, clientResponse -> error(notFound()))
+                        .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(unknown()))
                         .toBodilessEntity()
-                        .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout()))
+                        .timeout(ofMillis(gatewayProperties.getRequestTimeout()))
                         .thenReturn(Boolean.TRUE));
     }
 
@@ -76,13 +74,11 @@ public class GatewayServiceClient {
                         .uri(GATEWAY_PATH_CONSENT_ARTEFACT_FETCH)
                         .header(AUTHORIZATION, token)
                         .header(X_CM_ID, cmSuffix)
-                        .body(Mono.just(request),
-                                ConsentArtefactRequest.class)
+                        .body(just(request), ConsentArtefactRequest.class)
                         .retrieve()
-                        .onStatus(not(HttpStatus::is2xxSuccessful),
-                                clientResponse -> Mono.error(creationFailed()))
+                        .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(creationFailed()))
                         .toBodilessEntity()
-                        .timeout(Duration.ofMillis(gatewayProperties.getRequestTimeout())))
+                        .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
     }
 }
