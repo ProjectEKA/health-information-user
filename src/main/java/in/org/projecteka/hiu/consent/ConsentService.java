@@ -315,7 +315,14 @@ public class ConsentService {
                     var status = (ConsentStatus) result.get(STATUS);
                     return Mono.zip(patientService.findPatientWith(consentRequest.getPatient().getId()),
                             mergeWithArtefactStatus(consentRequest, status, consentRequestId),
-                            just(consentRequestId));
+                            just(consentRequestId))
+                            .onErrorResume(error -> error instanceof ClientError &&
+                                            ((ClientError) error).getError().getError().getCode() == PATIENT_NOT_FOUND,
+                                    error -> {
+                                        logger.error("Consent request created for unknown user.");
+                                        logger.error(error.getMessage(), error);
+                                        return empty();
+                                    });
                 })
                 .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(),
                         patientConsentRequest.getT2(),
