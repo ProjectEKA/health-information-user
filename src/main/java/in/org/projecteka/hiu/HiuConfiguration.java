@@ -139,7 +139,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
-import static io.lettuce.core.ReadFrom.REPLICA_PREFERRED;
+import static io.lettuce.core.ReadFrom.MASTER_PREFERRED;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
 
@@ -179,16 +179,20 @@ public class HiuConfiguration {
     @Bean("Lettuce")
     ReactiveRedisConnectionFactory redisConnection(RedisOptions redisOptions) {
         var hiu = "HIU-Redis-Client";
+        var configuration = new RedisStandaloneConfiguration(redisOptions.getHost(), redisOptions.getPort());
+        configuration.setPassword(redisOptions.getPassword());
+        if (redisOptions.useDefaultClientConfig()) {
+            return new LettuceConnectionFactory(configuration);
+        }
         var clientOptions = ClientOptions.builder()
                 .socketOptions(SocketOptions.builder().keepAlive(redisOptions.isKeepAliveEnabled()).build())
                 .build();
-        var clientConfiguration = LettuceClientConfiguration.builder()
-                .clientName(hiu)
-                .clientOptions(clientOptions)
-                .readFrom(REPLICA_PREFERRED)
-                .build();
-        var configuration = new RedisStandaloneConfiguration(redisOptions.getHost(), redisOptions.getPort());
-        configuration.setPassword(redisOptions.getPassword());
+        var clientConfiguration =
+                LettuceClientConfiguration.builder()
+                        .clientName(hiu)
+                        .clientOptions(clientOptions)
+                        .readFrom(MASTER_PREFERRED)
+                        .build();
         return new LettuceConnectionFactory(configuration, clientConfiguration);
     }
 
