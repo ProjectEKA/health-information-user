@@ -32,6 +32,7 @@ import static in.org.projecteka.hiu.ClientError.unauthorizedRequester;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_FETCH_PATIENT_HEALTH_INFO;
 import static in.org.projecteka.hiu.common.Constants.API_PATH_GET_HEALTH_INFO_STATUS;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_HIU_NOTIFY;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FIND;
@@ -73,6 +74,7 @@ public class SecurityConfiguration {
                                                                "/**.png",
                                                                PATH_DATA_TRANSFER,
                                                                PATH_HEARTBEAT,
+                                                               INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO,
                                                                "/sessions",
                                                                "/config"};
 

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -69,6 +70,19 @@ public class PatientConsentRepository {
 
     private static final String DELETE_FROM_DATA_FLOW_REQUEST_KEYS = "DELETE FROM data_flow_request_keys " +
             "WHERE transaction_id IN (%s)";
+
+    private static final String SELECT_LATEST_RESOURCE_BY_CC_FOR_PATIENT_IN_HIP =
+                "SELECT hi.care_context_reference as care_context_reference, " +
+                    "dfr.consent_artefact_id as consent_artefact_id, MAX(dfp.latest_res_date) as max_res_date " +
+                "FROM patient_consent_request pcr " +
+                    "JOIN consent_artefact ca ON ca.consent_request_id=pcr.consent_request_id::text " +
+                    "JOIN data_flow_request dfr ON dfr.consent_artefact_id=ca.consent_artefact_id " +
+                    "JOIN data_flow_parts dfp on dfp.transaction_id=dfr.transaction_id " +
+                    "JOIN health_information hi ON hi.transaction_id=dfp.transaction_id " +
+                "WHERE pcr.patient_id=$1 AND pcr.hip_id=$2 AND dfp.status in ('SUCCEEDED', 'PARTIAL') " +
+                    "GROUP BY care_context_reference, dfr.consent_artefact_id";
+
+
 
     private final PgPool dbClient;
 
@@ -316,6 +330,25 @@ public class PatientConsentRepository {
 
     private String joinByComma(List<String> list) {
         return String.join(", ", list.stream().map(e -> String.format("'%s'", e)).collect(Collectors.toList()));
+    }
+
+    public Mono<List<Map<String, Object>>> getLatestResourceDateByHipCareContext(String patientId, String hipId) {
+        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_LATEST_RESOURCE_BY_CC_FOR_PATIENT_IN_HIP)
+                .execute(Tuple.of(patientId, hipId),
+                        handler -> {
+                            if (handler.failed()) {
+                                logger.error(handler.cause().getMessage(), handler.cause());
+                                monoSink.error(dbOperationFailure("Failed to get consent details from consent artefact table"));
+                            } else {
+                                List<Map<String, Object>> ccDetails = new ArrayList<>();
+                                handler.result().forEach(row -> {
+                                    ccDetails.add(Map.of("careContextReference", row.getString("care_context_reference"),
+                                            "consentArtefactId", row.getString("consent_artefact_id"),
+                                            "lastResourceDate", row.getLocalDateTime("max_res_date")));
+                                });
+                                monoSink.success(ccDetails);
+                            }
+                        }));
     }
 }
 
