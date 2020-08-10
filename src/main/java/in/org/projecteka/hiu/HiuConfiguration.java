@@ -19,6 +19,7 @@ import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CMAccountServiceAuthenticator;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
+import in.org.projecteka.hiu.common.CacheMethodProperty;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
@@ -27,6 +28,7 @@ import in.org.projecteka.hiu.common.UserAuthenticator;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.common.cache.LoadingCacheGenericAdapter;
 import in.org.projecteka.hiu.common.cache.RedisGenericAdapter;
+import in.org.projecteka.hiu.common.heartbeat.CacheHealth;
 import in.org.projecteka.hiu.common.heartbeat.Heartbeat;
 import in.org.projecteka.hiu.common.heartbeat.RabbitMQOptions;
 import in.org.projecteka.hiu.consent.ConceptValidator;
@@ -58,6 +60,8 @@ import in.org.projecteka.hiu.user.SessionService;
 import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.UserRepository;
 import io.lettuce.core.ClientOptions;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
 import io.lettuce.core.SocketOptions;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -85,6 +89,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
+import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
@@ -137,7 +144,7 @@ public class HiuConfiguration {
     }
 
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
-    @Bean
+    @Bean("Lettuce")
     ReactiveRedisConnectionFactory redisConnection(RedisOptions redisOptions) {
         var hiu = "HIU-Redis-Client";
         var clientOptions = ClientOptions.builder()
@@ -731,9 +738,38 @@ public class HiuConfiguration {
         return new GatewayServiceClient(builder, serviceProperties, gateway);
     }
 
+    @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "guava", matchIfMissing = true)
+    @Bean("Lettuce")
+    ReactiveRedisConnectionFactory dummyRedisConnection() {
+        return new ReactiveRedisConnectionFactory() {
+            @Override
+            public ReactiveRedisConnection getReactiveConnection() {
+                return null;
+            }
+
+            @Override
+            public ReactiveRedisClusterConnection getReactiveClusterConnection() {
+                return null;
+            }
+
+            @Override
+            public DataAccessException translateExceptionIfPossible(RuntimeException ex) {
+                return null;
+            }
+        };
+    }
+
     @Bean
-    public Heartbeat heartbeat(RabbitMQOptions rabbitMQOptions, DatabaseProperties databaseProperties) {
-        return new Heartbeat(rabbitMQOptions, databaseProperties);
+    public CacheHealth cacheHealth(@Qualifier("Lettuce") ReactiveRedisConnectionFactory redisConnectionFactory,
+                                   CacheMethodProperty cacheMethodProperty) {
+        return new CacheHealth(cacheMethodProperty, redisConnectionFactory);
+    }
+
+    @Bean
+    public Heartbeat heartbeat(RabbitMQOptions rabbitMQOptions,
+                               DatabaseProperties databaseProperties,
+                               CacheHealth cacheHealth) {
+        return new Heartbeat(rabbitMQOptions, databaseProperties, cacheHealth);
     }
 
     @Bean
