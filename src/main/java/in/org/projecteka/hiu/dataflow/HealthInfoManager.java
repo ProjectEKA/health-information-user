@@ -119,7 +119,6 @@ public class HealthInfoManager {
                 .flatMapMany(patientDataRequestDetails -> {
                     var detailsByDataReqId = patientDataRequestDetails.stream()
                             .collect(Collectors.groupingBy(PatientDataRequestDetail::getDataRequestId));
-
                     var patientHealthInfoStatuses = new ArrayList<PatientHealthInfoStatus>();
                     detailsByDataReqId.forEach((dataReqId, dataRequestDetails) -> {
                         var dataRequestDetail = dataRequestDetails.get(0);
@@ -219,7 +218,7 @@ public class HealthInfoManager {
     }
 
     private boolean isPartial(List<HealthInfoStatus> statuses) {
-        return statuses.stream().anyMatch(status -> status.equals(PARTIAL));
+        return statuses.stream().anyMatch(status -> status.equals(PARTIAL) || status.equals(HealthInfoStatus.ERRORED));
     }
 
     private boolean isErrored(List<HealthInfoStatus> statuses) {
