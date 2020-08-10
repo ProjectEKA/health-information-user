@@ -373,6 +373,10 @@ public class ConsentService {
         return consentTask.perform(notification, localDateTime);
     }
 
+    public Mono<List<Map<String, Object>>> getLatestCareContextResourceDates(String patientId, String hipId) {
+        return patientConsentRepository.getLatestResourceDateByHipCareContext(patientId, hipId);
+    }
+
     @PostConstruct
     private void postConstruct() {
         consentTasks.put(GRANTED, new GrantedConsentTask(consentRepository, gatewayServiceClient, responseCache));
