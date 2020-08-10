@@ -37,7 +37,7 @@ public class PatientConsentController {
                 );
     }
 
-    @GetMapping(INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO)
+    @PostMapping(INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO)
     @ResponseStatus(HttpStatus.OK)
     public Mono<List<Map<String, Object>>> careContextStatus(@RequestBody @Valid CareContextInfoRequest request) {
         return Mono.from(consentService.getLatestCareContextResourceDates(request.getPatientId(), request.getHipId()));
