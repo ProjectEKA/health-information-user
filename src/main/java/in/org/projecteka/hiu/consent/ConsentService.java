@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
+import static in.org.projecteka.hiu.ErrorCode.PATIENT_NOT_FOUND;
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static in.org.projecteka.hiu.common.Constants.PATIENT_REQUESTED_PURPOSE_CODE;
 import static in.org.projecteka.hiu.common.Constants.STATUS;
