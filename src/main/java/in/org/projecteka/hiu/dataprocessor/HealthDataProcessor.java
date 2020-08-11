@@ -93,12 +93,14 @@ public class HealthDataProcessor {
 
     private void processEntries(DataContext context) {
         try {
+            logger.info(String.format(
+                    "Received data from HIP for transaction: %s. Number of entries: %d. Trying to process data.",
+                    context.getTransactionId(), context.getNumberOfEntries()));
             updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING, null);
             String transactionId = context.getTransactionId();
             DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(transactionId).block();
             List<String> dataErrors = new ArrayList<>();
             List<StatusResponse> statusResponses = new ArrayList<>();
-            logger.info("Received data from HIP. Number of entries: " + context.getNumberOfEntries());
             context.getNotifiedData().getEntries().forEach(entry -> {
                 var entryToProcess = entry;
                 String dataPartNumber = context.getDataPartNumber();
