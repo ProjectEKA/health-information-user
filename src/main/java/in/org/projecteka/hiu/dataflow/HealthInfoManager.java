@@ -147,13 +147,27 @@ public class HealthInfoManager {
                             return;
                         }
 
-                        if (dataRequestDetails.stream().anyMatch(this::isStatusNull)) {
-                            logger.info("Data is not yet received for data request id {}",
+
+                        if (dataRequestDetails.stream().allMatch(this::isStatusNull)) {
+                            logger.info("No data parts are yet received for data request id {}",
                                     dataRequestDetail.getDataRequestId());
                             patientHealthInfoStatuses.add(statusBuilder
                                     .status(getStatusAgainstDate(
                                             dataRequestDetail.getDataFlowRequestedAt(),
                                             serviceProperties.getDataPartWaitTime()))
+                                    .build());
+                            return;
+                        }
+
+                        if (dataRequestDetails.stream().anyMatch(this::isStatusNull)) {
+                            logger.info("Some data parts are not yet received for data request id {}",
+                                    dataRequestDetail.getDataRequestId());
+                            var status = now(UTC)
+                                    .isAfter(dataRequestDetail.getDataFlowRequestedAt()
+                                    .plusMinutes(serviceProperties.getDataPartWaitTime())) ?
+                                    getStatusFor(dataRequestDetails) : PROCESSING;
+                            patientHealthInfoStatuses.add(statusBuilder
+                                    .status(status)
                                     .build());
                             return;
                         }
@@ -186,6 +200,7 @@ public class HealthInfoManager {
 
     private DataRequestStatus getStatusFor(List<PatientDataRequestDetail> dataRequestDetails) {
         var statuses = dataRequestDetails.stream()
+                .filter(dataRequestDetail -> !Objects.isNull(dataRequestDetail.getDataPartStatus()))
                 .map(PatientDataRequestDetail::getDataPartStatus)
                 .collect(Collectors.toList());
         if (isProcessing(statuses)) {
