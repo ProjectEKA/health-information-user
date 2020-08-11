@@ -421,6 +421,13 @@ public class HiuConfiguration {
                 redisOptions.getRetry());
     }
 
+    @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "guava", matchIfMissing = true)
+    @Bean("blockListedTokens")
+    public CacheAdapter<String, String> localBlockListedTokenCache(
+            LoadingCache<String, String> stringLoadingCache) {
+        return new LoadingCacheGenericAdapter<>(stringLoadingCache, null);
+    }
+
     @Bean
     public ConsentRepository consentRepository(PgPool pgPool) {
         return new ConsentRepository(pgPool);
