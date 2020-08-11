@@ -12,4 +12,5 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 public class AccountServiceProperties {
         private final boolean usingUnsecureSSL;
         private final String url;
+        private final boolean enableOfflineVerification;
 }

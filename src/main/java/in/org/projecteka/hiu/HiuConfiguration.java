@@ -7,6 +7,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
@@ -18,6 +19,7 @@ import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CMAccountServiceAuthenticator;
+import in.org.projecteka.hiu.common.CMAccountServiceOfflineAuthenticator;
 import in.org.projecteka.hiu.common.CMPatientAccountAuthenticator;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.CacheMethodProperty;
@@ -116,12 +118,19 @@ import reactor.netty.resources.ConnectionProvider;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.URL;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
+import static in.org.projecteka.hiu.common.Constants.GET_CERT;
 import static io.lettuce.core.ReadFrom.MASTER_PREFERRED;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
@@ -683,15 +692,52 @@ public class HiuConfiguration {
     @Bean("userAuthenticator")
     public Authenticator cmPatientAccountAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
                                                        ConfigurableJWTProcessor<SecurityContext> jwtProcessor,
-                                                       SessionServiceClient sessionServiceClient) {
-        return new CMPatientAccountAuthenticator(new CMAccountServiceAuthenticator(sessionServiceClient),
-                new CMPatientAuthenticator(jwkSet, jwtProcessor));
+                                                       SessionServiceClient sessionServiceClient,
+                                                       AccountServiceProperties accountServiceProperties,
+                                                       WebClient.Builder webClientBuilder)
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
+        var cmAccountServiceAuthenticator = getAccountServiceAuthenticator(sessionServiceClient,
+                accountServiceProperties,
+                webClientBuilder);
+        CMPatientAuthenticator cmPatientAuthenticator = new CMPatientAuthenticator(jwkSet, jwtProcessor);
+        return new CMPatientAccountAuthenticator(cmAccountServiceAuthenticator, cmPatientAuthenticator);
     }
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
     @Bean("userAuthenticator")
-    public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient) {
-        return new CMAccountServiceAuthenticator(sessionServiceClient);
+    public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient,
+                                                            AccountServiceProperties accountServiceProperties,
+                                                            WebClient.Builder webClientBuilder)
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
+        return getAccountServiceAuthenticator(sessionServiceClient, accountServiceProperties, webClientBuilder);
+    }
+
+    private Authenticator getAccountServiceAuthenticator(SessionServiceClient sessionServiceClient,
+                                                         AccountServiceProperties accountServiceProperties,
+                                                         WebClient.Builder webClientBuilder)
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
+        if (!accountServiceProperties.isEnableOfflineVerification()) {
+            return new CMAccountServiceAuthenticator(sessionServiceClient);
+        }
+        var tokenVerification = offlineTokenVerification(webClientBuilder,
+                accountServiceProperties.getUrl());
+        return new CMAccountServiceOfflineAuthenticator(tokenVerification);
+    }
+
+    private RSASSAVerifier offlineTokenVerification(WebClient.Builder webClientBuilder, String baseUrl)
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
+        var cert = webClientBuilder.baseUrl(baseUrl).build()
+                .get()
+                .uri(uriBuilder -> uriBuilder.path(GET_CERT).build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        var publicKeyContent = cert.replaceAll("\\n", "")
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "");
+        var kf = KeyFactory.getInstance("RSA");
+        var keySpecX509 = new X509EncodedKeySpec(Base64.getDecoder().decode(publicKeyContent));
+        return new RSASSAVerifier((RSAPublicKey) kf.generatePublic(keySpecX509));
     }
 
     @Bean
