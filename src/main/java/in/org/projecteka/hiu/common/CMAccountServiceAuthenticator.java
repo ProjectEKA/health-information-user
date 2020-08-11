@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.common;
 
 import com.nimbusds.jose.JWSObject;
 import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.TokenValidationRequest;
 import lombok.AllArgsConstructor;
@@ -11,11 +12,14 @@ import reactor.core.publisher.Mono;
 
 import java.text.ParseException;
 
+import static in.org.projecteka.hiu.common.Constants.BLOCK_LIST;
+import static in.org.projecteka.hiu.common.Constants.BLOCK_LIST_FORMAT;
 import static java.lang.String.format;
 
 @AllArgsConstructor
 public class CMAccountServiceAuthenticator implements Authenticator {
     private final SessionServiceClient sessionServiceClient;
+    private final CacheAdapter<String, String> blockListedTokens;
     private static final Logger logger = LoggerFactory.getLogger(CMAccountServiceAuthenticator.class);
 
     @Override
@@ -26,16 +30,19 @@ public class CMAccountServiceAuthenticator implements Authenticator {
                 return Mono.empty();
 
             var jwsObject = JWSObject.parse(parts[1]);
-
+            var credentials = parts[1];
             var jsonObject = jwsObject.getPayload().toJSONObject();
-            return sessionServiceClient.validateToken(TokenValidationRequest.builder().authToken(parts[1]).build())
-                    .flatMap(isValid -> {
-                        if (Boolean.TRUE.equals(isValid)) {
-                            return Mono.just(Caller.builder().username(jsonObject.getAsString("healthId"))
-                                    .isServiceAccount(false).build());
-                        }
-                        return Mono.empty();
-                    }).onErrorResume(error -> Mono.empty());
+            return blockListedTokens.exists(String.format(BLOCK_LIST_FORMAT, BLOCK_LIST, credentials))
+                    .filter(exists -> !exists)
+                    .flatMap(uselessFalse -> sessionServiceClient.validateToken(TokenValidationRequest.builder()
+                            .authToken(credentials).build())
+                            .flatMap(isValid -> {
+                                if (Boolean.TRUE.equals(isValid)) {
+                                    return Mono.just(Caller.builder().username(jsonObject.getAsString("healthId"))
+                                            .isServiceAccount(false).build());
+                                }
+                                return Mono.empty();
+                            }).onErrorResume(error -> Mono.empty()));
         } catch (ParseException e) {
             logger.error(format("Unauthorized access with token: %s %s", token, e));
         }
