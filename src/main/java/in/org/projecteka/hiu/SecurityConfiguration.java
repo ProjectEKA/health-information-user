@@ -4,11 +4,11 @@ import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.user.Role;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,6 +44,8 @@ import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.of;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.slf4j.LoggerFactory.getLogger;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static reactor.core.publisher.Mono.empty;
 import static reactor.core.publisher.Mono.error;
 
@@ -60,7 +62,6 @@ public class SecurityConfiguration {
     };
 
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(
-            Map.entry(HttpMethod.GET, "/cm/hello"),
             Map.entry(HttpMethod.POST, APP_PATH_PATIENT_CONSENT_REQUEST),
             Map.entry(HttpMethod.GET, "/v1/patient/health-information/fetch/**/attachments/**"),
             Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO),
@@ -119,6 +120,7 @@ public class SecurityConfiguration {
         private final Authenticator authenticator;
         private final Authenticator userAuthenticator;
         private final String authHeader;
+        private static final Logger logger = getLogger(SecurityContextRepository.class);
 
         @Override
         public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {
@@ -127,7 +129,9 @@ public class SecurityConfiguration {
 
         @Override
         public Mono<SecurityContext> load(ServerWebExchange exchange) {
-            String path = exchange.getRequest().getPath().toString();
+            var path = exchange.getRequest().getPath().toString();
+            var requestMethod = exchange.getRequest().getMethod();
+            logger.info("Received a request for path: {}, method: {}", path, requestMethod);
             if (isSafe(path)) {
                 return empty();
             }
@@ -135,13 +139,13 @@ public class SecurityConfiguration {
             if (isCMPatientRequest(path, exchange.getRequest().getMethod())) {
                 var patientToken = exchange.getRequest().getHeaders().getFirst(authHeader);
                 return isEmpty(patientToken)
-                        ? error(unauthorizedRequester())
-                        : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
+                       ? error(unauthorizedRequester())
+                       : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
             }
 
-            var token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            var token = exchange.getRequest().getHeaders().getFirst(AUTHORIZATION);
 
-            if(isEmpty(token)){
+            if (isEmpty(token)) {
                 return error(unauthorizedRequester());
             }
 
