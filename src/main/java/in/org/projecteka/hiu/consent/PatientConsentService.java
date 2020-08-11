@@ -61,8 +61,7 @@ public class PatientConsentService {
     public Mono<Map<String, String>> handlePatientConsentRequest(String requesterId,
                                                                  PatientConsentRequest consentRequest) {
         List<String> hipIds = filterEmptyAndNullValues(consentRequest.getHipIds());
-
-        if(hipIds.isEmpty()){
+        if (hipIds.isEmpty()) {
             return Mono.just(new HashMap<>());
         }
 
@@ -80,17 +79,19 @@ public class PatientConsentService {
         }
 
         return patientConsentRepository.getLatestDataRequestsForPatient(requesterId, hipIds)
-                .flatMap(this::getStatusForPreviousRequests)
-                .map(prevHipRequestStatuses -> {
-                    var oldHips = prevHipRequestStatuses.stream().map(PatientHealthInfoStatus::getHipId).collect(Collectors.toSet());
-                    var newHips = Sets.difference(Set.copyOf(hipIds), oldHips);
-                    var finishedHips = prevHipRequestStatuses.stream()
-                            .filter(drs -> !drs.getStatus().equals(DataRequestStatus.PROCESSING))
-                            .map(PatientHealthInfoStatus::getHipId)
-                            .collect(Collectors.toList());
-                    finishedHips.addAll(newHips);
-                    return finishedHips;
-                })
+                .flatMap(dataRequestDetails -> Mono.justOrEmpty(dataRequestDetails)
+                        .map(this::filterRequestAfterThreshold)
+                        .flatMap(this::getStatusForPreviousRequests)
+                        .map(prevHipRequestStatuses -> {
+                            var oldHips = dataRequestDetails.stream().map(PatientDataRequestDetail::getHipId).collect(Collectors.toSet());
+                            var newHips = Sets.difference(Set.copyOf(hipIds), oldHips);
+                            var finishedHips = prevHipRequestStatuses.stream()
+                                    .filter(drs -> !drs.getStatus().equals(DataRequestStatus.PROCESSING))
+                                    .map(PatientHealthInfoStatus::getHipId)
+                                    .collect(Collectors.toList());
+                            finishedHips.addAll(newHips);
+                            return finishedHips;
+                        }))
                 .flatMapMany(Flux::fromIterable)
                 .flatMap(hipId -> buildConsentRequest(requesterId, hipId,
                         now(UTC).minusYears(consentServiceProperties.getConsentRequestFromYears())))
@@ -102,6 +103,15 @@ public class PatientConsentService {
                     entries.forEach(e -> response.put(e.getKey(), e.getValue()));
                     return response;
                 });
+    }
+
+    private List<PatientDataRequestDetail> filterRequestAfterThreshold(List<PatientDataRequestDetail> dataRequestDetails) {
+        return dataRequestDetails.stream()
+                .filter(dataRequestDetail -> {
+                    return !dataRequestDetail.getPatientDataRequestedAt()
+                            .isAfter(now(UTC).minusMinutes(consentServiceProperties.getConsentRequestDelay()));
+                }).collect(Collectors.toList());
+
     }
 
     private List<String> filterEmptyAndNullValues(List<String> ids) {
@@ -147,9 +157,9 @@ public class PatientConsentService {
                 .then(sendConsentRequestToGateway(patientId, consentRequestData, gatewayRequestId))
                 .then(patientConsentRepository
                         .insertPatientConsentRequest(dataRequestId, hipIdForConsentRequest, patientId)
-                        .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(),
-                                dataRequestId.toString()).subscribe())
-                        .map(discard -> dataRequestId.toString()));
+                        .then(Mono.defer(() -> patientRequestCache.put(gatewayRequestId.toString(),
+                                dataRequestId.toString()))))
+                .thenReturn(dataRequestId.toString());
     }
 
     private Mono<Void> validateConsentRequest(ConsentRequestData consentRequestData) {

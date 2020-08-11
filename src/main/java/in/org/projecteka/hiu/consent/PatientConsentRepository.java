@@ -358,7 +358,7 @@ public class PatientConsentRepository {
             "WHERE ROW(pcr.hip_id, pcr.date_created) = (SELECT " +
                "hip_id, max(date_created) " +
                "FROM patient_consent_request " +
-               "WHERE patient_id=$1 and hip in (%s) " +
+               "WHERE patient_id=$1 and hip_id in (%s) " +
                "GROUP BY hip_id)";
 
     public Mono<List<PatientDataRequestDetail>> getLatestDataRequestsForPatient(String patientId, List<String> hipIds) {
@@ -375,7 +375,7 @@ public class PatientConsentRepository {
                                     results.add(PatientDataRequestDetail.builder()
                                             .patientDataRequestedAt(row.getLocalDateTime("date_created"))
                                             .hipId(row.getString("hip_id"))
-                                            .dataRequestId(row.getString("data_request_id"))
+                                            .dataRequestId(row.getUUID("data_request_id").toString())
                                             .build());
                                 });
                                 monoSink.success(results);
