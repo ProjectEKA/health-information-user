@@ -6,10 +6,13 @@ import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
+import in.org.projecteka.hiu.dataflow.HealthInfoManager;
+import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
@@ -17,6 +20,7 @@ import reactor.test.StepVerifier;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static in.org.projecteka.hiu.common.TestBuilders.dateRange;
 import static in.org.projecteka.hiu.common.TestBuilders.gatewayResponse;
@@ -64,6 +68,8 @@ class ConsentServiceTest {
     private GatewayServiceClient gatewayServiceClient;
     @Mock
     private HiuProperties hiuProperties;
+    @Mock
+    private HealthInfoManager healthInfoManager;
 
     @BeforeEach
     void setUp() {
@@ -75,6 +81,7 @@ class ConsentServiceTest {
         String requesterId = randomString();
         var hiuProperties = hiuProperties().build();
         var token = randomString();
+        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         ConsentService consentService = new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -87,7 +94,8 @@ class ConsentServiceTest {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache,
-                gatewayCache);
+                gatewayCache,
+                healthInfoStatus);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
         when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
@@ -104,6 +112,7 @@ class ConsentServiceTest {
     void shouldHandleConsentArtefactResponse() throws NoSuchFieldException {
         var requestId = UUID.randomUUID();
         var consentRequestId = UUID.randomUUID().toString();
+        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         ConsentService consentService = new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -116,7 +125,7 @@ class ConsentServiceTest {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache,
-                gatewayCache);
+                gatewayCache, healthInfoStatus);
         var consentId = UUID.randomUUID().toString();
         var dateRange = dateRange().build();
         var signature = string();
@@ -153,6 +162,7 @@ class ConsentServiceTest {
         var hiuProperties = hiuProperties().build();
         var token = randomString();
         var hipId = string();
+        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         ConsentService consentService = new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -165,7 +175,7 @@ class ConsentServiceTest {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache,
-                gatewayCache);
+                gatewayCache, healthInfoStatus);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
         when(patientConsentRepository.getConsentDetails(hipId, requesterId)).thenReturn(empty());

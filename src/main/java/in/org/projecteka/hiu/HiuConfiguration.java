@@ -51,6 +51,7 @@ import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.dataflow.LocalDataStore;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
@@ -109,6 +110,7 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
@@ -117,8 +119,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static io.lettuce.core.ReadFrom.REPLICA_PREFERRED;
@@ -195,7 +199,11 @@ public class HiuConfiguration {
             PatientConsentRepository patientConsentRepository,
             ConsentServiceProperties consentServiceProperties,
             @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
-            @Qualifier("gatewayResponseCache") CacheAdapter<String, String> gatewayResponseCache) {
+            @Qualifier("gatewayResponseCache") CacheAdapter<String, String> gatewayResponseCache,
+            HealthInfoManager healthInfoManager) {
+
+        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
+
         return new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -208,7 +216,8 @@ public class HiuConfiguration {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache,
-                gatewayResponseCache);
+                gatewayResponseCache,
+                healthInfoStatus);
     }
 
     @Bean
