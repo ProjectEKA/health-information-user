@@ -30,10 +30,11 @@ public class Heartbeat {
     public static final String SERVICE_DOWN = "Service Down";
     private final RabbitMQOptions rabbitMQOptions;
     private final DatabaseProperties databaseProperties;
+    private final CacheHealth cacheHealth;
 
     public Mono<HeartbeatResponse> getStatus() {
         try {
-            if (isRabbitMQUp() && isPostgresUp()) {
+            if (cacheHealth.isUp() && isRabbitMQUp() && isPostgresUp()) {
                 logger.info("Heart beat is healthy");
                 return just(HeartbeatResponse.builder().timeStamp(now(UTC)).status(UP).build());
             }
