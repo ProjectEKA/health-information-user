@@ -37,6 +37,7 @@ public class DataFlowService {
     private static final Logger logger = LoggerFactory.getLogger(DataFlowService.class);
 
     public Mono<Void> handleNotification(DataNotificationRequest dataNotificationRequest) {
+        logger.info("[DataFlowService] Received data transfer for transactionId={}", dataNotificationRequest.getTransactionId());
         List<Entry> invalidEntries = dataNotificationRequest.getEntries().parallelStream().filter(entry ->
                 !(hasLink(entry) || hasContent(entry))).collect(Collectors.toList());
 
