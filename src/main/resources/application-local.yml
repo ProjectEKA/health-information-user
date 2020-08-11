@@ -44,7 +44,7 @@ hiu:
   accountservice:
     usingUnsecureSSL: true
     url: ${ACCOUNT_SERVICE_URL}
-  loginMethod: keycloak
+  loginMethod: both
 spring:
   rabbitmq:
     host: localhost
