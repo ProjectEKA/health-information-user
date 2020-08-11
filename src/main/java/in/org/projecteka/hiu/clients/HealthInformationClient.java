@@ -2,20 +2,26 @@ package in.org.projecteka.hiu.clients;
 
 import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.dataprocessor.model.HealthInfoNotificationRequest;
+import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.Properties;
+
 import static in.org.projecteka.hiu.ClientError.failedToNotifyCM;
 import static in.org.projecteka.hiu.common.Constants.X_CM_ID;
 import static java.util.function.Predicate.not;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static reactor.core.publisher.Mono.error;
 
 public class HealthInformationClient {
     private final WebClient client;
     private final GatewayProperties gatewayProperties;
+    private static final Logger logger = getLogger(HealthInformationClient.class);
 
     public HealthInformationClient(WebClient.Builder client, GatewayProperties gatewayProperties) {
         this.client = client.build();
@@ -28,11 +34,17 @@ public class HealthInformationClient {
                 .uri(url)
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus == NOT_FOUND,
-                        clientResponse -> Mono.error(new Throwable("Health information not found")))
+                        clientResponse -> clientResponse.bodyToMono(Properties.class)
+                                .doOnNext(properties -> logger.error(properties.toString()))
+                                .then(error(new Throwable("Health information not found"))))
                 .onStatus(httpStatus -> httpStatus == UNAUTHORIZED,
-                        clientResponse -> Mono.error(new Throwable("Unauthorized")))
-                .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse ->
-                        Mono.error(new Throwable("Unknown error occurred")))
+                        clientResponse -> clientResponse.bodyToMono(Properties.class)
+                                .doOnNext(properties -> logger.error(properties.toString()))
+                                .then(error(new Throwable("Unauthorized"))))
+                .onStatus(not(HttpStatus::is2xxSuccessful),
+                        clientResponse -> clientResponse.bodyToMono(Properties.class)
+                                .doOnNext(properties -> logger.error(properties.toString()))
+                                .then(error(new Throwable("Unknown error occurred"))))
                 .bodyToMono(HealthInformation.class);
     }
 
@@ -46,7 +58,10 @@ public class HealthInformationClient {
                 .header(X_CM_ID, consentManagerId)
                 .body(Mono.just(notificationRequest), HealthInfoNotificationRequest.class)
                 .retrieve()
-                .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> Mono.error(failedToNotifyCM()))
+                .onStatus(not(HttpStatus::is2xxSuccessful),
+                        clientResponse -> clientResponse.bodyToMono(Properties.class)
+                                .doOnNext(properties -> logger.error(properties.toString()))
+                                .then(error(failedToNotifyCM())))
                 .toBodilessEntity().then();
     }
 }
