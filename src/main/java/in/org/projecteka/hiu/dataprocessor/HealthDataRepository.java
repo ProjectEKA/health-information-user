@@ -20,16 +20,17 @@ public class HealthDataRepository {
 
     //TODO: change the column data_flow_part_id to data_part_number
     private static final String INSERT_HEALTH_DATA
-            = "INSERT INTO health_information (transaction_id, part_number, data, status, latest_res_date) VALUES ($1, $2, $3, $4, $5)";
+            = "INSERT INTO health_information (transaction_id, part_number, data, status, latest_res_date, care_context_reference) VALUES ($1, $2, $3, $4, $5, $6)";
     private final PgPool dbClient;
 
     private Mono<Void> insertHealthData(String transactionId,
                                         String dataPartNumber,
                                         String resource,
-                                        EntryStatus entryStatus, LocalDateTime latestResourceDate) {
+                                        EntryStatus entryStatus, LocalDateTime latestResourceDate, String careContextReference) {
         return Mono.create(monoSink ->
                 dbClient.preparedQuery(INSERT_HEALTH_DATA)
-                        .execute(Tuple.of(transactionId, dataPartNumber, resource, entryStatus.toString(), latestResourceDate),
+                        .execute(Tuple.of(transactionId, dataPartNumber, resource,
+                                entryStatus.toString(), latestResourceDate, careContextReference),
                                 handler -> {
                                     if (handler.failed()) {
                                         logger.error(handler.cause().getMessage(), handler.cause());
@@ -40,11 +41,11 @@ public class HealthDataRepository {
                                 }));
     }
 
-    public Mono<Void> insertErrorFor(String transactionId, String dataPartNumber) {
-        return insertHealthData(transactionId, dataPartNumber, "", ERRORED, null);
+    public Mono<Void> insertErrorFor(String transactionId, String dataPartNumber, String careContextReference) {
+        return insertHealthData(transactionId, dataPartNumber, "", ERRORED, null, careContextReference);
     }
 
-    public Mono<Void> insertDataFor(String transactionId, String dataPartNumber, String resource, LocalDateTime latestResourceDate) {
-        return insertHealthData(transactionId, dataPartNumber, resource, SUCCEEDED, latestResourceDate);
+    public Mono<Void> insertDataFor(String transactionId, String dataPartNumber, String resource, LocalDateTime latestResourceDate, String careContextReference) {
+        return insertHealthData(transactionId, dataPartNumber, resource, SUCCEEDED, latestResourceDate, careContextReference);
     }
 }

@@ -93,12 +93,14 @@ public class HealthDataProcessor {
 
     private void processEntries(DataContext context) {
         try {
+            logger.info(String.format(
+                    "Received data from HIP for transaction: %s. Number of entries: %d. Trying to process data.",
+                    context.getTransactionId(), context.getNumberOfEntries()));
             updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING, null);
             String transactionId = context.getTransactionId();
             DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(transactionId).block();
             List<String> dataErrors = new ArrayList<>();
             List<StatusResponse> statusResponses = new ArrayList<>();
-            logger.info("Received data from HIP. Number of entries: " + context.getNumberOfEntries());
             context.getNotifiedData().getEntries().forEach(entry -> {
                 var entryToProcess = entry;
                 String dataPartNumber = context.getDataPartNumber();
@@ -106,7 +108,7 @@ public class HealthDataProcessor {
                     var healthInformation = healthInformationClient.informationFrom(entry.getLink()).block();
                     if (healthInformation == null) {
                         dataErrors.add("Health Information not found");
-                        healthDataRepository.insertErrorFor(transactionId, dataPartNumber).block();
+                        healthDataRepository.insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()).block();
                         statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
                         return;
                     }
@@ -114,17 +116,22 @@ public class HealthDataProcessor {
                             .content(healthInformation.getContent())
                             .checksum(entry.getChecksum())
                             .media(entry.getMedia())
+                            .careContextReference(entry.getCareContextReference())
                             .build();
                 }
                 var result = processEntryContent(context, entryToProcess, keyMaterial);
                 if (result.hasErrors()) {
                     dataErrors.addAll(result.getErrors());
-                    healthDataRepository.insertErrorFor(transactionId, dataPartNumber).block();
+                    healthDataRepository.insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()).block();
                     statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
                     return;
                 }
                 context.addTrackedResources(result.getTrackedResources());
-                healthDataRepository.insertDataFor(transactionId, dataPartNumber, result.getResource(), result.latestResourceDate()).block();
+                healthDataRepository.insertDataFor(transactionId,
+                        dataPartNumber,
+                        result.getResource(),
+                        result.latestResourceDate(),
+                        entryToProcess.getCareContextReference()).block();
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
 

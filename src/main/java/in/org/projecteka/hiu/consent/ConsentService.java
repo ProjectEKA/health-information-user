@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
+import static in.org.projecteka.hiu.ErrorCode.PATIENT_NOT_FOUND;
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static in.org.projecteka.hiu.common.Constants.PATIENT_REQUESTED_PURPOSE_CODE;
 import static in.org.projecteka.hiu.common.Constants.STATUS;
@@ -315,7 +316,14 @@ public class ConsentService {
                     var status = (ConsentStatus) result.get(STATUS);
                     return Mono.zip(patientService.findPatientWith(consentRequest.getPatient().getId()),
                             mergeWithArtefactStatus(consentRequest, status, consentRequestId),
-                            just(consentRequestId));
+                            just(consentRequestId))
+                            .onErrorResume(error -> error instanceof ClientError &&
+                                            ((ClientError) error).getError().getError().getCode() == PATIENT_NOT_FOUND,
+                                    error -> {
+                                        logger.error("Consent request created for unknown user.");
+                                        logger.error(error.getMessage(), error);
+                                        return empty();
+                                    });
                 })
                 .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(),
                         patientConsentRequest.getT2(),
@@ -371,6 +379,10 @@ public class ConsentService {
             return error(ClientError.validationFailed());
         }
         return consentTask.perform(notification, localDateTime);
+    }
+
+    public Mono<List<Map<String, Object>>> getLatestCareContextResourceDates(String patientId, String hipId) {
+        return patientConsentRepository.getLatestResourceDateByHipCareContext(patientId, hipId);
     }
 
     @PostConstruct
