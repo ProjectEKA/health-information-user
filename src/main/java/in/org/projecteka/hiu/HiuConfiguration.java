@@ -63,8 +63,6 @@ import in.org.projecteka.hiu.user.SessionService;
 import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.UserRepository;
 import io.lettuce.core.ClientOptions;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.RedisURI;
 import io.lettuce.core.SocketOptions;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -412,6 +410,24 @@ public class HiuConfiguration {
         return new ReactiveRedisTemplate<>(factory, builder.value(valueSerializer).build());
     }
 
+    @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
+    @Bean("blockListedTokens")
+    public CacheAdapter<String, String> redisBlockListedTokensCache(
+            ReactiveRedisOperations<String, String> stringReactiveRedisOperations,
+            RedisOptions redisOptions) {
+        return new RedisGenericAdapter<>(stringReactiveRedisOperations,
+                ofMinutes(5),
+                EMPTY_STRING,
+                redisOptions.getRetry());
+    }
+
+    @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "guava", matchIfMissing = true)
+    @Bean("blockListedTokens")
+    public CacheAdapter<String, String> localBlockListedTokenCache(
+            LoadingCache<String, String> stringLoadingCache) {
+        return new LoadingCacheGenericAdapter<>(stringLoadingCache, null);
+    }
+
     @Bean
     public ConsentRepository consentRepository(PgPool pgPool) {
         return new ConsentRepository(pgPool);
@@ -684,8 +700,9 @@ public class HiuConfiguration {
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak")
     @Bean("userAuthenticator")
     public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
-                                           ConfigurableJWTProcessor<SecurityContext> jwtProcessor) {
-        return new CMPatientAuthenticator(jwkSet, jwtProcessor);
+                                           ConfigurableJWTProcessor<SecurityContext> jwtProcessor,
+                                           CacheAdapter<String, String> blockListedTokens) {
+        return new CMPatientAuthenticator(jwkSet, jwtProcessor, blockListedTokens);
     }
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
@@ -694,12 +711,13 @@ public class HiuConfiguration {
                                                        ConfigurableJWTProcessor<SecurityContext> jwtProcessor,
                                                        SessionServiceClient sessionServiceClient,
                                                        AccountServiceProperties accountServiceProperties,
-                                                       WebClient.Builder webClientBuilder)
+                                                       WebClient.Builder webClientBuilder,
+                                                       CacheAdapter<String, String> blockListedTokens)
             throws InvalidKeySpecException, NoSuchAlgorithmException {
         var cmAccountServiceAuthenticator = getAccountServiceAuthenticator(sessionServiceClient,
                 accountServiceProperties,
-                webClientBuilder);
-        CMPatientAuthenticator cmPatientAuthenticator = new CMPatientAuthenticator(jwkSet, jwtProcessor);
+                webClientBuilder, blockListedTokens);
+        CMPatientAuthenticator cmPatientAuthenticator = new CMPatientAuthenticator(jwkSet, jwtProcessor, blockListedTokens);
         return new CMPatientAccountAuthenticator(cmAccountServiceAuthenticator, cmPatientAuthenticator);
     }
 
@@ -707,21 +725,23 @@ public class HiuConfiguration {
     @Bean("userAuthenticator")
     public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient,
                                                             AccountServiceProperties accountServiceProperties,
-                                                            WebClient.Builder webClientBuilder)
+                                                            WebClient.Builder webClientBuilder,
+                                                            CacheAdapter<String, String> blockListedTokens)
             throws InvalidKeySpecException, NoSuchAlgorithmException {
-        return getAccountServiceAuthenticator(sessionServiceClient, accountServiceProperties, webClientBuilder);
+        return getAccountServiceAuthenticator(sessionServiceClient, accountServiceProperties, webClientBuilder, blockListedTokens);
     }
 
     private Authenticator getAccountServiceAuthenticator(SessionServiceClient sessionServiceClient,
                                                          AccountServiceProperties accountServiceProperties,
-                                                         WebClient.Builder webClientBuilder)
+                                                         WebClient.Builder webClientBuilder,
+                                                         CacheAdapter<String, String> blockListedTokens)
             throws InvalidKeySpecException, NoSuchAlgorithmException {
         if (!accountServiceProperties.isEnableOfflineVerification()) {
-            return new CMAccountServiceAuthenticator(sessionServiceClient);
+            return new CMAccountServiceAuthenticator(sessionServiceClient, blockListedTokens);
         }
         var tokenVerification = offlineTokenVerification(webClientBuilder,
                 accountServiceProperties.getUrl());
-        return new CMAccountServiceOfflineAuthenticator(tokenVerification);
+        return new CMAccountServiceOfflineAuthenticator(tokenVerification, blockListedTokens);
     }
 
     private RSASSAVerifier offlineTokenVerification(WebClient.Builder webClientBuilder, String baseUrl)

@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.common;
 
 import in.org.projecteka.hiu.Caller;
+import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.TokenValidationRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +10,8 @@ import org.mockito.Mock;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static in.org.projecteka.hiu.common.Constants.BLOCK_LIST;
+import static in.org.projecteka.hiu.common.Constants.BLOCK_LIST_FORMAT;
 import static in.org.projecteka.hiu.common.TestBuilders.string;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -19,12 +22,15 @@ class CMAccountServiceAuthenticatorTest {
     @Mock
     SessionServiceClient sessionServiceClient;
 
+    @Mock
+    CacheAdapter<String, String> blockListedTokens;
+
     CMAccountServiceAuthenticator authenticator;
 
     @BeforeEach
     void setUp() {
         initMocks(this);
-        authenticator = new CMAccountServiceAuthenticator(sessionServiceClient);
+        authenticator = new CMAccountServiceAuthenticator(sessionServiceClient, blockListedTokens);
     }
 
     @Test
@@ -32,6 +38,8 @@ class CMAccountServiceAuthenticatorTest {
         String accessToken = string();
         String testToken = String.format("%s %s", "Bearer", accessToken);
 
+        when(blockListedTokens.exists(String.format(BLOCK_LIST_FORMAT, BLOCK_LIST, accessToken))).
+                thenReturn(Mono.just(true));
         when(sessionServiceClient.validateToken(any(TokenValidationRequest.class))).thenReturn(Mono.just(false));
 
         StepVerifier.create(authenticator.verify(testToken))
@@ -50,6 +58,8 @@ class CMAccountServiceAuthenticatorTest {
                 .build();
 
         when(sessionServiceClient.validateToken(any(TokenValidationRequest.class))).thenReturn(Mono.just(true));
+        when(blockListedTokens.exists(String.format(BLOCK_LIST_FORMAT, BLOCK_LIST, accessToken))).
+                thenReturn(Mono.just(false));
 
         StepVerifier.create(authenticator.verify(testToken))
                .expectNext(expectedCaller)

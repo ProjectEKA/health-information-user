@@ -27,6 +27,8 @@ public class Constants {
 
     public static final String STATUS = "status";
     public static final String DELIMITER = "@";
+    public static final String BLOCK_LIST = "blockList";
+    public static final String BLOCK_LIST_FORMAT = "%s:%s";
 
     private Constants() {
     }
