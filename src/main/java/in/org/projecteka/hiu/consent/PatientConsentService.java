@@ -107,10 +107,9 @@ public class PatientConsentService {
 
     private List<PatientDataRequestDetail> filterRequestAfterThreshold(List<PatientDataRequestDetail> dataRequestDetails) {
         return dataRequestDetails.stream()
-                .filter(dataRequestDetail -> {
-                    return !dataRequestDetail.getPatientDataRequestedAt()
-                            .isAfter(now(UTC).minusMinutes(consentServiceProperties.getConsentRequestDelay()));
-                }).collect(Collectors.toList());
+                .filter(dataRequestDetail -> !dataRequestDetail.getPatientDataRequestedAt()
+                        .isAfter(now(UTC).minusMinutes(consentServiceProperties.getConsentRequestDelay())))
+                .collect(Collectors.toList());
 
     }
 

@@ -236,8 +236,7 @@ public class HiuConfiguration {
                 consentRepository,
                 patientConsentRepository,
                 gatewayServiceClient,
-                healthInfoStatus
-                );
+                healthInfoStatus);
 
     }
 

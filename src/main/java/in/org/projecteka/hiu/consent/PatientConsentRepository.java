@@ -83,6 +83,15 @@ public class PatientConsentRepository {
                     "GROUP BY care_context_reference, dfr.consent_artefact_id";
 
 
+    private static final String SELECT_LATEST_DATA_REQUEST_FOR_PATIENT_BY_HIPS =
+            "SELECT " +
+                    "pcr.date_created, pcr.data_request_id, pcr.hip_id " +
+                    "FROM patient_consent_request pcr " +
+                    "WHERE ROW(pcr.hip_id, pcr.date_created) = (SELECT " +
+                    "hip_id, max(date_created) " +
+                    "FROM patient_consent_request " +
+                    "WHERE patient_id=$1 and hip_id in (%s) " +
+                    "GROUP BY hip_id)";
 
     private final PgPool dbClient;
 
@@ -351,16 +360,6 @@ public class PatientConsentRepository {
                         }));
     }
 
-    private static final String SELECT_LATEST_DATA_REQUEST_FOR_PATIENT_BY_HIPS =
-            "SELECT " +
-               "pcr.date_created, pcr.data_request_id, pcr.hip_id " +
-            "FROM patient_consent_request pcr " +
-            "WHERE ROW(pcr.hip_id, pcr.date_created) = (SELECT " +
-               "hip_id, max(date_created) " +
-               "FROM patient_consent_request " +
-               "WHERE patient_id=$1 and hip_id in (%s) " +
-               "GROUP BY hip_id)";
-
     public Mono<List<PatientDataRequestDetail>> getLatestDataRequestsForPatient(String patientId, List<String> hipIds) {
         var generatedQuery = String.format(SELECT_LATEST_DATA_REQUEST_FOR_PATIENT_BY_HIPS, joinByComma(hipIds));
         return Mono.create(monoSink -> dbClient.preparedQuery(generatedQuery)
@@ -371,13 +370,11 @@ public class PatientConsentRepository {
                                 monoSink.error(dbOperationFailure("Failed to get data request details for patient"));
                             } else {
                                 List<PatientDataRequestDetail> results = new ArrayList<>();
-                                handler.result().forEach(row -> {
-                                    results.add(PatientDataRequestDetail.builder()
-                                            .patientDataRequestedAt(row.getLocalDateTime("date_created"))
-                                            .hipId(row.getString("hip_id"))
-                                            .dataRequestId(row.getUUID("data_request_id").toString())
-                                            .build());
-                                });
+                                handler.result().forEach(row -> results.add(PatientDataRequestDetail.builder()
+                                        .patientDataRequestedAt(row.getLocalDateTime("date_created"))
+                                        .hipId(row.getString("hip_id"))
+                                        .dataRequestId(row.getUUID("data_request_id").toString())
+                                        .build()));
                                 monoSink.success(results);
                             }
                         }));
