@@ -18,6 +18,7 @@ import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
+import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.user.Role;
 import okhttp3.mockwebserver.MockResponse;
@@ -41,6 +42,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
@@ -69,7 +71,7 @@ import static reactor.core.publisher.Mono.just;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
+@AutoConfigureWebTestClient(timeout = "600000")
 @ContextConfiguration(initializers = ConsentUserJourneyTest.ContextInitializer.class)
 class ConsentUserJourneyTest {
     private static final MockWebServer consentManagerServer = new MockWebServer();
@@ -142,6 +144,10 @@ class ConsentUserJourneyTest {
 
     @MockBean
     private ConceptValidator conceptValidator;
+
+    @MockBean
+    HealthInfoManager healthInfoManager;
+
 
     @AfterAll
     static void tearDown() throws IOException {
@@ -462,7 +468,7 @@ class ConsentUserJourneyTest {
         var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
         when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(Mono.create(MonoSink::success));
-        when(patientConsentRepository.getConsentDetails(hipId, requesterId)).thenReturn(Mono.empty());
+        when(patientConsentRepository.getLatestDataRequestsForPatient(eq(requesterId), any())).thenReturn(Mono.empty());
         webTestClient
                 .post()
                 .uri(APP_PATH_PATIENT_CONSENT_REQUEST)
@@ -488,6 +494,7 @@ class ConsentUserJourneyTest {
         var token = randomString();
         var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
         when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
+        when(healthInfoManager.fetchHealthInformationStatus(any())).thenReturn(Flux.empty());
 
         webTestClient
                 .post()

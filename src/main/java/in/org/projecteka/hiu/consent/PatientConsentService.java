@@ -45,13 +45,13 @@ import static reactor.core.publisher.Mono.just;
 
 @AllArgsConstructor
 public class PatientConsentService {
-    private final PatientConsentRepository patientConsentRepository;
     private final ConsentServiceProperties consentServiceProperties;
-    private final CacheAdapter<String, String> patientRequestCache;
     private final HiuProperties hiuProperties;
     private final ConceptValidator conceptValidator;
-    private final GatewayServiceClient gatewayServiceClient;
+    private final CacheAdapter<String, String> patientRequestCache;
     private final ConsentRepository consentRepository;
+    private final PatientConsentRepository patientConsentRepository;
+    private final GatewayServiceClient gatewayServiceClient;
     private Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus;
 
     public Mono<List<Map<String, Object>>> getLatestCareContextResourceDates(String patientId, String hipId) {
@@ -60,8 +60,12 @@ public class PatientConsentService {
 
     public Mono<Map<String, String>> handlePatientConsentRequest(String requesterId,
                                                                  PatientConsentRequest consentRequest) {
-
         List<String> hipIds = filterEmptyAndNullValues(consentRequest.getHipIds());
+
+        if(hipIds.isEmpty()){
+            return Mono.just(new HashMap<>());
+        }
+
         if (consentRequest.isReloadConsent()) {
             return Flux.fromIterable(hipIds)
                     .flatMap(hipId -> handleForReloadConsent(requesterId, hipId))

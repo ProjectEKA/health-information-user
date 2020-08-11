@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +36,7 @@ import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -81,7 +83,6 @@ class ConsentServiceTest {
         String requesterId = randomString();
         var hiuProperties = hiuProperties().build();
         var token = randomString();
-        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         ConsentService consentService = new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -94,8 +95,7 @@ class ConsentServiceTest {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache,
-                gatewayCache,
-                healthInfoStatus);
+                gatewayCache);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
         when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
@@ -112,7 +112,6 @@ class ConsentServiceTest {
     void shouldHandleConsentArtefactResponse() throws NoSuchFieldException {
         var requestId = UUID.randomUUID();
         var consentRequestId = UUID.randomUUID().toString();
-        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         ConsentService consentService = new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -125,7 +124,7 @@ class ConsentServiceTest {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache,
-                gatewayCache, healthInfoStatus);
+                gatewayCache);
         var consentId = UUID.randomUUID().toString();
         var dateRange = dateRange().build();
         var signature = string();
@@ -158,30 +157,31 @@ class ConsentServiceTest {
 
     @Test
     void shouldBuildFirstConsentRequestIfConsentDataIsEmpty() {
-        var requesterId = string();
+        var requesterId = "hinapatel@ndhm";
         var hiuProperties = hiuProperties().build();
         var token = randomString();
         var hipId = string();
         Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
-        ConsentService consentService = new ConsentService(
-                hiuProperties,
-                consentRepository,
-                dataFlowRequestPublisher,
-                null,
-                null,
-                healthInformationPublisher,
-                conceptValidator,
-                gatewayServiceClient,
-                patientConsentRepository,
+        PatientConsentService consentService = new PatientConsentService(
                 consentServiceProperties,
+                hiuProperties,
+                conceptValidator,
                 patientRequestCache,
-                gatewayCache, healthInfoStatus);
+                consentRepository,
+                patientConsentRepository,
+                gatewayServiceClient,
+                healthInfoStatus);
         ConsentRequestData consentRequestData = consentRequestDetails().build();
-        consentRequestData.getConsent().getPatient().setId("hinapatel79@ncg");
-        when(patientConsentRepository.getConsentDetails(hipId, requesterId)).thenReturn(empty());
+        consentRequestData.getConsent().getPatient().setId(requesterId);
+        //when(patientConsentRepository.getConsentDetails(hipId, requesterId)).thenReturn(empty());
         when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
         when(gatewayServiceClient.sendConsentRequest(anyString(), any())).thenReturn(empty());
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(empty());
+        when(patientConsentRepository.getLatestDataRequestsForPatient(eq(requesterId), any())).thenReturn(Mono.just(new ArrayList<>()));
+        when(patientConsentRepository.insertPatientConsentRequest(any(),eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
+        when(healthInfoManager.fetchHealthInformationStatus(any())).thenReturn(Flux.empty());
+        when(patientRequestCache.put(any(),any())).thenReturn(Mono.empty());
+
 
         Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,
                 new PatientConsentRequest(List.of(hipId), false));

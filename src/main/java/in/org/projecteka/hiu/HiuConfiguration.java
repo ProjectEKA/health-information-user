@@ -39,6 +39,7 @@ import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.consent.PatientConsentRepository;
+import in.org.projecteka.hiu.consent.PatientConsentService;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
@@ -192,17 +193,13 @@ public class HiuConfiguration {
             DataFlowRequestPublisher dataFlowRequestPublisher,
             DataFlowDeletePublisher dataFlowDeletePublisher,
             PatientService patientService,
-            Gateway gateway,
             HealthInformationPublisher healthInformationPublisher,
             ConceptValidator validator,
             GatewayServiceClient gatewayServiceClient,
             PatientConsentRepository patientConsentRepository,
             ConsentServiceProperties consentServiceProperties,
             @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
-            @Qualifier("gatewayResponseCache") CacheAdapter<String, String> gatewayResponseCache,
-            HealthInfoManager healthInfoManager) {
-
-        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
+            @Qualifier("gatewayResponseCache") CacheAdapter<String, String> gatewayResponseCache) {
 
         return new ConsentService(
                 hiuProperties,
@@ -216,8 +213,32 @@ public class HiuConfiguration {
                 patientConsentRepository,
                 consentServiceProperties,
                 patientRequestCache,
-                gatewayResponseCache,
-                healthInfoStatus);
+                gatewayResponseCache);
+    }
+
+    @Bean
+    public PatientConsentService patientConsentService(
+            HiuProperties hiuProperties,
+            ConsentRepository consentRepository,
+            ConceptValidator validator,
+            GatewayServiceClient gatewayServiceClient,
+            PatientConsentRepository patientConsentRepository,
+            ConsentServiceProperties consentServiceProperties,
+            @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
+            HealthInfoManager healthInfoManager) {
+
+        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
+        return new PatientConsentService(
+                consentServiceProperties,
+                hiuProperties,
+                validator,
+                patientRequestCache,
+                consentRepository,
+                patientConsentRepository,
+                gatewayServiceClient,
+                healthInfoStatus
+                );
+
     }
 
     @Bean
