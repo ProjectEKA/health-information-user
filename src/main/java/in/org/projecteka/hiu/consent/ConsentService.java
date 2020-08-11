@@ -29,7 +29,6 @@ import java.util.UUID;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
-import static in.org.projecteka.hiu.ErrorCode.PATIENT_NOT_FOUND;
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static in.org.projecteka.hiu.common.Constants.STATUS;
 import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
@@ -43,6 +42,7 @@ import static java.time.LocalDateTime.now;
 import static java.time.ZoneOffset.UTC;
 import static java.util.UUID.fromString;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static reactor.core.publisher.Flux.fromIterable;
 import static reactor.core.publisher.Mono.defer;
 import static reactor.core.publisher.Mono.empty;
 import static reactor.core.publisher.Mono.error;
@@ -176,9 +176,7 @@ public class ConsentService {
                                 (in.org.projecteka.hiu.consent.model.ConsentRequest) result.get("consentRequest");
                         patients.add(consentRequest.getPatient().getId());
                     }
-                    return Flux.fromIterable(patients)
-                            .flatMap(patientService::findPatientWith)
-                            .thenMany(Flux.fromIterable(list));
+                    return fromIterable(patients).flatMap(patientService::tryFind).thenMany(fromIterable(list));
                 })
                 .flatMap(result -> {
                     var consentRequest =
@@ -186,16 +184,9 @@ public class ConsentService {
                     var consentRequestId = (String) result.get("consentRequestId");
                     consentRequestId = consentRequestId == null ? EMPTY_STRING : consentRequestId;
                     var status = (ConsentStatus) result.get(STATUS);
-                    return Mono.zip(patientService.findPatientWith(consentRequest.getPatient().getId()),
+                    return Mono.zip(patientService.tryFind(consentRequest.getPatient().getId()),
                             mergeWithArtefactStatus(consentRequest, status, consentRequestId),
-                            just(consentRequestId))
-                            .onErrorResume(error -> error instanceof ClientError &&
-                                            ((ClientError) error).getError().getError().getCode() == PATIENT_NOT_FOUND,
-                                    error -> {
-                                        logger.error("Consent request created for unknown user.");
-                                        logger.error(error.getMessage(), error);
-                                        return empty();
-                                    });
+                            just(consentRequestId));
                 })
                 .map(patientConsentRequest -> toConsentRequestRepresentation(patientConsentRequest.getT1(),
                         patientConsentRequest.getT2(),
@@ -208,13 +199,13 @@ public class ConsentService {
             String consentRequestId) {
         var consent = consentRequest.toBuilder().status(reqStatus).build();
         return reqStatus.equals(ConsentStatus.POSTED)
-                ? just(consent)
-                : consentRepository.getConsentDetails(consentRequestId)
-                .take(1)
-                .next()
-                .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
-                .switchIfEmpty(just(reqStatus))
-                .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
+               ? just(consent)
+               : consentRepository.getConsentDetails(consentRequestId)
+                       .take(1)
+                       .next()
+                       .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
+                       .switchIfEmpty(just(reqStatus))
+                       .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
     public Mono<Void> handleNotification(HiuConsentNotificationRequest hiuNotification) {
@@ -242,6 +233,7 @@ public class ConsentService {
                             consentArtefactResponse.getConsent().getSignature(),
                             hiuProperties.getDataPushUrl()))));
         }
+        logger.error("Unusual response = {} from CM", consentArtefactResponse);
         return empty();
     }
 

@@ -441,15 +441,15 @@ public class HiuConfiguration {
     // This exception handler needs to be given highest priority compared to DefaultErrorWebExceptionHandler, hence
     // order = -2.
     @Order(-2)
-    public ClientErrorExceptionHandler clientErrorExceptionHandler(ErrorAttributes errorAttributes,
-                                                                   ResourceProperties resourceProperties,
-                                                                   ApplicationContext applicationContext,
-                                                                   ServerCodecConfigurer serverCodecConfigurer) {
+    public GlobalExceptionHandler clientErrorExceptionHandler(ErrorAttributes errorAttributes,
+                                                              ResourceProperties resourceProperties,
+                                                              ApplicationContext applicationContext,
+                                                              ServerCodecConfigurer serverCodecConfigurer) {
 
-        ClientErrorExceptionHandler clientErrorExceptionHandler = new ClientErrorExceptionHandler(errorAttributes,
+        GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler(errorAttributes,
                 resourceProperties, applicationContext);
-        clientErrorExceptionHandler.setMessageWriters(serverCodecConfigurer.getWriters());
-        return clientErrorExceptionHandler;
+        globalExceptionHandler.setMessageWriters(serverCodecConfigurer.getWriters());
+        return globalExceptionHandler;
     }
 
     @Bean

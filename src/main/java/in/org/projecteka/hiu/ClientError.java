@@ -24,8 +24,8 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @ToString
 public class ClientError extends Throwable {
 
-    private static final String CANNOT_PROCESS_REQUEST_TRY_LATER = "Cannot process the request at the moment, please " +
-            "try later.";
+    private static final String CANNOT_PROCESS_REQUEST_TRY_LATER = "Cannot process the request at the moment," +
+            "please try later.";
     private final HttpStatus httpStatus;
     private final ErrorRepresentation error;
 
@@ -92,11 +92,13 @@ public class ClientError extends Throwable {
 
     public static ClientError invalidDataFromGateway() {
         return new ClientError(BAD_REQUEST,
-                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY, "Invalid Data from Gateway. Must have either a payload or error")));
+                new ErrorRepresentation(new Error(ErrorCode.INVALID_DATA_FROM_GATEWAY,
+                        "Invalid Data from Gateway. Must have either a payload or error")));
     }
 
     public static ClientError gatewayTimeOut() {
-        return new ClientError(GATEWAY_TIMEOUT, new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY, "Could not connect to Gateway")));
+        return new ClientError(GATEWAY_TIMEOUT,
+                new ErrorRepresentation(new Error(NO_RESULT_FROM_GATEWAY, "Could not connect to Gateway")));
     }
 
     public static ClientError consentRequestAlreadyUpdated() {
@@ -110,7 +112,8 @@ public class ClientError extends Throwable {
     }
 
     public static ClientError patientNotFound() {
-        return new ClientError(NOT_FOUND, new ErrorRepresentation(new Error(ErrorCode.PATIENT_NOT_FOUND, "Patient not found")));
+        return new ClientError(NOT_FOUND,
+                new ErrorRepresentation(new Error(ErrorCode.PATIENT_NOT_FOUND, "Patient not found")));
     }
 
     public static ClientError unAuthorized() {

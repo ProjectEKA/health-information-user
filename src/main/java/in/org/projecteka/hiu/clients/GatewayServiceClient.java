@@ -5,9 +5,12 @@ import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
+import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.util.Properties;
 
 import static in.org.projecteka.hiu.clients.PatientSearchThrowable.notFound;
 import static in.org.projecteka.hiu.clients.PatientSearchThrowable.unknown;
@@ -15,6 +18,7 @@ import static in.org.projecteka.hiu.common.Constants.X_CM_ID;
 import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
 import static java.time.Duration.ofMillis;
 import static java.util.function.Predicate.not;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static reactor.core.publisher.Mono.error;
@@ -27,6 +31,8 @@ public class GatewayServiceClient {
     private final WebClient webClient;
     private final GatewayProperties gatewayProperties;
     private final Gateway gateway;
+    private static final Logger logger = getLogger(GatewayServiceClient.class);
+
 
     public GatewayServiceClient(WebClient.Builder webClient,
                                 GatewayProperties gatewayProperties,
@@ -45,7 +51,10 @@ public class GatewayServiceClient {
                         .header(X_CM_ID, cmSuffix)
                         .body(just(request), ConsentRequest.class)
                         .retrieve()
-                        .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(creationFailed()))
+                        .onStatus(not(HttpStatus::is2xxSuccessful),
+                                clientResponse -> clientResponse.bodyToMono(Properties.class)
+                                        .doOnNext(properties -> logger.error(properties.toString()))
+                                        .then(error(creationFailed())))
                         .toBodilessEntity()
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();

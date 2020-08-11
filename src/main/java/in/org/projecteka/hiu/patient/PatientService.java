@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.patient;
 
+import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
@@ -12,7 +13,6 @@ import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.patient.model.Requester;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -23,18 +23,21 @@ import java.util.function.Supplier;
 
 import static in.org.projecteka.hiu.ClientError.gatewayTimeOut;
 import static in.org.projecteka.hiu.ClientError.unknownError;
+import static in.org.projecteka.hiu.ErrorCode.PATIENT_NOT_FOUND;
 import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
 import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
 import static in.org.projecteka.hiu.common.ErrorMappings.get;
 import static java.time.Duration.ofMillis;
+import static org.slf4j.LoggerFactory.getLogger;
 import static reactor.core.publisher.Mono.defer;
+import static reactor.core.publisher.Mono.empty;
 import static reactor.core.publisher.Mono.error;
 import static reactor.core.publisher.Mono.just;
 import static reactor.core.publisher.Mono.justOrEmpty;
 
 @AllArgsConstructor
 public class PatientService {
-    private static final Logger logger = LoggerFactory.getLogger(PatientService.class);
+    private static final Logger logger = getLogger(PatientService.class);
     private final GatewayServiceClient gatewayServiceClient;
     private final CacheAdapter<String, Patient> cache;
     private final HiuProperties hiuProperties;
@@ -46,10 +49,22 @@ public class PatientService {
             return just(response.getPatient().toPatient());
         }
         if (response.getError() != null) {
+            logger.error("Error received from gateway: {}", response.getError());
             return error(get(response.getError().getCode()));
         }
         logger.error("Gateway response: {}", response);
         return error(unknownError());
+    }
+
+    public Mono<Patient> tryFind(String id) {
+        return findPatientWith(id)
+                .onErrorResume(error -> error instanceof ClientError &&
+                                ((ClientError) error).getError().getError().getCode() == PATIENT_NOT_FOUND,
+                        error -> {
+                            logger.error("Consent request created for unknown user.");
+                            logger.error(error.getMessage(), error);
+                            return empty();
+                        });
     }
 
     public Mono<Patient> findPatientWith(String id) {
