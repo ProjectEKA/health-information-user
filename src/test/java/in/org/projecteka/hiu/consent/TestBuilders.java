@@ -11,6 +11,7 @@ import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.Patient;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
+import in.org.projecteka.hiu.dataflow.model.PatientDataRequestDetail;
 import org.jeasy.random.EasyRandom;
 
 public class TestBuilders {
@@ -75,5 +76,9 @@ public class TestBuilders {
 
     public static GatewayConsentArtefactResponse.GatewayConsentArtefactResponseBuilder gatewayConsentArtefactResponse() {
         return easyRandom.nextObject(GatewayConsentArtefactResponse.GatewayConsentArtefactResponseBuilder.class);
+    }
+
+    public static PatientDataRequestDetail.PatientDataRequestDetailBuilder patientDataRequestDetail() {
+        return easyRandom.nextObject(PatientDataRequestDetail.PatientDataRequestDetailBuilder.class);
     }
 }

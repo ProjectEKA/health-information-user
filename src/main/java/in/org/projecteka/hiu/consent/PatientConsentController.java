@@ -23,7 +23,7 @@ import static in.org.projecteka.hiu.common.Constants.INTERNAL_PATH_PATIENT_CARE_
 @RestController
 @AllArgsConstructor
 public class PatientConsentController {
-    private final ConsentService consentService;
+    private final PatientConsentService patientConsentService;
 
     @PostMapping(APP_PATH_PATIENT_CONSENT_REQUEST)
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -32,14 +32,14 @@ public class PatientConsentController {
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
                 .flatMap(requesterId ->
-                        consentService.handlePatientConsentRequest(requesterId, consentRequest)
+                        patientConsentService.handlePatientConsentRequest(requesterId, consentRequest)
                 );
     }
 
     @PostMapping(INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO)
     @ResponseStatus(HttpStatus.OK)
     public Mono<DataTransferStatusResponse> careContextStatus(@RequestBody @Valid CareContextInfoRequest request) {
-        return consentService.getLatestCareContextResourceDates(request.getPatientId(), request.getHipId())
+        return patientConsentService.getLatestCareContextResourceDates(request.getPatientId(), request.getHipId())
                 .map(DataTransferStatusResponse::new);
     }
 }

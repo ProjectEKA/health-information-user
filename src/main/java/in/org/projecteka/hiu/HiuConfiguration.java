@@ -42,6 +42,7 @@ import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
 import in.org.projecteka.hiu.consent.PatientConsentRepository;
+import in.org.projecteka.hiu.consent.PatientConsentService;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowClient;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
@@ -54,6 +55,7 @@ import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.HealthInformationRepository;
 import in.org.projecteka.hiu.dataflow.LocalDataStore;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
+import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
@@ -110,6 +112,7 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
@@ -124,8 +127,10 @@ import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static in.org.projecteka.hiu.common.Constants.GET_CERT;
@@ -200,7 +205,6 @@ public class HiuConfiguration {
             DataFlowRequestPublisher dataFlowRequestPublisher,
             DataFlowDeletePublisher dataFlowDeletePublisher,
             PatientService patientService,
-            Gateway gateway,
             HealthInformationPublisher healthInformationPublisher,
             ConceptValidator validator,
             GatewayServiceClient gatewayServiceClient,
@@ -208,6 +212,7 @@ public class HiuConfiguration {
             ConsentServiceProperties consentServiceProperties,
             @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
             @Qualifier("gatewayResponseCache") CacheAdapter<String, String> gatewayResponseCache) {
+
         return new ConsentService(
                 hiuProperties,
                 consentRepository,
@@ -221,6 +226,30 @@ public class HiuConfiguration {
                 consentServiceProperties,
                 patientRequestCache,
                 gatewayResponseCache);
+    }
+
+    @Bean
+    public PatientConsentService patientConsentService(
+            HiuProperties hiuProperties,
+            ConsentRepository consentRepository,
+            ConceptValidator validator,
+            GatewayServiceClient gatewayServiceClient,
+            PatientConsentRepository patientConsentRepository,
+            ConsentServiceProperties consentServiceProperties,
+            @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
+            HealthInfoManager healthInfoManager) {
+
+        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
+        return new PatientConsentService(
+                consentServiceProperties,
+                hiuProperties,
+                validator,
+                patientRequestCache,
+                consentRepository,
+                patientConsentRepository,
+                gatewayServiceClient,
+                healthInfoStatus);
+
     }
 
     @Bean
