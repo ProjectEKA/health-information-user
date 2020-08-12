@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
-import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
@@ -10,7 +9,6 @@ import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.model.DataRequestStatus;
 import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
-import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -50,34 +48,40 @@ import static reactor.core.publisher.Mono.empty;
 import static reactor.core.publisher.Mono.just;
 
 class PatientConsentServiceTest {
-    @Mock
-    CacheAdapter<String, Patient> cache;
+
     @Mock
     CacheAdapter<String, String> patientRequestCache;
-    @Mock
-    CacheAdapter<String, PatientSearchGatewayResponse> patientSearchCache;
+
     @Mock
     CacheAdapter<String, String> gatewayCache;
+
     @Mock
     private ConsentRepository consentRepository;
+
     @Mock
     private PatientConsentRepository patientConsentRepository;
+
     @Mock
     private ConsentServiceProperties consentServiceProperties;
+
     @Mock
     private DataFlowRequestPublisher dataFlowRequestPublisher;
-    @Mock
-    private DataFlowDeletePublisher dataFlowDeletePublisher;
+
     @Mock
     private HealthInformationPublisher healthInformationPublisher;
+
     @Mock
     private ConceptValidator conceptValidator;
+
     @Mock
     private GatewayServiceClient gatewayServiceClient;
+
     @Mock
     private HiuProperties hiuProperties;
+
     @Mock
     private HealthInfoManager healthInfoManager;
+
     private PatientConsentService consentService;
 
 
@@ -147,12 +151,9 @@ class PatientConsentServiceTest {
     @Test
     void shouldBuildFirstConsentRequestIfConsentDataIsEmpty() {
         var requesterId = "hinapatel@ncg";
-        var hiuProperties = hiuProperties().build();
-        var token = randomString();
         var hipId = string();
         ConsentRequestData consentRequestData = consentRequestDetails().build();
         consentRequestData.getConsent().getPatient().setId(requesterId);
-        //when(patientConsentRepository.getConsentDetails(hipId, requesterId)).thenReturn(empty());
         when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
         when(gatewayServiceClient.sendConsentRequest(anyString(), any())).thenReturn(empty());
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(empty());
