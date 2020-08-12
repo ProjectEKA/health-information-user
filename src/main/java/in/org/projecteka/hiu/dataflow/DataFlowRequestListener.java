@@ -17,7 +17,8 @@ import in.org.projecteka.hiu.dataflow.model.KeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.KeyStructure;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -33,7 +34,7 @@ import static reactor.core.publisher.Mono.defer;
 
 @AllArgsConstructor
 public class DataFlowRequestListener {
-    private static final Logger logger = Logger.getLogger(DataFlowRequestListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(DataFlowRequestListener.class);
     private final MessageListenerContainerFactory messageListenerContainerFactory;
     private final DestinationsConfig destinationsConfig;
     private final DataFlowClient dataFlowClient;
@@ -61,18 +62,19 @@ public class DataFlowRequestListener {
         MessageListener messageListener = message -> {
             DataFlowRequest dataFlowRequest = convertToDataFlowRequest(message.getBody());
             String consentId = dataFlowRequest.getConsent().getId();
-            logger.info("Received data flow request with consent id : " + consentId);
+            logger.info("Received data flow request with consent id : {}", consentId);
 
             try {
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
                 dataFlowRequest.setKeyMaterial(keyMaterial);
 
-                logger.info("Initiating data flow request to consent manager");
                 gateway.token()
                         .flatMap(token -> {
                             var gatewayDataFlowRequest = getDataFlowRequest(dataFlowRequest);
                             String requestId = gatewayDataFlowRequest.getRequestId().toString();
+                            logger.info("[DataFlowRequestListener] Initiating data flow request to consent manager with RequestID" +
+                                    " {}", requestId);
                             return consentRepository.getPatientId(consentId)
                                     .flatMap(patientId -> dataFlowClient.initiateDataFlowRequest(gatewayDataFlowRequest,
                                             token,
@@ -84,7 +86,7 @@ public class DataFlowRequestListener {
                         }).block();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
-                logger.fatal("Exception on key creation {exception}", exception);
+                logger.error("Exception on key creation {exception}", exception);
                 throw new AmqpRejectAndDontRequeueException(exception);
             }
         };
