@@ -33,7 +33,6 @@ import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.gatewayConsentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
 import static in.org.projecteka.hiu.consent.TestBuilders.permission;
-import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static java.time.ZoneOffset.UTC;
 import static org.junit.Assert.assertEquals;
@@ -158,9 +157,9 @@ class PatientConsentServiceTest {
         when(gatewayServiceClient.sendConsentRequest(anyString(), any())).thenReturn(empty());
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(empty());
         when(patientConsentRepository.getLatestDataRequestsForPatient(eq(requesterId), any())).thenReturn(Mono.just(new ArrayList<>()));
-        when(patientConsentRepository.insertPatientConsentRequest(any(),eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
+        when(patientConsentRepository.insertPatientConsentRequest(any(), eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
         when(healthInfoManager.fetchHealthInformationStatus(any())).thenReturn(Flux.empty());
-        when(patientRequestCache.put(any(),any())).thenReturn(Mono.empty());
+        when(patientRequestCache.put(any(), any())).thenReturn(Mono.empty());
 
 
         Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,
