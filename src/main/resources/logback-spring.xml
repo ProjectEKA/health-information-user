@@ -1,0 +1,29 @@
+<configuration>
+    <springProfile name="!local">
+        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
+        <root level="info">
+            <appender-ref ref="console"/>
+        </root>
+    </springProfile>
+    <logger name="org.springframework">
+        <level value="warn"/>
+    </logger>
+
+    <logger name="in.org.projecteka.hiu.patient.PatientService">
+        <level value="debug"/>
+    </logger>
+    <springProfile name="local">
+        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+            <layout class="ch.qos.logback.classic.PatternLayout">
+                <Pattern>
+                    %black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1.}): %msg%n%throwable
+                </Pattern>
+            </layout>
+        </appender>
+        <root level="info">
+            <appender-ref ref="console"/>
+        </root>
+    </springProfile>
+</configuration>
