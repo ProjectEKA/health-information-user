@@ -156,8 +156,8 @@ public class PatientConsentService {
                 .then(sendConsentRequestToGateway(patientId, consentRequestData, gatewayRequestId))
                 .then(patientConsentRepository
                         .insertPatientConsentRequest(dataRequestId, hipIdForConsentRequest, patientId)
-                        .then(Mono.defer(() -> patientRequestCache.put(gatewayRequestId.toString(),
-                                dataRequestId.toString()))))
+                        .doOnSuccess(discard -> patientRequestCache.put(gatewayRequestId.toString(),
+                                dataRequestId.toString()).subscribe()))
                 .thenReturn(dataRequestId.toString());
     }
 
