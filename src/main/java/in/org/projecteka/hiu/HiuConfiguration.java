@@ -111,7 +111,6 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClient.Builder;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
@@ -549,7 +548,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowClient dataFlowClient(@Qualifier("customBuilder") Builder builder,
+    public DataFlowClient dataFlowClient(@Qualifier("customBuilder") WebClient.Builder builder,
                                          GatewayProperties gatewayProperties) {
         return new DataFlowClient(builder, gatewayProperties);
     }
@@ -684,13 +683,13 @@ public class HiuConfiguration {
 
     @Bean
     public GatewayAuthenticationClient centralRegistryClient(
-            @Qualifier("customBuilder") Builder builder,
+            @Qualifier("customBuilder") WebClient.Builder builder,
             GatewayProperties gatewayProperties) {
         return new GatewayAuthenticationClient(builder, gatewayProperties.getBaseUrl());
     }
 
     @Bean
-    public HealthInformationClient healthInformationClient(@Qualifier("customBuilder") Builder builder,
+    public HealthInformationClient healthInformationClient(@Qualifier("customBuilder") WebClient.Builder builder,
                                                            GatewayProperties gatewayProperties) {
         return new HealthInformationClient(builder, gatewayProperties);
     }
@@ -758,7 +757,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public SessionServiceClient sessionServiceClient(@Qualifier("customBuilder") Builder builder,
+    public SessionServiceClient sessionServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
                                                      AccountServiceProperties accountServiceProperties) {
         if (accountServiceProperties.isUsingUnsecureSSL()) {
             builder.clientConnector(reactorClientHttpConnector());
@@ -794,7 +793,7 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public GatewayServiceClient gatewayServiceClient(@Qualifier("customBuilder") Builder builder,
+    public GatewayServiceClient gatewayServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
                                                      GatewayProperties serviceProperties,
                                                      Gateway gateway) {
         return new GatewayServiceClient(builder, serviceProperties, gateway);
@@ -841,7 +840,7 @@ public class HiuConfiguration {
     }
 
     @Bean("customBuilder")
-    public Builder webClient(final ClientHttpConnector clientHttpConnector, ObjectMapper objectMapper) {
+    public WebClient.Builder webClient(final ClientHttpConnector clientHttpConnector, ObjectMapper objectMapper) {
         return WebClient
                 .builder()
                 .exchangeStrategies(exchangeStrategies(objectMapper))
