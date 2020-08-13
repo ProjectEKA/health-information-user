@@ -12,6 +12,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import in.org.projecteka.hiu.DestinationsConfig.DestinationInfo;
 import in.org.projecteka.hiu.clients.AccountServiceProperties;
 import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
@@ -103,6 +104,7 @@ import org.springframework.data.redis.core.ReactiveRedisOperations;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.RedisSerializationContext.RedisSerializationContextBuilder;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -175,6 +177,37 @@ public class HiuConfiguration {
                         .readFrom(MASTER_PREFERRED)
                         .build();
         return new LettuceConnectionFactory(configuration, clientConfiguration);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "guava", matchIfMissing = true)
+    public LoadingCache<String, String> loadingCacheForAccessToken() {
+        return CacheBuilder
+                .newBuilder()
+                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .build(new CacheLoader<>() {
+                    public String load(String key) {
+                        return EMPTY_STRING;
+                    }
+                });
+    }
+
+    @Bean("accessToken")
+    @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "guava", matchIfMissing = true)
+    public CacheAdapter<String, String> accessTokenCacheAdapter(
+            LoadingCache<String, String> loadingCacheForAccessToken) {
+        return new LoadingCacheGenericAdapter<>(loadingCacheForAccessToken, EMPTY_STRING);
+    }
+
+    @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
+    @Bean("accessToken")
+    public CacheAdapter<String, String> redisAccessTokenCacheAdapter(
+            ReactiveRedisOperations<String, String> stringReactiveRedisOperations,
+            RedisOptions redisOptions) {
+        return new RedisGenericAdapter<>(stringReactiveRedisOperations,
+                ofMinutes(5),
+                "hiu-gateway-accessToken",
+                redisOptions.getRetry());
     }
 
     @Bean
@@ -302,7 +335,7 @@ public class HiuConfiguration {
     ReactiveRedisOperations<String, Patient> redisPatientOperations(
             ReactiveRedisConnectionFactory factory) {
         var valueSerializer = new Jackson2JsonRedisSerializer<>(Patient.class);
-        RedisSerializationContext.RedisSerializationContextBuilder<String, Patient> builder =
+        RedisSerializationContextBuilder<String, Patient> builder =
                 RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
         return new ReactiveRedisTemplate<>(factory, builder.value(valueSerializer).build());
     }
@@ -344,7 +377,7 @@ public class HiuConfiguration {
     ReactiveRedisOperations<String, DataFlowRequestKeyMaterial> dataFlowReactiveOperations(
             ReactiveRedisConnectionFactory factory) {
         var valueSerializer = new Jackson2JsonRedisSerializer<>(DataFlowRequestKeyMaterial.class);
-        RedisSerializationContext.RedisSerializationContextBuilder<String, DataFlowRequestKeyMaterial> builder =
+        RedisSerializationContextBuilder<String, DataFlowRequestKeyMaterial> builder =
                 RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
         return new ReactiveRedisTemplate<>(factory, builder.value(valueSerializer).build());
     }
@@ -392,7 +425,7 @@ public class HiuConfiguration {
     @Bean
     ReactiveRedisOperations<String, String> stringReactiveRedisOperations(ReactiveRedisConnectionFactory factory) {
         Jackson2JsonRedisSerializer<String> valueSerializer = new Jackson2JsonRedisSerializer<>(String.class);
-        RedisSerializationContext.RedisSerializationContextBuilder<String, String> builder =
+        RedisSerializationContextBuilder<String, String> builder =
                 RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
         return new ReactiveRedisTemplate<>(factory, builder.value(valueSerializer).build());
     }
@@ -434,7 +467,7 @@ public class HiuConfiguration {
     ReactiveRedisOperations<String, PatientSearchGatewayResponse> patientResponseReactiveOperations(
             ReactiveRedisConnectionFactory factory) {
         var valueSerializer = new Jackson2JsonRedisSerializer<>(PatientSearchGatewayResponse.class);
-        RedisSerializationContext.RedisSerializationContextBuilder<String, PatientSearchGatewayResponse> builder =
+        RedisSerializationContextBuilder<String, PatientSearchGatewayResponse> builder =
                 RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
         return new ReactiveRedisTemplate<>(factory, builder.value(valueSerializer).build());
     }
@@ -489,15 +522,15 @@ public class HiuConfiguration {
 
     @Bean
     public DestinationsConfig destinationsConfig(AmqpAdmin amqpAdmin, RabbitQueueNames queueNames) {
-        HashMap<String, DestinationsConfig.DestinationInfo> queues = new HashMap<>();
+        HashMap<String, DestinationInfo> queues = new HashMap<>();
         queues.put(queueNames.getDataFlowRequestQueue(),
-                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowRequestQueue()));
+                new DestinationInfo(EXCHANGE, queueNames.getDataFlowRequestQueue()));
         queues.put(queueNames.getDataFlowProcessQueue(),
-                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowProcessQueue()));
+                new DestinationInfo(EXCHANGE, queueNames.getDataFlowProcessQueue()));
         queues.put(queueNames.getDataFlowDeleteQueue(),
-                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getDataFlowDeleteQueue()));
+                new DestinationInfo(EXCHANGE, queueNames.getDataFlowDeleteQueue()));
         queues.put(queueNames.getHealthInfoQueue(),
-                new DestinationsConfig.DestinationInfo(EXCHANGE, queueNames.getHealthInfoQueue()));
+                new DestinationInfo(EXCHANGE, queueNames.getHealthInfoQueue()));
 
         DestinationsConfig destinationsConfig = new DestinationsConfig(queues, null);
         Queue deadLetterQueue = QueueBuilder.durable(queueNames.getHIUDeadLetterQueue()).build();
@@ -695,8 +728,9 @@ public class HiuConfiguration {
 
     @Bean
     public Gateway connector(GatewayProperties gatewayProperties,
-                             GatewayAuthenticationClient gatewayAuthenticationClient) {
-        return new Gateway(gatewayProperties, gatewayAuthenticationClient);
+                             GatewayAuthenticationClient gatewayAuthenticationClient,
+                             @Qualifier("accessToken") CacheAdapter<String, String> accessToken) {
+        return new Gateway(gatewayProperties, gatewayAuthenticationClient, accessToken);
     }
 
     @Bean("centralRegistryJWKSet")
