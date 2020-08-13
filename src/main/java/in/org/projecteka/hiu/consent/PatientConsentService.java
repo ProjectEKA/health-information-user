@@ -153,11 +153,9 @@ public class PatientConsentService {
         var hipIdForConsentRequest = consentRequestData.getConsent().getHipId();
         var patientId = consentRequestData.getConsent().getPatient().getId();
         return validateConsentRequest(consentRequestData)
+                .then(Mono.defer(() -> patientRequestCache.put(gatewayRequestId.toString(), dataRequestId.toString())))
                 .then(sendConsentRequestToGateway(patientId, consentRequestData, gatewayRequestId))
-                .then(patientConsentRepository
-                        .insertPatientConsentRequest(dataRequestId, hipIdForConsentRequest, patientId)
-                        .then(Mono.defer(() -> patientRequestCache.put(gatewayRequestId.toString(),
-                                dataRequestId.toString()))))
+                .then(patientConsentRepository.insertPatientConsentRequest(dataRequestId, hipIdForConsentRequest, patientId))
                 .thenReturn(dataRequestId.toString());
     }
 
