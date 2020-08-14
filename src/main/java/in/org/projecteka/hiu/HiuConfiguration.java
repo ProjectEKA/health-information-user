@@ -123,6 +123,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
@@ -258,7 +259,7 @@ public class HiuConfiguration {
             @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
             HealthInfoManager healthInfoManager) {
 
-        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
+        BiFunction<List<String>, String, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         return new PatientConsentService(
                 consentServiceProperties,
                 hiuProperties,

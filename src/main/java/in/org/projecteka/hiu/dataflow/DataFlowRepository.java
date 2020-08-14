@@ -63,7 +63,7 @@ public class DataFlowRepository {
             "where ca.consent_request_id in (%s)";
 
     private static final String FETCH_PATIENT_DATA_REQUEST_DETAILS = "SELECT " +
-            "pcr.hip_id, pcr.data_request_id::text, " +
+            "pcr.hip_id, pcr.data_request_id::text, pcr.patient_id" +
             "pcr.date_created AS patient_data_requested_at, " +
             "dfr.date_created AS data_flow_requested_at, " +
             "dfp.status AS data_part_status, pcr.consent_request_id::text, ca.consent_artefact_id " +
@@ -297,6 +297,7 @@ public class DataFlowRepository {
                                 .dataPartStatus(HealthInfoStatus.fromString(row.getString("data_part_status")))
                                 .consentRequestId(row.getString("consent_request_id"))
                                 .consentArtefactId(row.getString("consent_artefact_id"))
+                                .patientId(row.getString("patient_id"))
                                 .build());
                     }
                     fluxSink.complete();

@@ -140,7 +140,7 @@ public class HealthDataProcessor {
             if (!dataErrors.isEmpty()) {
                 var errors = dataErrors.stream().map("[ERROR]"::concat).collect(joining());
                 var allErrors = "[ERROR]".concat(errors);
-                logger.error("Error occurred while processing data from HIP. Transaction id: %s. Errors: %s",
+                logger.error("Error occurred while processing data from HIP. Transaction id: {}. Errors: {}",
                         context.getTransactionId(), allErrors);
                 updateDataProcessStatus(context, allErrors, status, context.latestResourceDate());
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.FAILED);
@@ -149,7 +149,7 @@ public class HealthDataProcessor {
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
             }
         } catch (Exception ex) {
-            logger.error("Error occurred while processing data from HIP. Transaction id: %s.", context.getTransactionId());
+            logger.error("Error occurred while processing data from HIP. Transaction id: {}.", context.getTransactionId());
             logger.error(ex.getMessage(), ex);
         }
     }

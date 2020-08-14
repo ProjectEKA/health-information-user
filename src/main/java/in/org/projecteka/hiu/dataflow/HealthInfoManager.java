@@ -109,9 +109,11 @@ public class HealthInfoManager {
                 .flatMap(dataFlowRepository::getTransactionId);
     }
 
-    public Flux<PatientHealthInfoStatus> fetchHealthInformationStatus(List<String> dataRequestIds) {
+    public Flux<PatientHealthInfoStatus> fetchHealthInformationStatus(List<String> dataRequestIds, String username) {
         var dataReqUUIDs = dataRequestIds.stream().filter(this::isUUID).collect(Collectors.toSet());
         return dataFlowRepository.fetchPatientDataRequestDetails(dataReqUUIDs)
+                .filter(dataRequestDetail -> dataRequestDetail.getPatientId().equals(username))
+                .switchIfEmpty(Flux.error(unauthorizedRequester()))
                 .collectList()
                 .flatMapMany(patientDataRequestDetails -> {
                     var detailsByDataReqId = patientDataRequestDetails.stream()

@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import static in.org.projecteka.hiu.common.TestBuilders.dateRange;
 import static in.org.projecteka.hiu.common.TestBuilders.gatewayResponse;
@@ -88,7 +88,7 @@ class PatientConsentServiceTest {
     void setUp() {
         initMocks(this);
         var hiuProperties = hiuProperties().build();
-        Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
+        BiFunction<List<String>, String, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         consentService = new PatientConsentService(
                 consentServiceProperties,
                 hiuProperties,
@@ -158,7 +158,7 @@ class PatientConsentServiceTest {
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(empty());
         when(patientConsentRepository.getLatestDataRequestsForPatient(eq(requesterId), any())).thenReturn(Mono.just(new ArrayList<>()));
         when(patientConsentRepository.insertPatientConsentRequest(any(), eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
-        when(healthInfoManager.fetchHealthInformationStatus(any())).thenReturn(Flux.empty());
+        when(healthInfoManager.fetchHealthInformationStatus(any(), eq(requesterId))).thenReturn(Flux.empty());
         when(patientRequestCache.put(any(), any())).thenReturn(Mono.empty());
 
 
@@ -184,7 +184,7 @@ class PatientConsentServiceTest {
                 .requestId(dataRequestDetail.getDataRequestId())
                 .status(DataRequestStatus.ERRORED)
                 .build();
-        when(healthInfoManager.fetchHealthInformationStatus(any())).thenReturn(Flux.just(hipRequestErrorStatus));
+        when(healthInfoManager.fetchHealthInformationStatus(any(), eq(requesterId))).thenReturn(Flux.just(hipRequestErrorStatus));
         when(patientConsentRepository.getLatestDataRequestsForPatient(eq(requesterId), any())).thenReturn(Mono.just(List.of(dataRequestDetail)));
 
         when(conceptValidator.validatePurpose(anyString())).thenReturn(just(true));
@@ -220,7 +220,7 @@ class PatientConsentServiceTest {
                 .requestId(dataRequestDetail.getDataRequestId())
                 .status(DataRequestStatus.PROCESSING)
                 .build();
-        when(healthInfoManager.fetchHealthInformationStatus(any())).thenReturn(Flux.just(hipRequestErrorStatus));
+        when(healthInfoManager.fetchHealthInformationStatus(any(), eq(requesterId))).thenReturn(Flux.just(hipRequestErrorStatus));
         when(patientConsentRepository.getLatestDataRequestsForPatient(eq(requesterId), any())).thenReturn(Mono.just(List.of(dataRequestDetail)));
 
         Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,

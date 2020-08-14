@@ -95,7 +95,7 @@ public class HealthInfoController {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
-                .flatMapMany(username -> healthInfoManager.fetchHealthInformationStatus(dataRequest.getRequestIds()))
+                .flatMapMany(username -> healthInfoManager.fetchHealthInformationStatus(dataRequest.getRequestIds(), username))
                 .collectList()
                 .map(DataRequestStatusResponse::new);
     }
