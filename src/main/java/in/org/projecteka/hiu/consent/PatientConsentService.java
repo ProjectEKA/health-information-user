@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
@@ -52,7 +52,7 @@ public class PatientConsentService {
     private final ConsentRepository consentRepository;
     private final PatientConsentRepository patientConsentRepository;
     private final GatewayServiceClient gatewayServiceClient;
-    private Function<List<String>, Flux<PatientHealthInfoStatus>> healthInfoStatus;
+    private BiFunction<List<String>, String, Flux<PatientHealthInfoStatus>> healthInfoStatus;
 
     public Mono<List<Map<String, Object>>> getLatestCareContextResourceDates(String patientId, String hipId) {
         return patientConsentRepository.getLatestResourceDateByHipCareContext(patientId, hipId);
@@ -81,7 +81,7 @@ public class PatientConsentService {
         return patientConsentRepository.getLatestDataRequestsForPatient(requesterId, hipIds)
                 .flatMap(dataRequestDetails -> Mono.justOrEmpty(dataRequestDetails)
                         .map(this::filterRequestAfterThreshold)
-                        .flatMap(this::getStatusForPreviousRequests)
+                        .flatMap(dataReqs -> getStatusForPreviousRequests(dataReqs, requesterId))
                         .map(prevHipRequestStatuses -> {
                             var oldHips = dataRequestDetails.stream().map(PatientDataRequestDetail::getHipId).collect(Collectors.toSet());
                             var newHips = Sets.difference(Set.copyOf(hipIds), oldHips);
@@ -184,8 +184,9 @@ public class PatientConsentService {
                 .then(defer(() -> consentRepository.insertConsentRequestToGateway(hiuConsentRequest)));
     }
 
-    private Mono<List<PatientHealthInfoStatus>> getStatusForPreviousRequests(List<PatientDataRequestDetail> dataRequestDetails) {
+    private Mono<List<PatientHealthInfoStatus>> getStatusForPreviousRequests(List<PatientDataRequestDetail> dataRequestDetails,
+                                                                             String username) {
         var dataRequestIds = dataRequestDetails.stream().map(PatientDataRequestDetail::getDataRequestId).collect(Collectors.toList());
-        return healthInfoStatus.apply(dataRequestIds).collectList();
+        return healthInfoStatus.apply(dataRequestIds, username).collectList();
     }
 }

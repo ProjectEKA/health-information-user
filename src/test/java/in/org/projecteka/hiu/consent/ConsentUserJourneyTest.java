@@ -494,7 +494,7 @@ class ConsentUserJourneyTest {
         var token = randomString();
         var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
         when(cmPatientAuthenticator.verify(token)).thenReturn(just(caller));
-        when(healthInfoManager.fetchHealthInformationStatus(any())).thenReturn(Flux.empty());
+        when(healthInfoManager.fetchHealthInformationStatus(any(), eq(requesterId))).thenReturn(Flux.empty());
 
         webTestClient
                 .post()
