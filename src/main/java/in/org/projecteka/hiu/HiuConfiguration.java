@@ -486,8 +486,8 @@ public class HiuConfiguration {
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "guava", matchIfMissing = true)
     @Bean("blockListedTokens")
     public CacheAdapter<String, String> localBlockListedTokenCache(
-            LoadingCache<String, String> stringLoadingCache) {
-        return new LoadingCacheGenericAdapter<>(stringLoadingCache, null);
+            LoadingCache<String, String> stringStringLoadingCache) {
+        return new LoadingCacheGenericAdapter<>(stringStringLoadingCache, null);
     }
 
     @Bean
