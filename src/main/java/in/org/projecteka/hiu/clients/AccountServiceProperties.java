@@ -12,4 +12,8 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 public class AccountServiceProperties {
         private final boolean usingUnsecureSSL;
         private final String url;
+        private final String clientId;
+        private final String clientSecret;
+        private final String hasAuthUrl;
+        private final boolean hasBehindGateway;
 }

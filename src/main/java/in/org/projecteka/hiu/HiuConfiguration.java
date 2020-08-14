@@ -58,6 +58,8 @@ import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
+import in.org.projecteka.hiu.user.HASGatewayClient;
+import in.org.projecteka.hiu.user.IdentityService;
 import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
 import in.org.projecteka.hiu.user.SessionServiceClient;
@@ -112,6 +114,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
@@ -757,12 +760,29 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public HASGatewayClient hasGatewayClient(@Qualifier("customBuilder") WebClient.Builder builder,
+                                             AccountServiceProperties accountServiceProperties) {
+        return new HASGatewayClient(builder, accountServiceProperties.getHasAuthUrl());
+    }
+
+
+    @Bean
+    public IdentityService identityService(HASGatewayClient hasGatewayClient,
+                                           AccountServiceProperties accountServiceProperties) {
+        return new IdentityService(hasGatewayClient, accountServiceProperties);
+    }
+
+    @Bean
     public SessionServiceClient sessionServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
-                                                     AccountServiceProperties accountServiceProperties) {
+                                                     AccountServiceProperties accountServiceProperties,
+                                                     IdentityService identityService) {
         if (accountServiceProperties.isUsingUnsecureSSL()) {
             builder.clientConnector(reactorClientHttpConnector());
         }
-        return new SessionServiceClient(builder, accountServiceProperties.getUrl());
+        if (accountServiceProperties.isHasBehindGateway()) {
+            return new SessionServiceClient(builder, accountServiceProperties.getUrl(), identityService::authenticateForHASGateway);
+        }
+        return new SessionServiceClient(builder, accountServiceProperties.getUrl(), () -> Mono.just(""));
     }
 
     @Bean

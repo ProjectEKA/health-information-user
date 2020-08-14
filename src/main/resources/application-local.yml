@@ -44,6 +44,10 @@ hiu:
   accountservice:
     usingUnsecureSSL: true
     url: ${ACCOUNT_SERVICE_URL}
+    hasBehindGateway: true
+    clientId: '00e70546'
+    clientSecret: 5f160652daeaf7a8b7e054fcc18c8848
+    hasAuthUrl: https://apis-prd.pmjay.gov.in/auth
   loginMethod: keycloak
 spring:
   rabbitmq:
