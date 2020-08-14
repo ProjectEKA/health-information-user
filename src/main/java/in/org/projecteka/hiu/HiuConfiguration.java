@@ -61,6 +61,8 @@ import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import in.org.projecteka.hiu.dataprocessor.HealthDataRepository;
 import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
+import in.org.projecteka.hiu.user.HASGatewayClient;
+import in.org.projecteka.hiu.user.IdentityService;
 import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
 import in.org.projecteka.hiu.user.SessionServiceClient;
@@ -106,6 +108,7 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializationContext.RedisSerializationContextBuilder;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.ServerCodecConfigurer;
@@ -115,6 +118,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
@@ -775,11 +779,12 @@ public class HiuConfiguration {
                                                        SessionServiceClient sessionServiceClient,
                                                        AccountServiceProperties accountServiceProperties,
                                                        WebClient.Builder webClientBuilder,
-                                                       CacheAdapter<String, String> blockListedTokens)
+                                                       CacheAdapter<String, String> blockListedTokens,
+                                                       IdentityService identityService)
             throws InvalidKeySpecException, NoSuchAlgorithmException {
         var cmAccountServiceAuthenticator = getAccountServiceAuthenticator(sessionServiceClient,
                 accountServiceProperties,
-                webClientBuilder, blockListedTokens);
+                webClientBuilder, blockListedTokens, identityService);
         CMPatientAuthenticator cmPatientAuthenticator = new CMPatientAuthenticator(jwkSet, jwtProcessor, blockListedTokens);
         return new CMPatientAccountAuthenticator(cmAccountServiceAuthenticator, cmPatientAuthenticator);
     }
@@ -789,29 +794,33 @@ public class HiuConfiguration {
     public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient,
                                                             AccountServiceProperties accountServiceProperties,
                                                             WebClient.Builder webClientBuilder,
-                                                            CacheAdapter<String, String> blockListedTokens)
+                                                            CacheAdapter<String, String> blockListedTokens,
+                                                            IdentityService identityService)
             throws InvalidKeySpecException, NoSuchAlgorithmException {
-        return getAccountServiceAuthenticator(sessionServiceClient, accountServiceProperties, webClientBuilder, blockListedTokens);
+        return getAccountServiceAuthenticator(sessionServiceClient, accountServiceProperties, webClientBuilder, blockListedTokens, identityService);
     }
 
     private Authenticator getAccountServiceAuthenticator(SessionServiceClient sessionServiceClient,
                                                          AccountServiceProperties accountServiceProperties,
                                                          WebClient.Builder webClientBuilder,
-                                                         CacheAdapter<String, String> blockListedTokens)
+                                                         CacheAdapter<String, String> blockListedTokens,
+                                                         IdentityService identityService)
             throws InvalidKeySpecException, NoSuchAlgorithmException {
         if (!accountServiceProperties.isEnableOfflineVerification()) {
             return new CMAccountServiceAuthenticator(sessionServiceClient, blockListedTokens);
         }
+        String gateWayToken = accountServiceProperties.isHasBehindGateway() ? identityService.authenticateForHASGateway().block() : "";
         var tokenVerification = offlineTokenVerification(webClientBuilder,
-                accountServiceProperties.getUrl());
+                accountServiceProperties.getUrl(), gateWayToken);
         return new CMAccountServiceOfflineAuthenticator(tokenVerification, blockListedTokens);
     }
 
-    private RSASSAVerifier offlineTokenVerification(WebClient.Builder webClientBuilder, String baseUrl)
+    private RSASSAVerifier offlineTokenVerification(WebClient.Builder webClientBuilder, String baseUrl, String gateWayToken)
             throws InvalidKeySpecException, NoSuchAlgorithmException {
         var cert = webClientBuilder.baseUrl(baseUrl).build()
                 .get()
                 .uri(uriBuilder -> uriBuilder.path(GET_CERT).build())
+                .header(HttpHeaders.AUTHORIZATION, gateWayToken)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
@@ -839,12 +848,29 @@ public class HiuConfiguration {
     }
 
     @Bean
+    public HASGatewayClient hasGatewayClient(@Qualifier("customBuilder") WebClient.Builder builder,
+                                             AccountServiceProperties accountServiceProperties) {
+        return new HASGatewayClient(builder, accountServiceProperties.getHasAuthUrl());
+    }
+
+
+    @Bean
+    public IdentityService identityService(HASGatewayClient hasGatewayClient,
+                                           AccountServiceProperties accountServiceProperties) {
+        return new IdentityService(hasGatewayClient, accountServiceProperties);
+    }
+
+    @Bean
     public SessionServiceClient sessionServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
-                                                     AccountServiceProperties accountServiceProperties) {
+                                                     AccountServiceProperties accountServiceProperties,
+                                                     IdentityService identityService) {
         if (accountServiceProperties.isUsingUnsecureSSL()) {
             builder.clientConnector(reactorClientHttpConnector());
         }
-        return new SessionServiceClient(builder, accountServiceProperties.getUrl());
+        if (accountServiceProperties.isHasBehindGateway()) {
+            return new SessionServiceClient(builder, accountServiceProperties.getUrl(), identityService::authenticateForHASGateway);
+        }
+        return new SessionServiceClient(builder, accountServiceProperties.getUrl(), () -> Mono.just(""));
     }
 
     @Bean

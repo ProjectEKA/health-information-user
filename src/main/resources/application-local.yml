@@ -44,7 +44,11 @@ hiu:
   accountservice:
     usingUnsecureSSL: true
     url: ${ACCOUNT_SERVICE_URL}
-  loginMethod: both
+    loginMethod: both
+    hasBehindGateway: true
+    clientId: 'client-id'
+    clientSecret: 'client-secret'
+    hasAuthUrl: ${ACCOUNT_SERVICE_AUTH_URL}
 spring:
   rabbitmq:
     host: localhost
