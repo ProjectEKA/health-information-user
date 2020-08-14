@@ -124,7 +124,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static io.lettuce.core.ReadFrom.REPLICA_PREFERRED;

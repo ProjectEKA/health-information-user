@@ -83,7 +83,7 @@ public class HealthInfoController {
                         serviceProperties.getLocalStoragePath(),
                         TokenUtils.encode(consentRequestId),
                         TokenUtils.encode(transactionId), fileName))
-                .filter(filePath -> Files.exists(filePath))
+                .filter(Files::exists)
                 .collectList()
                 .filter(filePaths -> !filePaths.isEmpty())
                 .map(filePaths -> {
