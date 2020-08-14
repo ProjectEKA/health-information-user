@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class PatientDataRequestDetail {
     private final String hipId;
     private final String dataRequestId;
+    private final String patientId;
     private final String consentRequestId;
     private final String consentArtefactId;
     private final LocalDateTime patientDataRequestedAt;

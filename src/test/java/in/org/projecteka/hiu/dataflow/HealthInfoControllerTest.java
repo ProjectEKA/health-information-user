@@ -181,7 +181,7 @@ class HealthInfoControllerTest {
         var dataRequestIds = List.of(UUID.randomUUID().toString());
         var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
-        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.SUCCEEDED).build();
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.SUCCEEDED).patientId(requester).build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
         when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
@@ -205,7 +205,7 @@ class HealthInfoControllerTest {
         var dataRequestIds = List.of(UUID.randomUUID().toString());
         var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
-        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.PARTIAL).build();
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.PARTIAL).patientId(requester).build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
         when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
@@ -229,7 +229,7 @@ class HealthInfoControllerTest {
         var dataRequestIds = List.of(UUID.randomUUID().toString());
         var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
-        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.PROCESSING).build();
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.PROCESSING).patientId(requester).build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
         when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
@@ -253,7 +253,7 @@ class HealthInfoControllerTest {
         var dataRequestIds = List.of(UUID.randomUUID().toString());
         var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
-        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.ERRORED).build();
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail().dataPartStatus(HealthInfoStatus.ERRORED).patientId(requester).build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
         when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
@@ -280,6 +280,7 @@ class HealthInfoControllerTest {
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .consentRequestId(null)
                 .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC))
+                .patientId(requester)
                 .build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
@@ -306,6 +307,7 @@ class HealthInfoControllerTest {
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .consentArtefactId(null)
+                .patientId(requester)
                 .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1))
                 .build();
 
@@ -334,6 +336,7 @@ class HealthInfoControllerTest {
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .dataPartStatus(null)
                 .dataFlowRequestedAt(LocalDateTime.now(ZoneOffset.UTC))
+                .patientId(requester)
                 .build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
@@ -360,6 +363,7 @@ class HealthInfoControllerTest {
         ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .dataPartStatus(null)
+                .patientId(requester)
                 .dataFlowRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
                 .build();
 
@@ -388,6 +392,7 @@ class HealthInfoControllerTest {
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .consentArtefactId(null)
                 .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
+                .patientId(requester)
                 .build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
@@ -415,6 +420,7 @@ class HealthInfoControllerTest {
         var dataRequestDetail = TestBuilders.patientDataRequestDetail()
                 .consentRequestId(null)
                 .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
+                .patientId(requester)
                 .build();
 
         when(authenticator.verify(token)).thenReturn(just(caller));
@@ -428,6 +434,37 @@ class HealthInfoControllerTest {
                         .build())).build();
 
         assertHealthInfoStatus(token, dataStatusCheckRequest, expectedResponse);
+        assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenDataRequestIdDoesntBelongToRequester() throws JsonProcessingException {
+        var token = TestBuilders.string();
+        var requester = "someone@ncg";
+        var caller = new Caller(requester, false, null, true);
+        var dataRequestIds = List.of(UUID.randomUUID().toString());
+        var dataStatusCheckRequest = DataRequestStatusCheckRequest.builder().requestIds(dataRequestIds).build();
+        ArgumentCaptor<Set<String>> dataRequestIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        var dataRequestDetail = TestBuilders.patientDataRequestDetail()
+                .consentRequestId(null)
+                .patientDataRequestedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5))
+                .patientId("some-other-request@ncg")
+                .build();
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
+
+        webTestClient
+                .post()
+                .uri(API_PATH_GET_HEALTH_INFO_STATUS)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(dataStatusCheckRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
+
         assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
     }
 }

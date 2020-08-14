@@ -75,18 +75,26 @@ public class HealthInfoController {
     public Mono<ResponseEntity<FileSystemResource>> fetchHealthInformation(
             @PathVariable(value = "consent-request-id") String consentRequestId,
             @PathVariable(value = "file-name") String fileName) {
-        return healthInfoManager.getTransactionIdForConsentRequest(consentRequestId)
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
+                .map(Caller::getUsername)
+                .flatMapMany(username -> healthInfoManager.getTransactionIdForConsentRequest(consentRequestId, username))
                 .map(transactionId -> Paths.get(
                         serviceProperties.getLocalStoragePath(),
                         TokenUtils.encode(consentRequestId),
                         TokenUtils.encode(transactionId), fileName))
-                .map(filePath -> {
+                .filter(Files::exists)
+                .collectList()
+                .filter(filePaths -> !filePaths.isEmpty())
+                .map(filePaths -> {
+                    var filePath = filePaths.get(0);
                     var contentDispositionHeaderValue = String.format("attachment; %s", filePath.getFileName().toString());
                     return ResponseEntity.ok()
                             .header(HttpHeaders.CONTENT_DISPOSITION, contentDispositionHeaderValue)
                             .contentType(responseContentType(filePath))
                             .body(new FileSystemResource(filePath));
-                });
+                })
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
 
     }
 
@@ -95,7 +103,7 @@ public class HealthInfoController {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> (Caller) securityContext.getAuthentication().getPrincipal())
                 .map(Caller::getUsername)
-                .flatMapMany(username -> healthInfoManager.fetchHealthInformationStatus(dataRequest.getRequestIds()))
+                .flatMapMany(username -> healthInfoManager.fetchHealthInformationStatus(dataRequest.getRequestIds(), username))
                 .collectList()
                 .map(DataRequestStatusResponse::new);
     }

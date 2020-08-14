@@ -104,14 +104,18 @@ public class HealthInfoManager {
                 .zipWith(healthInformationRepository.getTotalCountOfEntries(transactionIds));
     }
 
-    public Mono<String> getTransactionIdForConsentRequest(String consentRequestId) {
-        return consentRepository.getConsentArtefactId(consentRequestId)
-                .flatMap(dataFlowRepository::getTransactionId);
+    public Flux<String> getTransactionIdForConsentRequest(String consentRequestId, String username) {
+        return consentRepository.getConsentDetails(consentRequestId)
+                .filter(consentArtefact -> consentArtefact.get("requester").equals(username))
+                .switchIfEmpty(Mono.error(unauthorizedRequester()))
+                .flatMap(consentArtefact -> dataFlowRepository.getTransactionId(consentArtefact.get("consentId")));
     }
 
-    public Flux<PatientHealthInfoStatus> fetchHealthInformationStatus(List<String> dataRequestIds) {
+    public Flux<PatientHealthInfoStatus> fetchHealthInformationStatus(List<String> dataRequestIds, String username) {
         var dataReqUUIDs = dataRequestIds.stream().filter(this::isUUID).collect(Collectors.toSet());
         return dataFlowRepository.fetchPatientDataRequestDetails(dataReqUUIDs)
+                .filter(dataRequestDetail -> dataRequestDetail.getPatientId().equals(username))
+                .switchIfEmpty(Flux.error(unauthorizedRequester()))
                 .collectList()
                 .flatMapMany(patientDataRequestDetails -> {
                     var detailsByDataReqId = patientDataRequestDetails.stream()
