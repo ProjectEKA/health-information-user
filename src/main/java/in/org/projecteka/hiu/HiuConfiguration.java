@@ -21,8 +21,6 @@ import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.CMAccountServiceAuthenticator;
 import in.org.projecteka.hiu.common.CMAccountServiceOfflineAuthenticator;
-import in.org.projecteka.hiu.common.CMPatientAccountAuthenticator;
-import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.CacheMethodProperty;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
@@ -764,32 +762,6 @@ public class HiuConfiguration {
         return new DefaultJWTProcessor<>();
     }
 
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak")
-    @Bean("userAuthenticator")
-    public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
-                                           ConfigurableJWTProcessor<SecurityContext> jwtProcessor,
-                                           CacheAdapter<String, String> blockListedTokens) {
-        return new CMPatientAuthenticator(jwkSet, jwtProcessor, blockListedTokens);
-    }
-
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "both", matchIfMissing = true)
-    @Bean("userAuthenticator")
-    public Authenticator cmPatientAccountAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
-                                                       ConfigurableJWTProcessor<SecurityContext> jwtProcessor,
-                                                       SessionServiceClient sessionServiceClient,
-                                                       AccountServiceProperties accountServiceProperties,
-                                                       WebClient.Builder webClientBuilder,
-                                                       CacheAdapter<String, String> blockListedTokens,
-                                                       IdentityService identityService)
-            throws InvalidKeySpecException, NoSuchAlgorithmException {
-        var cmAccountServiceAuthenticator = getAccountServiceAuthenticator(sessionServiceClient,
-                accountServiceProperties,
-                webClientBuilder, blockListedTokens, identityService);
-        CMPatientAuthenticator cmPatientAuthenticator = new CMPatientAuthenticator(jwkSet, jwtProcessor, blockListedTokens);
-        return new CMPatientAccountAuthenticator(cmAccountServiceAuthenticator, cmPatientAuthenticator);
-    }
-
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
     @Bean("userAuthenticator")
     public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient,
                                                             AccountServiceProperties accountServiceProperties,

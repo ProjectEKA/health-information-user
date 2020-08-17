@@ -44,7 +44,6 @@ hiu:
   accountservice:
     usingUnsecureSSL: true
     url: ${ACCOUNT_SERVICE_URL}
-    loginMethod: both
     hasBehindGateway: true
     clientId: 'client-id'
     clientSecret: 'client-secret'
