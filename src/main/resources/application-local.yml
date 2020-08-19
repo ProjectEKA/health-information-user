@@ -42,9 +42,9 @@ hiu:
     clientSecret: ${CLIENT_SECRET}
     jwkUrl: http://localhost:8000/v0.5/certs
   accountservice:
-    usingUnsecureSSL: true
+    usingUnsecureSSL: false
     url: ${ACCOUNT_SERVICE_URL}
-    hasBehindGateway: true
+    hasBehindGateway: false
     clientId: 'client-id'
     clientSecret: 'client-secret'
     hasAuthUrl: ${ACCOUNT_SERVICE_AUTH_URL}
