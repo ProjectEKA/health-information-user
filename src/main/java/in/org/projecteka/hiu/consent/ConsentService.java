@@ -11,9 +11,11 @@ import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.ConsentStatusRequest;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,6 +237,11 @@ public class ConsentService {
         }
         logger.error("Unusual response = {} from CM", consentArtefactResponse);
         return empty();
+    }
+
+    public Mono<Void> handleConsentRequestStatus(ConsentStatusRequest consentStatusRequest) {
+        //
+
     }
 
     private Mono<Void> processConsentNotification(ConsentNotification notification, LocalDateTime localDateTime) {
