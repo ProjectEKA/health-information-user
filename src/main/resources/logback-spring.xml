@@ -6,6 +6,7 @@
         <root level="info">
             <appender-ref ref="console"/>
         </root>
+        <logger name="reactor.netty.http.server" level="DEBUG"/>
     </springProfile>
     <logger name="org.springframework">
         <level value="warn"/>
@@ -25,5 +26,6 @@
         <root level="info">
             <appender-ref ref="console"/>
         </root>
+        <logger name="reactor.netty.http.server" level="DEBUG"/>
     </springProfile>
 </configuration>
