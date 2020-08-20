@@ -251,12 +251,12 @@ public class ConsentService {
         }
         if (consentStatusRequest.getConsentRequest() != null) {
             return consentRepository
-                    .getConsentRequestStatus(consentStatusRequest.getConsentRequest().getConsentRequestId())
+                    .getConsentRequestStatus(consentStatusRequest.getConsentRequest().getId())
                     .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
                     .filter(consentStatus -> consentStatus != consentStatusRequest.getConsentRequest().getStatus())
                     .flatMap(consentRequest -> consentRepository
                             .updateConsentRequestStatus(consentStatusRequest.getConsentRequest().getStatus(),
-                                    consentStatusRequest.getConsentRequest().getConsentRequestId()));
+                                    consentStatusRequest.getConsentRequest().getId()));
         }
         logger.error("Unusual response = {} from CM", consentStatusRequest);
         return empty();

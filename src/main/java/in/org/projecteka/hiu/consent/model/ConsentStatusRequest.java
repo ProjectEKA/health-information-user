@@ -14,7 +14,7 @@ import java.util.UUID;
 public class ConsentStatusRequest {
     UUID requestId;
     LocalDateTime timestamp;
-    ConsentNotification consentRequest;
+    ConsentStatusDetail consentRequest;
     RespError error;
     @NotNull
     GatewayResponse resp;
