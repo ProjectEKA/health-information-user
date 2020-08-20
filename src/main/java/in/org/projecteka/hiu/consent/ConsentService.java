@@ -39,6 +39,7 @@ import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.ERRORED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
 import static java.time.LocalDateTime.now;
 import static java.time.ZoneOffset.UTC;
@@ -240,8 +241,25 @@ public class ConsentService {
     }
 
     public Mono<Void> handleConsentRequestStatus(ConsentStatusRequest consentStatusRequest) {
-        //
-
+        if (consentStatusRequest.getError() != null) {
+            logger.error("[ConsentService] Received error response for consent-status. HIU " +
+                            "RequestId={}, Error code = {}, message={}",
+                    consentStatusRequest.getResp().getRequestId(),
+                    consentStatusRequest.getError().getCode(),
+                    consentStatusRequest.getError().getMessage());
+            return empty();
+        }
+        if (consentStatusRequest.getConsentRequest() != null) {
+            return consentRepository
+                    .getConsentRequestStatus(consentStatusRequest.getConsentRequest().getConsentRequestId())
+                    .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
+                    .filter(consentStatus -> consentStatus != consentStatusRequest.getConsentRequest().getStatus())
+                    .flatMap(consentRequest -> consentRepository
+                            .updateConsentRequestStatus(consentStatusRequest.getConsentRequest().getStatus(),
+                                    consentStatusRequest.getConsentRequest().getConsentRequestId()));
+        }
+        logger.error("Unusual response = {} from CM", consentStatusRequest);
+        return empty();
     }
 
     private Mono<Void> processConsentNotification(ConsentNotification notification, LocalDateTime localDateTime) {
