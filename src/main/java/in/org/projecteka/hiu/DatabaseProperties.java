@@ -1,7 +1,9 @@
 package in.org.projecteka.hiu;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -10,16 +12,17 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "hiu.database")
 @Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PACKAGE)
 @AllArgsConstructor
 public class DatabaseProperties {
-    private final String host;
-    private final int port;
-    private final String schema;
-    private final String user;
-    private final String password;
-    private final int poolSize;
-    private final boolean replicaReadEnabled;
-    private final Replica replica;
+    private String host;
+    private int port;
+    private String schema;
+    private String user;
+    private String password;
+    private int poolSize;
+    private boolean replicaReadEnabled;
+    private Replica replica;
 
     public Replica getReplica() {
         return replica != null && replicaReadEnabled
