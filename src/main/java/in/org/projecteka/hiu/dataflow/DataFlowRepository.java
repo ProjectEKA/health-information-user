@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.dataflow.model.PatientDataRequestDetail;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.Tuple;
+import lombok.AllArgsConstructor;
 import org.apache.log4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -27,6 +28,7 @@ import static in.org.projecteka.hiu.common.Serializer.to;
 import static in.org.projecteka.hiu.dataflow.model.RequestStatus.REQUESTED;
 import static java.lang.String.format;
 
+@AllArgsConstructor
 public class DataFlowRepository {
     private static final String INSERT_TO_DATA_FLOW_REQUEST = "INSERT INTO data_flow_request (transaction_id, " +
             "consent_artefact_id, data_flow_request, request_id) VALUES ($1, $2, $3, $4)";
@@ -74,17 +76,14 @@ public class DataFlowRepository {
             "WHERE pcr.data_request_id IN (%s)";
 
     private static final Logger logger = Logger.getLogger(DataFlowRepository.class);
-    private final PgPool dbClient;
-
-    public DataFlowRepository(PgPool pgPool) {
-        this.dbClient = pgPool;
-    }
+    private final PgPool readWriteClient;
+    private final PgPool readOnlyClient;
 
     public Mono<Void> addDataRequest(String transactionId,
                                      String consentId,
                                      DataFlowRequest dataFlowRequest,
                                      String requestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST)
                 .execute(Tuple.of(transactionId, consentId, from(dataFlowRequest), requestId),
                         handler -> {
                             if (handler.failed()) {
@@ -96,7 +95,7 @@ public class DataFlowRepository {
     }
 
     public Mono<Void> addDataFlowRequest(String requestId, String consentId, DataFlowRequest dataFlowRequest) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_DATA_FLOW_REQUEST)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_DATA_FLOW_REQUEST)
                 .execute(Tuple.of(requestId, consentId, from(dataFlowRequest)),
                         handler -> {
                             if (handler.failed()) {
@@ -109,7 +108,7 @@ public class DataFlowRepository {
     }
 
     public Mono<Void> updateDataRequest(String transactionId, RequestStatus status, String requestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_DATA_FLOW_REQUEST)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(UPDATE_DATA_FLOW_REQUEST)
                 .execute(Tuple.of(transactionId, status.toString(), requestId),
                         handler -> {
                             if (handler.failed()) {
@@ -122,7 +121,7 @@ public class DataFlowRepository {
     }
 
     public Mono<Void> addKeys(String transactionId, DataFlowRequestKeyMaterial dataFlowRequestKeyMaterial) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST_KEYS)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_TO_DATA_FLOW_REQUEST_KEYS)
                 .execute(Tuple.of(transactionId, from(dataFlowRequestKeyMaterial)),
                         handler -> {
                             if (handler.failed()) {
@@ -135,7 +134,7 @@ public class DataFlowRepository {
     }
 
     public Mono<DataFlowRequestKeyMaterial> getKeys(String transactionId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(GET_KEY_FOR_ID)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(GET_KEY_FOR_ID)
                 .execute(Tuple.of(transactionId),
                         handler -> {
                             if (handler.failed()) {
@@ -156,7 +155,7 @@ public class DataFlowRepository {
     }
 
     public Mono<String> getTransactionId(String consentArtefactId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_TRANSACTION_IDS_FROM_DATA_FLOW_REQUEST)
                 .execute(Tuple.of(consentArtefactId, REQUESTED.toString()),
                         handler -> {
                             if (handler.failed()) {
@@ -176,7 +175,7 @@ public class DataFlowRepository {
     }
 
     public Mono<String> getConsentId(String transactionId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_ID)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_CONSENT_ID)
                 .execute(Tuple.of(transactionId),
                         handler -> {
                             if (handler.failed()) {
@@ -196,7 +195,7 @@ public class DataFlowRepository {
 
 
     public Mono<Map<String, Object>> retrieveDataFlowRequest(String transactionId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_DATA_FLOW_REQUEST_FOR_TRANSACTION)
                 .execute(Tuple.of(transactionId),
                         handler -> {
                             if (handler.failed()) {
@@ -223,7 +222,7 @@ public class DataFlowRepository {
     }
 
     public Mono<Void> insertDataPartAvailability(String transactionId, int partNumber, HealthInfoStatus status) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_HEALTH_DATA_AVAILABILITY)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_HEALTH_DATA_AVAILABILITY)
                 .execute(Tuple.of(transactionId, String.valueOf(partNumber), status.toString()),
                         handler -> {
                             if (handler.failed()) {
@@ -237,7 +236,7 @@ public class DataFlowRepository {
 
     public Mono<Void> updateDataFlowWithStatus(String transactionId, String dataPartNumber, String allErrors,
                                                HealthInfoStatus status, LocalDateTime latestResourceDate) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_HEALTH_DATA_AVAILABILITY)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(UPDATE_HEALTH_DATA_AVAILABILITY)
                 .execute(Tuple.of(status.toString(), allErrors, latestResourceDate, transactionId, dataPartNumber),
                         handler -> {
                             if (handler.failed()) {
@@ -254,7 +253,7 @@ public class DataFlowRepository {
         if (consentRequestIds.isEmpty()) {
             return Flux.empty();
         }
-        return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
+        return Flux.create(fluxSink -> readWriteClient.preparedQuery(generatedQuery)
                 .execute(handler -> {
                     if (handler.failed()) {
                         logger.error(handler.cause().getMessage(), handler.cause());
@@ -280,7 +279,7 @@ public class DataFlowRepository {
         if (dataRequestIds.isEmpty()) {
             return Flux.empty();
         }
-        return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
+        return Flux.create(fluxSink -> readWriteClient.preparedQuery(generatedQuery)
                 .execute(handler -> {
                     if (handler.failed()) {
                         logger.error(handler.cause().getMessage(), handler.cause());

@@ -80,11 +80,13 @@ public class ConsentRepository {
             "consent_request_id = $1";
     private static final String SELECT_CM_ID_FOR_A_CONSENT = "SELECT consent_artefact -> 'consentManager' ->> 'id' as " +
             "consentManagerId FROM consent_artefact WHERE consent_artefact_id=$1";
-    private final PgPool dbClient;
+
+    private final PgPool readWriteClient;
+    private final PgPool readOnlyClient;
 
     @Deprecated
     public Mono<Void> insert(ConsentRequest consentRequest) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_CONSENT_REQUEST_QUERY)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_CONSENT_REQUEST_QUERY)
                 .execute(Tuple.of(new JsonObject(from(consentRequest)), consentRequest.getId()),
                         handler -> {
                             if (handler.failed()) {
@@ -105,7 +107,7 @@ public class ConsentRepository {
      * @return
      */
     public Mono<ConsentRequest> get(String consentRequestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_REQUEST_QUERY)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_CONSENT_REQUEST_QUERY)
                 .execute(Tuple.of(consentRequestId),
                         handler -> {
                             if (handler.failed()) {
@@ -124,7 +126,7 @@ public class ConsentRepository {
     }
 
     public Mono<ConsentArtefact> getConsent(String consentId, ConsentStatus status) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_ARTEFACT_QUERY)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_CONSENT_ARTEFACT_QUERY)
                 .execute(Tuple.of(consentId, status.toString()),
                         handler -> {
                             if (handler.failed()) {
@@ -146,7 +148,7 @@ public class ConsentRepository {
     public Mono<Void> insertConsentArtefact(ConsentArtefact consentArtefact,
                                             ConsentStatus status,
                                             String consentRequestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_CONSENT_ARTEFACT_QUERY)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_CONSENT_ARTEFACT_QUERY)
                 .execute(Tuple.of(consentRequestId,
                         new JsonObject(from(consentArtefact)),
                         consentArtefact.getConsentId(),
@@ -165,7 +167,7 @@ public class ConsentRepository {
     public Mono<Void> updateStatus(ConsentArtefactReference consentArtefactReference,
                                    ConsentStatus status,
                                    LocalDateTime timestamp) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_CONSENT_ARTEFACT_STATUS_QUERY)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(UPDATE_CONSENT_ARTEFACT_STATUS_QUERY)
                 .execute(Tuple.of(status.toString(),
                         timestamp,
                         consentArtefactReference.getId()),
@@ -180,7 +182,7 @@ public class ConsentRepository {
     }
 
     public Flux<Map<String, String>> getConsentDetails(String consentRequestId) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT)
+        return Flux.create(fluxSink -> readOnlyClient.preparedQuery(SELECT_CONSENT_IDS_FROM_CONSENT_ARTIFACT)
                 .execute(Tuple.of(consentRequestId),
                         handler -> {
                             if (handler.failed()) {
@@ -207,7 +209,7 @@ public class ConsentRepository {
     }
 
     public Mono<String> getConsentArtefactId(String consentRequestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_ID_FROM_REQUEST_ID)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_CONSENT_ID_FROM_REQUEST_ID)
                 .execute(Tuple.of(consentRequestId),
                         handler -> {
                             if (handler.failed()) {
@@ -221,7 +223,7 @@ public class ConsentRepository {
     }
 
     public Mono<String> getHipId(String consentId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_HIP_ID_FOR_A_CONSENT)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_HIP_ID_FOR_A_CONSENT)
                 .execute(Tuple.of(consentId),
                         handler -> {
                             if (handler.failed()) {
@@ -239,7 +241,7 @@ public class ConsentRepository {
     }
 
     public Mono<String> getPatientId(String consentArtefactId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_PATIENT_ID_FOR_A_CONSENT)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_PATIENT_ID_FOR_A_CONSENT)
                 .execute(Tuple.of(consentArtefactId),
                         handler -> {
                             if (handler.failed()) {
@@ -258,7 +260,7 @@ public class ConsentRepository {
 
 
     public Mono<Void> insertConsentRequestToGateway(ConsentRequest consentRequest) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_GATEWAY_CONSENT_REQUEST)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_GATEWAY_CONSENT_REQUEST)
                 .execute(Tuple.of(
                         new JsonObject(from(consentRequest)),
                         consentRequest.getId(),
@@ -274,7 +276,7 @@ public class ConsentRepository {
     }
 
     public Mono<ConsentStatus> consentRequestStatus(String gatewayRequestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
                 .execute(Tuple.of(gatewayRequestId),
                         handler -> {
                             if (handler.failed()) {
@@ -292,7 +294,7 @@ public class ConsentRepository {
     }
 
     public Mono<ConsentStatus> consentRequestStatusFor(String consentRequestId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(GATEWAY_CONSENT_REQUEST_STATUS)
                 .execute(Tuple.of(consentRequestId),
                         handler -> {
                             if (handler.failed()) {
@@ -313,7 +315,7 @@ public class ConsentRepository {
                                                  ConsentStatus status,
                                                  String consentRequestId) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(UPDATE_GATEWAY_CONSENT_REQUEST_STATUS)
+                readWriteClient.preparedQuery(UPDATE_GATEWAY_CONSENT_REQUEST_STATUS)
                         .execute(Tuple.of(consentRequestId, status.toString(), LocalDateTime.now(), gatewayRequestId),
                                 handler -> {
                                     if (handler.failed()) {
@@ -326,7 +328,7 @@ public class ConsentRepository {
     }
 
     public Flux<Map<String, Object>> requestsOf(String requesterId) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(CONSENT_REQUEST_BY_REQUESTER_ID)
+        return Flux.create(fluxSink -> readOnlyClient.preparedQuery(CONSENT_REQUEST_BY_REQUESTER_ID)
                 .execute(Tuple.of(requesterId),
                         handler -> {
                             if (handler.failed()) {
@@ -352,7 +354,7 @@ public class ConsentRepository {
 
     public Mono<Void> updateConsentRequestStatus(ConsentStatus status, String consentRequestId) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(UPDATE_CONSENT_REQUEST_STATUS)
+                readWriteClient.preparedQuery(UPDATE_CONSENT_REQUEST_STATUS)
                         .execute(Tuple.of(consentRequestId, status.toString(), LocalDateTime.now()),
                                 handler -> {
                                     if (handler.failed()) {
@@ -365,7 +367,7 @@ public class ConsentRepository {
     }
 
     public Mono<ConsentStatus> getConsentRequestStatus(String consentId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CONSENT_REQUEST_STATUS)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_CONSENT_REQUEST_STATUS)
                 .execute(Tuple.of(consentId),
                         handler -> {
                             if (handler.failed()) {
@@ -383,7 +385,7 @@ public class ConsentRepository {
     }
 
     public Mono<String> getConsentMangerId(String consentId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_CM_ID_FOR_A_CONSENT)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_CM_ID_FOR_A_CONSENT)
                 .execute(Tuple.of(consentId),
                         handler -> {
                             if (handler.failed()) {
