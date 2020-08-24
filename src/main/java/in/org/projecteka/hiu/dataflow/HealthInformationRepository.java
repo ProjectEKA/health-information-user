@@ -38,11 +38,13 @@ public class HealthInformationRepository {
 
     private static final String DELETE_HEALTH_INFO_FOR_EXPIRED_CONSENT = "DELETE FROM health_information WHERE transaction_id=$1";
 
-    private final PgPool dbClient;
+    private final PgPool readWriteClient;
+    private final PgPool readOnlyClient;
+
     private final Logger logger = LoggerFactory.getLogger(HealthInformationRepository.class);
 
     public Flux<Map<String, Object>> getHealthInformation(String transactionId) {
-        return Flux.create(fluxSink -> dbClient.preparedQuery(SELECT_HEALTH_INFORMATION)
+        return Flux.create(fluxSink -> readOnlyClient.preparedQuery(SELECT_HEALTH_INFORMATION)
                 .execute(Tuple.of(transactionId),
                         getHealthInfo(fluxSink, "Failed to get health information from transaction Id")));
     }
@@ -50,7 +52,7 @@ public class HealthInformationRepository {
 
     public Mono<Void> deleteHealthInformation(String transactionId) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(DELETE_HEALTH_INFO_FOR_EXPIRED_CONSENT)
+                readWriteClient.preparedQuery(DELETE_HEALTH_INFO_FOR_EXPIRED_CONSENT)
                         .execute(Tuple.of(transactionId),
                                 handler -> {
                                     if (handler.failed()) {
@@ -67,7 +69,7 @@ public class HealthInformationRepository {
         if(transactionIds.isEmpty()){
             return Flux.empty();
         }
-        return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
+        return Flux.create(fluxSink -> readOnlyClient.preparedQuery(generatedQuery)
                 .execute(Tuple.of(limit, offset),
                         getHealthInfo(fluxSink, "Failed to get health information for given transaction ids")));
     }
@@ -77,7 +79,7 @@ public class HealthInformationRepository {
         if (transactionIds.isEmpty()){
             return Mono.just(0);
         }
-        return Mono.create(monoSink -> dbClient.preparedQuery(generatedQuery)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(generatedQuery)
                 .execute(handler -> {
                     if (handler.failed()) {
                         logger.error(handler.cause().getMessage(), handler.cause());

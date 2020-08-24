@@ -136,15 +136,29 @@ public class HiuConfiguration {
     public static final String HIU_DEAD_LETTER_ROUTING_KEY = "deadLetter";
     public static final String EXCHANGE = "exchange";
 
-    @Bean
-    public PgPool dbConnectionPool(DatabaseProperties dbProps) {
+    @Bean("readWriteClient")
+    public PgPool readWriteClient(DatabaseProperties dbProps) {
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setPort(dbProps.getPort())
                 .setHost(dbProps.getHost())
                 .setDatabase(dbProps.getSchema())
                 .setUser(dbProps.getUser())
                 .setPassword(dbProps.getPassword());
-        var poolOptions = new PoolOptions().setMaxSize(dbProps.getPoolSize());
+
+        PoolOptions poolOptions = new PoolOptions().setMaxSize(dbProps.getPoolSize());
+        return PgPool.pool(connectOptions, poolOptions);
+    }
+
+    @Bean("readOnlyClient")
+    public PgPool readOnlyClient(DatabaseProperties dbProps) {
+        PgConnectOptions connectOptions = new PgConnectOptions()
+                .setPort(dbProps.getReplica().getPort())
+                .setHost(dbProps.getReplica().getHost())
+                .setDatabase(dbProps.getSchema())
+                .setUser(dbProps.getReplica().getUser())
+                .setPassword(dbProps.getReplica().getPassword());
+
+        PoolOptions poolOptions = new PoolOptions().setMaxSize(dbProps.getReplica().getPoolSize());
         return PgPool.pool(connectOptions, poolOptions);
     }
 
@@ -459,13 +473,15 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public ConsentRepository consentRepository(PgPool pgPool) {
-        return new ConsentRepository(pgPool);
+    public ConsentRepository consentRepository(@Qualifier("readWriteClient") PgPool readWriteClient,
+                                               @Qualifier("readOnlyClient") PgPool readOnlyClient) {
+        return new ConsentRepository(readWriteClient, readOnlyClient);
     }
 
     @Bean
-    public PatientConsentRepository patientConsentRequestRepository(PgPool pgPool) {
-        return new PatientConsentRepository(pgPool);
+    public PatientConsentRepository patientConsentRequestRepository(@Qualifier("readWriteClient") PgPool readWriteClient,
+                                                                    @Qualifier("readOnlyClient") PgPool readOnlyClient) {
+        return new PatientConsentRepository(readWriteClient, readOnlyClient);
     }
 
     @Bean
@@ -554,13 +570,15 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public DataFlowRepository dataFlowRequestRepository(PgPool pgPool) {
-        return new DataFlowRepository(pgPool);
+    public DataFlowRepository dataFlowRequestRepository(@Qualifier("readWriteClient") PgPool readWriteClient,
+                                                        @Qualifier("readOnlyClient") PgPool readOnlyClient) {
+        return new DataFlowRepository(readWriteClient, readOnlyClient);
     }
 
     @Bean
-    public HealthInformationRepository healthInformationRepository(PgPool pgPool) {
-        return new HealthInformationRepository(pgPool);
+    public HealthInformationRepository healthInformationRepository(@Qualifier("readWriteClient") PgPool readWriteClient,
+                                                                   @Qualifier("readOnlyClient") PgPool readOnlyClient) {
+        return new HealthInformationRepository(readWriteClient, readOnlyClient);
     }
 
     @Bean
@@ -645,8 +663,8 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public HealthDataRepository healthDataRepository(PgPool pgPool) {
-        return new HealthDataRepository(pgPool);
+    public HealthDataRepository healthDataRepository(@Qualifier("readWriteClient") PgPool readWriteClient) {
+        return new HealthDataRepository(readWriteClient);
     }
 
     @Bean
@@ -778,8 +796,9 @@ public class HiuConfiguration {
     }
 
     @Bean
-    public UserRepository userRepository(PgPool pgPool) {
-        return new UserRepository(pgPool);
+    public UserRepository userRepository(@Qualifier("readWriteClient") PgPool readWriteClient,
+                                         @Qualifier("readOnlyClient") PgPool readOnlyClient) {
+        return new UserRepository(readWriteClient, readOnlyClient);
     }
 
     @Bean
