@@ -23,6 +23,13 @@ hiu:
     user: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     poolSize: ${DB_CONNECTION_POOL_SIZE}
+    replica-read-enabled: {REPLICA_READ_ENABLED:false}
+    replica:
+      host: ${POSTGRES_HOST}
+      port: ${POSTGRES_PORT:5432}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+      poolSize: ${REPLICA_POOL_SIZE:3}
   dataflow:
     offsetInDays: ${OFFSET_IN_DAYS}
     usingGateway: ${USING_GATEWAY}
