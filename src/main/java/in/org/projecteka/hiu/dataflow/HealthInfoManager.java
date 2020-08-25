@@ -115,7 +115,6 @@ public class HealthInfoManager {
         var dataReqUUIDs = dataRequestIds.stream().filter(this::isUUID).collect(Collectors.toSet());
         return dataFlowRepository.fetchPatientDataRequestDetails(dataReqUUIDs)
                 .filter(dataRequestDetail -> dataRequestDetail.getPatientId().equals(username))
-                .switchIfEmpty(Flux.error(unauthorizedRequester()))
                 .collectList()
                 .flatMapMany(patientDataRequestDetails -> {
                     var detailsByDataReqId = patientDataRequestDetails.stream()
