@@ -21,4 +21,22 @@ public class DatabaseProperties {
     private String user;
     private String password;
     private int poolSize;
+    private boolean replicaReadEnabled;
+    private Replica replica;
+
+    public Replica getReplica() {
+        return replica != null && replicaReadEnabled
+                ? replica
+                : new Replica(host, port, user, password, getReadPoolSize());
+    }
+
+    private int getReadPoolSize() {
+        return poolSize / 2 + poolSize % 2;
+    }
+
+    public int getPoolSize() {
+        return replica != null && replicaReadEnabled
+                ? poolSize
+                : poolSize / 2;
+    }
 }

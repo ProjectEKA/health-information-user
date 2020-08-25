@@ -79,10 +79,11 @@ public class PatientConsentRepository {
                     "WHERE patient_id=$1 and hip_id in (%s) " +
                     "GROUP BY hip_id)";
 
-    private final PgPool dbClient;
+    private final PgPool readWriteClient;
+    private final PgPool readOnlyClient;
 
     public Mono<Void> insertPatientConsentRequest(UUID dataRequestId, String hipId, String requesterId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(INSERT_PATIENT_CONSENT_REQUEST)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(INSERT_PATIENT_CONSENT_REQUEST)
                 .execute(Tuple.of(dataRequestId, hipId, requesterId),
                         handler -> {
                             if (handler.failed()) {
@@ -96,7 +97,7 @@ public class PatientConsentRepository {
 
 
     public Mono<Void> updatePatientConsentRequest(UUID dataRequestId, UUID consentRequestId, LocalDateTime now) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(UPDATE_PATIENT_CONSENT_REQUEST)
+        return Mono.create(monoSink -> readWriteClient.preparedQuery(UPDATE_PATIENT_CONSENT_REQUEST)
                 .execute(Tuple.of(dataRequestId, consentRequestId, now),
                         handler -> {
                             if (handler.failed()) {
@@ -110,7 +111,7 @@ public class PatientConsentRepository {
 
     public Mono<List<String>> deletePatientConsentRequestFor(String patientId) {
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(DELETE_FROM_PATIENT_CONSENT_REQUEST)
+                readWriteClient.preparedQuery(DELETE_FROM_PATIENT_CONSENT_REQUEST)
                         .execute(Tuple.of(patientId),
                                 handler -> {
                                     if (handler.failed()) {
@@ -131,7 +132,7 @@ public class PatientConsentRepository {
         }
         var generatedQuery = String.format(DELETE_FROM_CONSENT_REQUEST, joinByComma(consentRequestIds));
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(generatedQuery)
+                readWriteClient.preparedQuery(generatedQuery)
                         .execute(handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
@@ -152,7 +153,7 @@ public class PatientConsentRepository {
         }
         var generatedQuery = String.format(DELETE_FROM_CONSENT_ARTEFACT, joinByComma(consentArtefactIds));
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(generatedQuery)
+                readWriteClient.preparedQuery(generatedQuery)
                         .execute(handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
@@ -173,7 +174,7 @@ public class PatientConsentRepository {
         }
         var generatedQuery = String.format(DELETE_FROM_DATA_FLOW_REQUEST, joinByComma(consentArtefactIds));
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(generatedQuery)
+                readWriteClient.preparedQuery(generatedQuery)
                         .execute(handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
@@ -194,7 +195,7 @@ public class PatientConsentRepository {
         }
         var generatedQuery = String.format(DELETE_FROM_HEALTH_INFORMATION, joinByComma(transactionIds));
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(generatedQuery)
+                readWriteClient.preparedQuery(generatedQuery)
                         .execute(handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
@@ -215,7 +216,7 @@ public class PatientConsentRepository {
         }
         var generatedQuery = String.format(DELETE_FROM_DATA_FLOW_REQUEST_KEYS, joinByComma(transactionIds));
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(generatedQuery)
+                readWriteClient.preparedQuery(generatedQuery)
                         .execute(handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
@@ -234,7 +235,7 @@ public class PatientConsentRepository {
         }
         var generatedQuery = String.format(DELETE_FROM_DATA_FLOW_PARTS, joinByComma(transactionIds));
         return Mono.create(monoSink ->
-                dbClient.preparedQuery(generatedQuery)
+                readWriteClient.preparedQuery(generatedQuery)
                         .execute(handler -> {
                             if (handler.failed()) {
                                 logger.error(handler.cause().getMessage(), handler.cause());
@@ -254,7 +255,7 @@ public class PatientConsentRepository {
         if (dataRequestIds.isEmpty()) {
             return Flux.empty();
         }
-        return Flux.create(fluxSink -> dbClient.preparedQuery(generatedQuery)
+        return Flux.create(fluxSink -> readOnlyClient.preparedQuery(generatedQuery)
                 .execute(handler -> {
                     if (handler.failed()) {
                         logger.error(handler.cause().getMessage(), handler.cause());
@@ -277,7 +278,7 @@ public class PatientConsentRepository {
     }
 
     public Mono<List<Map<String, Object>>> getLatestResourceDateByHipCareContext(String patientId, String hipId) {
-        return Mono.create(monoSink -> dbClient.preparedQuery(SELECT_LATEST_RESOURCE_BY_CC_FOR_PATIENT_IN_HIP)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(SELECT_LATEST_RESOURCE_BY_CC_FOR_PATIENT_IN_HIP)
                 .execute(Tuple.of(patientId, hipId),
                         handler -> {
                             if (handler.failed()) {
@@ -297,7 +298,7 @@ public class PatientConsentRepository {
 
     public Mono<List<PatientDataRequestDetail>> getLatestDataRequestsForPatient(String patientId, List<String> hipIds) {
         var generatedQuery = String.format(SELECT_LATEST_DATA_REQUEST_FOR_PATIENT_BY_HIPS, joinByComma(hipIds));
-        return Mono.create(monoSink -> dbClient.preparedQuery(generatedQuery)
+        return Mono.create(monoSink -> readOnlyClient.preparedQuery(generatedQuery)
                 .execute(Tuple.of(patientId),
                         handler -> {
                             if (handler.failed()) {
