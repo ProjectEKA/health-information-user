@@ -3,10 +3,9 @@
         <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
         </appender>
-        <root level="info">
+        <root level="DEBUG">
             <appender-ref ref="console"/>
         </root>
-        <logger name="reactor.netty.http.server" level="DEBUG"/>
     </springProfile>
     <logger name="org.springframework">
         <level value="warn"/>
@@ -23,9 +22,8 @@
                 </Pattern>
             </layout>
         </appender>
-        <root level="info">
+        <root level="DEBUG">
             <appender-ref ref="console"/>
         </root>
-        <logger name="reactor.netty.http.server" level="DEBUG"/>
     </springProfile>
 </configuration>
