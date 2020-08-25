@@ -438,7 +438,7 @@ class HealthInfoControllerTest {
     }
 
     @Test
-    void shouldReturnUnauthorizedWhenDataRequestIdDoesntBelongToRequester() throws JsonProcessingException {
+    void shouldReturnEmptyStatusesDataRequestIdDoesntBelongToRequester() throws JsonProcessingException {
         var token = TestBuilders.string();
         var requester = "someone@ncg";
         var caller = new Caller(requester, false, null, true);
@@ -454,17 +454,8 @@ class HealthInfoControllerTest {
         when(authenticator.verify(token)).thenReturn(just(caller));
         when(dataFlowRepository.fetchPatientDataRequestDetails(dataRequestIdsCaptor.capture())).thenReturn(Flux.just(dataRequestDetail));
 
-        webTestClient
-                .post()
-                .uri(API_PATH_GET_HEALTH_INFO_STATUS)
-                .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(dataStatusCheckRequest)
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus()
-                .isUnauthorized();
 
+        assertHealthInfoStatus(token, dataStatusCheckRequest, new DataRequestStatusResponse(List.of()));
         assertEquals(dataRequestIdsCaptor.getValue(), Set.copyOf(dataRequestIds));
     }
 }
