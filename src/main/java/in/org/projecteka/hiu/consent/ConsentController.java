@@ -5,6 +5,7 @@ import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
+import in.org.projecteka.hiu.consent.model.ConsentStatusRequest;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import lombok.AllArgsConstructor;
@@ -62,6 +63,13 @@ public class ConsentController {
     public Mono<ResponseEntity<HttpStatus>> onFetchConsentArtefact(
             @RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
         consentService.handleConsentArtefact(consentArtefactResponse).subscribe();
+        return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
+    }
+
+    @PostMapping(Constants.PATH_CONSENT_REQUEST_ON_STATUS)
+    public Mono<ResponseEntity<HttpStatus>> onStatusConsentRequest(
+            @RequestBody ConsentStatusRequest consentStatusRequest) {
+        consentService.handleConsentRequestStatus(consentStatusRequest).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 }
