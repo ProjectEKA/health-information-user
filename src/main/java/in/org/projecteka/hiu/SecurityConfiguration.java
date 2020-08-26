@@ -37,6 +37,7 @@ import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_HIU_NOTIFY;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FIND;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_INIT;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUEST_ON_STATUS;
 import static in.org.projecteka.hiu.common.Constants.PATH_DATA_TRANSFER;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
@@ -58,7 +59,8 @@ public class SecurityConfiguration {
             PATH_CONSENTS_HIU_NOTIFY,
             PATH_CONSENTS_ON_FETCH,
             PATH_CONSENTS_ON_FIND,
-            PATH_HEALTH_INFORMATION_HIU_ON_REQUEST
+            PATH_HEALTH_INFORMATION_HIU_ON_REQUEST,
+            PATH_CONSENT_REQUEST_ON_STATUS
     };
 
     private static final List<Map.Entry<HttpMethod, String>> CM_PATIENT_APIS = List.of(

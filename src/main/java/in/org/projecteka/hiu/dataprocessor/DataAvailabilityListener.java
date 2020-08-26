@@ -10,7 +10,6 @@ import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.consent.ConsentRepository;
-import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
 import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
@@ -43,7 +42,7 @@ public class DataAvailabilityListener {
     private final ConsentRepository consentRepository;
     private final RabbitQueueNames queueNames;
 
-    private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
+    private static final Logger logger = Logger.getLogger(DataAvailabilityListener.class);
 
     @PostConstruct
     @SneakyThrows

@@ -11,9 +11,11 @@ import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
 import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.ConsentStatusRequest;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.ERRORED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
 import static java.time.LocalDateTime.now;
 import static java.time.ZoneOffset.UTC;
@@ -234,6 +237,28 @@ public class ConsentService {
                             hiuProperties.getDataPushUrl()))));
         }
         logger.error("Unusual response = {} from CM", consentArtefactResponse);
+        return empty();
+    }
+
+    public Mono<Void> handleConsentRequestStatus(ConsentStatusRequest consentStatusRequest) {
+        if (consentStatusRequest.getError() != null) {
+            logger.error("[ConsentService] Received error response for consent-status. HIU " +
+                            "RequestId={}, Error code = {}, message={}",
+                    consentStatusRequest.getResp().getRequestId(),
+                    consentStatusRequest.getError().getCode(),
+                    consentStatusRequest.getError().getMessage());
+            return empty();
+        }
+        if (consentStatusRequest.getConsentRequest() != null) {
+            return consentRepository
+                    .getConsentRequestStatus(consentStatusRequest.getConsentRequest().getId())
+                    .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
+                    .filter(consentStatus -> consentStatus != consentStatusRequest.getConsentRequest().getStatus())
+                    .flatMap(consentRequest -> consentRepository
+                            .updateConsentRequestStatus(consentStatusRequest.getConsentRequest().getStatus(),
+                                    consentStatusRequest.getConsentRequest().getId()));
+        }
+        logger.error("Unusual response = {} from CM", consentStatusRequest);
         return empty();
     }
 
