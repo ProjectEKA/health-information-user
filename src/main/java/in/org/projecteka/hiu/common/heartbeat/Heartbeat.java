@@ -35,7 +35,6 @@ public class Heartbeat {
     public Mono<HeartbeatResponse> getStatus() {
         try {
             if (cacheHealth.isUp() && isRabbitMQUp() && isPostgresUp()) {
-                logger.info("Heart beat is healthy");
                 return just(HeartbeatResponse.builder().timeStamp(now(UTC)).status(UP).build());
             }
             return just(HeartbeatResponse.builder().timeStamp(now(UTC)).status(DOWN).error(of(SERVICE_DOWN)).build());
