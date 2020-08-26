@@ -7,6 +7,8 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.ConsentCreationResponse;
 import in.org.projecteka.hiu.consent.model.ConsentNotificationRequest;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.consent.model.ConsentStatusDetail;
+import in.org.projecteka.hiu.consent.model.ConsentStatusRequest;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.Patient;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
@@ -80,5 +82,13 @@ public class TestBuilders {
 
     public static PatientDataRequestDetail.PatientDataRequestDetailBuilder patientDataRequestDetail() {
         return easyRandom.nextObject(PatientDataRequestDetail.PatientDataRequestDetailBuilder.class);
+    }
+
+    public static ConsentStatusRequest.ConsentStatusRequestBuilder consentStatusRequest() {
+        return easyRandom.nextObject(ConsentStatusRequest.ConsentStatusRequestBuilder.class);
+    }
+
+    public static ConsentStatusDetail.ConsentStatusDetailBuilder consentStatusDetail() {
+        return easyRandom.nextObject(ConsentStatusDetail.ConsentStatusDetailBuilder.class);
     }
 }

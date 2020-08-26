@@ -21,13 +21,17 @@ import static in.org.projecteka.hiu.common.TestBuilders.string;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusDetail;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.gatewayConsentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
 import static in.org.projecteka.hiu.consent.TestBuilders.permission;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -144,5 +148,38 @@ class ConsentServiceTest {
         StepVerifier.create(publisher).expectComplete().verify();
         verify(consentRepository).insertConsentArtefact(consentDetail, GRANTED, consentRequestId);
         verify(dataFlowRequestPublisher).broadcastDataFlowRequest(consentId, dateRange, signature, dataPushUrl);
+    }
+
+    @Test
+    void shouldUpdateDBIfStatusResponseAndConsentRequestStatusAreDifferent() {
+        var consentRequestDetail = consentStatusDetail().status(DENIED).build();
+        var consentRequest = consentStatusRequest().consentRequest(consentRequestDetail).error(null).build();
+
+        when(consentRepository
+                .getConsentRequestStatus(consentRequest.getConsentRequest().getId())).thenReturn(Mono.just(GRANTED));
+        when(consentRepository
+                .updateConsentRequestStatus(consentRequest.getConsentRequest().getStatus(),
+                        consentRequest.getConsentRequest().getId())).thenReturn(Mono.empty());
+
+        var statusProducer = consentService.handleConsentRequestStatus(consentRequest);
+        StepVerifier.create(statusProducer)
+                .verifyComplete();
+        verify(consentRepository).getConsentRequestStatus(consentRequest.getConsentRequest().getId());
+        verify(consentRepository).updateConsentRequestStatus(consentRequest.getConsentRequest().getStatus(),
+                consentRequest.getConsentRequest().getId());
+    }
+
+    @Test
+    void shouldNotUpdateDBIfStatusResponseAndConsentRequestStatusAreEqual() {
+        var consentRequestDetail = consentStatusDetail().status(GRANTED).build();
+        var consentRequest = consentStatusRequest().consentRequest(consentRequestDetail).error(null).build();
+
+        when(consentRepository
+                .getConsentRequestStatus(consentRequest.getConsentRequest().getId())).thenReturn(Mono.just(GRANTED));
+
+        var statusProducer = consentService.handleConsentRequestStatus(consentRequest);
+        StepVerifier.create(statusProducer)
+                .verifyComplete();
+        verify(consentRepository).getConsentRequestStatus(consentRequest.getConsentRequest().getId());
     }
 }

@@ -23,6 +23,7 @@ public class Constants {
     public static final String API_PATH_GET_HEALTH_INFO_STATUS = "/v1/patient/health-information/status";
     public static final String VALIDATE_TOKEN = "/v1/account/token";
     public static final String INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO = "/internal/patient/hip/data-transfer-status";
+    public static final String PATH_CONSENT_REQUEST_ON_STATUS = CURRENT_VERSION + "/consent-requests/on-status";
 
     public static final String STATUS = "status";
     public static final String DELIMITER = "@";

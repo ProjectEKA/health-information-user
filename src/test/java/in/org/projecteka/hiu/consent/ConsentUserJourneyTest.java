@@ -56,9 +56,13 @@ import java.util.stream.Stream;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_INIT;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUEST_ON_STATUS;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusDetail;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.REQUESTED;
 import static java.lang.Thread.sleep;
@@ -508,5 +512,60 @@ class ConsentUserJourneyTest {
                 .isAccepted()
                 .expectBody()
                 .json("{}");
+    }
+
+    @Test
+    void shouldUpdateDBIfStatusResponseAndConsentRequestStatusAreDifferent() {
+        var token = randomString();
+        var consentRequestDetail = consentStatusDetail().status(DENIED).build();
+        var consentRequest = consentStatusRequest().consentRequest(consentRequestDetail).error(null).build();
+        var caller = ServiceCaller.builder()
+                .clientId(randomString())
+                .roles(List.of(Role.GATEWAY))
+                .build();
+
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
+        when(consentRepository
+                .getConsentRequestStatus(consentRequest.getConsentRequest().getId())).thenReturn(Mono.just(GRANTED));
+        when(consentRepository
+                .updateConsentRequestStatus(consentRequest.getConsentRequest().getStatus(),
+                        consentRequest.getConsentRequest().getId())).thenReturn(Mono.empty());
+
+        webTestClient
+                .post()
+                .uri(PATH_CONSENT_REQUEST_ON_STATUS)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    void shouldNotUpdateDBIfStatusResponseAndConsentRequestStatusAreEqual() {
+        var token = randomString();
+        var consentRequestDetail = consentStatusDetail().status(GRANTED).build();
+        var consentRequest = consentStatusRequest().consentRequest(consentRequestDetail).error(null).build();
+        var caller = ServiceCaller.builder()
+                .clientId(randomString())
+                .roles(List.of(Role.GATEWAY))
+                .build();
+
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
+        when(consentRepository
+                .getConsentRequestStatus(consentRequest.getConsentRequest().getId())).thenReturn(Mono.just(GRANTED));
+
+        webTestClient
+                .post()
+                .uri(PATH_CONSENT_REQUEST_ON_STATUS)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(consentRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
     }
 }

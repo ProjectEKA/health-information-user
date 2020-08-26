@@ -15,7 +15,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class DataAvailabilityPublisher {
 
-    private static final Logger logger = Logger.getLogger(DataFlowRequestPublisher.class);
+    private static final Logger logger = Logger.getLogger(DataAvailabilityPublisher.class);
     private final AmqpTemplate amqpTemplate;
     private final DestinationsConfig destinationsConfig;
     private final RabbitQueueNames queueNames;
