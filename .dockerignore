@@ -1,1 +1,5 @@
-!build/
+# Ignore everything
+*
+
+# Allow files and directories
+!/build/libs/*.jar
