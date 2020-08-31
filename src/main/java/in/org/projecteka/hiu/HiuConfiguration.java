@@ -203,9 +203,10 @@ public class HiuConfiguration {
     @Bean("accessToken")
     public CacheAdapter<String, String> redisAccessTokenCacheAdapter(
             ReactiveRedisOperations<String, String> stringReactiveRedisOperations,
-            RedisOptions redisOptions) {
+            RedisOptions redisOptions,
+            GatewayProperties gatewayProperties) {
         return new RedisGenericAdapter<>(stringReactiveRedisOperations,
-                ofMinutes(5),
+                ofMinutes(gatewayProperties.getAccessTokenExpiryInMinutes()),
                 "hiu-gateway-accessToken",
                 redisOptions.getRetry());
     }
