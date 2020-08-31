@@ -18,4 +18,5 @@ public class GatewayProperties {
     private String clientId;
     private String clientSecret;
     private String jwkUrl;
+    private int accessTokenExpiryInMinutes;
 }
