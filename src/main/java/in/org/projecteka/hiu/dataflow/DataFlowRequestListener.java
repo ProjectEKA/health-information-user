@@ -9,9 +9,9 @@ import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
-import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.ConsentRepository;
+import in.org.projecteka.hiu.consent.model.DataFlowRequestTraceableMessage;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
@@ -64,10 +64,12 @@ public class DataFlowRequestListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            var traceableMessage = to(message.getBody(), TraceableMessage.class);
-            DataFlowRequest dataFlowRequest = convertToDataFlowRequest((byte[]) traceableMessage.get().getMessage());
+            var traceableMessage = to(message.getBody(), DataFlowRequestTraceableMessage.class);
+            String correlationId = traceableMessage.get().getCorrelationId();
+            DataFlowRequest dataFlowRequest = traceableMessage.get().getDataFlowRequest();
+
             String consentId = dataFlowRequest.getConsent().getId();
-            String correlationId = to(traceableMessage.get().getCorrelationId(), String.class);
+
             MDC.put(Constants.CORRELATION_ID, correlationId);
             logger.info("Received data flow request with consent id : {}", consentId);
             try {

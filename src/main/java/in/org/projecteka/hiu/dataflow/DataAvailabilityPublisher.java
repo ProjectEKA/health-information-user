@@ -3,8 +3,7 @@ package in.org.projecteka.hiu.dataflow;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
-import in.org.projecteka.hiu.common.TraceableMessage;
-import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
+import in.org.projecteka.hiu.dataflow.model.DataAvailabilityTraceableMessage;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -28,9 +27,9 @@ public class DataAvailabilityPublisher {
     public Mono<Void> broadcastDataAvailability(Map<String, String> contentRef) {
         DestinationsConfig.DestinationInfo destinationInfo =
                 destinationsConfig.getQueues().get(queueNames.getDataFlowProcessQueue());
-        TraceableMessage traceableMessage = TraceableMessage.builder()
+        DataAvailabilityTraceableMessage traceableMessage = DataAvailabilityTraceableMessage.builder()
                 .correlationId(MDC.get(CORRELATION_ID))
-                .message(contentRef)
+                .contentRef(contentRef)
                 .build();
 
         if (destinationInfo == null) {

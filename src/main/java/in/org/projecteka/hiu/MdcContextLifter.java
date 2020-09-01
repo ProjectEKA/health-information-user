@@ -18,6 +18,7 @@ public class MdcContextLifter<T> implements CoreSubscriber<T> {
 
     @Override
     public void onSubscribe(Subscription subscription) {
+        copyToMdc(coreSubscriber.currentContext());
         coreSubscriber.onSubscribe(subscription);
     }
 
@@ -35,6 +36,7 @@ public class MdcContextLifter<T> implements CoreSubscriber<T> {
 
     @Override
     public void onComplete() {
+        copyToMdc(coreSubscriber.currentContext());
         coreSubscriber.onComplete();
     }
 

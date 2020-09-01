@@ -2,10 +2,10 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
-import in.org.projecteka.hiu.common.TraceableMessage;
-import in.org.projecteka.hiu.consent.model.dataflow.Consent;
-import in.org.projecteka.hiu.consent.model.dataflow.DataFlowRequest;
-import in.org.projecteka.hiu.consent.model.dataflow.DateRange;
+import in.org.projecteka.hiu.consent.model.DataFlowRequestTraceableMessage;
+import in.org.projecteka.hiu.dataflow.model.Consent;
+import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
+import in.org.projecteka.hiu.dataflow.model.DateRange;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -27,7 +27,7 @@ public class DataFlowRequestPublisher {
     public Mono<Void> broadcastDataFlowRequest(String consentArtefactId, in.org.projecteka.hiu.consent.model.DateRange dateRange, String signature, String dataPushUrl) {
         DestinationsConfig.DestinationInfo destinationInfo =
                 destinationsConfig.getQueues().get(queueNames.getDataFlowRequestQueue());
-        DataFlowRequest request = DataFlowRequest.builder()
+        in.org.projecteka.hiu.dataflow.model.DataFlowRequest request = DataFlowRequest.builder()
                 .consent(Consent.builder().
                         id(consentArtefactId)
                         .digitalSignature(signature)
@@ -38,9 +38,9 @@ public class DataFlowRequestPublisher {
                         .build())
                 .dataPushUrl(dataPushUrl)
                 .build();
-        TraceableMessage traceableMessage = TraceableMessage.builder()
+        DataFlowRequestTraceableMessage traceableMessage = DataFlowRequestTraceableMessage.builder()
                 .correlationId(MDC.get(CORRELATION_ID))
-                .message(request)
+                .dataFlowRequest(request)
                 .build();
 
         if (destinationInfo == null) {

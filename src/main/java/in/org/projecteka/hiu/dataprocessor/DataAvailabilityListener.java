@@ -21,7 +21,6 @@ import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
 import org.slf4j.MDC;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
@@ -62,6 +61,9 @@ public class DataAvailabilityListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
+//            var traceableMessage = to(message.getBody(), DataAvailabilityTraceableMessage.class);
+//            String correlationId = traceableMessage.get().getCorrelationId();
+//            DataAvailableMessage dataAvailableMessage = deserializeMessage(traceableMessage.get().getContentRef());
             var traceableMessage = to(message.getBody(), TraceableMessage.class);
             DataAvailableMessage dataAvailableMessage = deserializeMessage((byte[]) traceableMessage.get().getMessage());
             String correlationId = to(traceableMessage.get().getCorrelationId(), String.class);

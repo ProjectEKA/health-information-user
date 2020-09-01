@@ -6,6 +6,7 @@ import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.consent.TokenUtils;
+import in.org.projecteka.hiu.consent.model.DataFlowDeleteTraceableMessage;
 import in.org.projecteka.hiu.dataflow.model.DataFlowDelete;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -48,9 +49,9 @@ public class DataFlowDeleteListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            var traceableMessage = to(message.getBody(), TraceableMessage.class);
-            var mayBeDataFlow = to((byte[]) traceableMessage.get().getMessage(), DataFlowDelete.class);
-            String correlationId = to(traceableMessage.get().getCorrelationId(), String.class);
+            var traceableMessage = to(message.getBody(), DataFlowDeleteTraceableMessage.class);
+            String correlationId = traceableMessage.get().getCorrelationId();
+            Optional<DataFlowDelete> mayBeDataFlow = Optional.of(traceableMessage.get().getDataFlowDelete());
             mayBeDataFlow.ifPresentOrElse(dataFlowDelete -> {
                 MDC.put(Constants.CORRELATION_ID, correlationId);
                 logger.info("Received data flow delete for consent artefact id: {}", dataFlowDelete.getConsentId());

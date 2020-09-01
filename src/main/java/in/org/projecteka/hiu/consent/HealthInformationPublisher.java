@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
-import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -25,9 +24,9 @@ public class HealthInformationPublisher {
     public Mono<Void> publish(ConsentArtefactReference consentArtefactReference) {
         DestinationsConfig.DestinationInfo destinationInfo =
                 destinationsConfig.getQueues().get(queueNames.getHealthInfoQueue());
-        TraceableMessage traceableMessage = TraceableMessage.builder()
+        ConsentArtefactTraceableMessage traceableMessage = ConsentArtefactTraceableMessage.builder()
                 .correlationId(MDC.get(CORRELATION_ID))
-                .message(consentArtefactReference)
+                .consentArtefactReference(consentArtefactReference)
                 .build();
 
         if (destinationInfo == null) {
