@@ -2,19 +2,23 @@ package in.org.projecteka.hiu.dataflow;
 
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.consent.TokenUtils;
 import in.org.projecteka.hiu.dataflow.model.DataFlowDelete;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
 import static in.org.projecteka.hiu.common.Serializer.to;
@@ -44,8 +48,11 @@ public class DataFlowDeleteListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            var mayBeDataFlow = to(message.getBody(), DataFlowDelete.class);
+            var traceableMessage = to(message.getBody(), TraceableMessage.class);
+            var mayBeDataFlow = to((byte[]) traceableMessage.get().getMessage(), DataFlowDelete.class);
+            String correlationId = to(traceableMessage.get().getCorrelationId(), String.class);
             mayBeDataFlow.ifPresentOrElse(dataFlowDelete -> {
+                MDC.put(Constants.CORRELATION_ID, correlationId);
                 logger.info("Received data flow delete for consent artefact id: {}", dataFlowDelete.getConsentId());
                 String transactionId = dataFlowRepository.getTransactionId(dataFlowDelete.getConsentId()).block();
                 if (transactionId != null) {
@@ -56,6 +63,7 @@ public class DataFlowDeleteListener {
                     localDataStore.deleteExpiredConsentData(pathToTransactionDirectory);
                 }
             }, () -> logger.info("Failed to delete data flow message"));
+            MDC.clear();
         };
 
         mlc.setupMessageListener(messageListener);

@@ -6,8 +6,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
@@ -19,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -30,6 +33,7 @@ import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
+import static in.org.projecteka.hiu.common.Serializer.to;
 import static reactor.core.publisher.Mono.defer;
 
 @AllArgsConstructor
@@ -60,10 +64,12 @@ public class DataFlowRequestListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            DataFlowRequest dataFlowRequest = convertToDataFlowRequest(message.getBody());
+            var traceableMessage = to(message.getBody(), TraceableMessage.class);
+            DataFlowRequest dataFlowRequest = convertToDataFlowRequest((byte[]) traceableMessage.get().getMessage());
             String consentId = dataFlowRequest.getConsent().getId();
+            String correlationId = to(traceableMessage.get().getCorrelationId(), String.class);
+            MDC.put(Constants.CORRELATION_ID, correlationId);
             logger.info("Received data flow request with consent id : {}", consentId);
-
             try {
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
@@ -84,6 +90,7 @@ public class DataFlowRequestListener {
                                             dataFlowRequest)))
                                     .then(defer(() -> dataFlowCache.put(requestId, dataRequestKeyMaterial)));
                         }).block();
+                MDC.clear();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.error("Exception on key creation {exception}", exception);

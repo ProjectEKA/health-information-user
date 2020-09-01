@@ -7,8 +7,10 @@ import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.LocalDicomServerProperties;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
 import in.org.projecteka.hiu.dataflow.Decryptor;
@@ -17,6 +19,7 @@ import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -28,6 +31,7 @@ import java.util.List;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
+import static in.org.projecteka.hiu.common.Serializer.to;
 
 @AllArgsConstructor
 public class DataAvailabilityListener {
@@ -58,7 +62,10 @@ public class DataAvailabilityListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            DataAvailableMessage dataAvailableMessage = deserializeMessage(message);
+            var traceableMessage = to(message.getBody(), TraceableMessage.class);
+            DataAvailableMessage dataAvailableMessage = deserializeMessage((byte[]) traceableMessage.get().getMessage());
+            String correlationId = to(traceableMessage.get().getCorrelationId(), String.class);
+            MDC.put(Constants.CORRELATION_ID, correlationId);
             logger.info(String.format("Received notification of data availability for transaction id : %s",
                     dataAvailableMessage.getTransactionId()));
             logger.info(String.format("Processing data from file : %s", dataAvailableMessage.getPathToFile()));
@@ -73,6 +80,7 @@ public class DataAvailabilityListener {
                         hiuProperties,
                         consentRepository);
                 healthDataProcessor.process(dataAvailableMessage);
+                MDC.clear();
             } catch (Exception exception) {
                 logger.error(exception);
                 throw new AmqpRejectAndDontRequeueException(exception);
@@ -94,10 +102,10 @@ public class DataAvailabilityListener {
     }
 
     @SneakyThrows
-    private DataAvailableMessage deserializeMessage(Message msg) {
+    private DataAvailableMessage deserializeMessage(byte[] message) {
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .configure(WRITE_DATES_AS_TIMESTAMPS, false);
-        return mapper.readValue(msg.getBody(), DataAvailableMessage.class);
+        return mapper.readValue(message, DataAvailableMessage.class);
     }
 }
