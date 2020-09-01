@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: nha-app
+  name: patient-hiu
+  labels:
+    app: patient-hiu
+    service: patient-hiu
+spec:
+  selector:
+   app: patient-hiu
+  ports:
+  - name: http
+    port: 8003
+    targetPort: 8003

@@ -1,0 +1,31 @@
+# {{ if .Values.persistence.enabled -}}
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: "{{ .Values.persistence.VolumeName }}"
+#   labels:
+#     app.kubernetes.io/instance: {{ .Release.Name }}
+#     app.kubernetes.io/managed-by: {{ .Release.Service }}
+#     type: {{ .Values.persistence.storageClass }}
+# spec:
+#   storageClassName: {{ .Values.persistence.storageClass }}
+#   capacity:
+#     storage: {{ .Values.persistence.size | quote }}
+#   accessModes:
+#     - {{ .Values.persistence.accessMode | quote }}
+#   persistentVolumeReclaimPolicy: Retain
+# {{ end -}}
+---
+{{ if .Values.persistence.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.VolumeName }}
+spec:
+  storageClassName: "{{ .Values.persistence.storageClass }}"
+  accessModes:
+   - {{ .Values.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+{{ end -}}

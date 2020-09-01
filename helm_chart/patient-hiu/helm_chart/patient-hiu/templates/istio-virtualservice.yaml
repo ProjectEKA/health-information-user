@@ -1,0 +1,24 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "patient-hiu.fullname" . }}
+  labels:
+    {{- include "patient-hiu.labels" . | nindent 4 }}
+spec:
+  gateways:
+     - {{ .Values.ingress.gateway }}
+  hosts:
+  {{- toYaml .Values.ingress.hosts | nindent 2 }}
+  http:
+  - match:
+    - uri:
+        prefix: {{ .Values.ingress.uriPrefix }}
+    rewrite:
+      uri: {{ .Values.ingress.rewriteUri }}
+    route:
+    - destination:
+        host: patient-hiu
+        port:
+          number: 8003
+{{- end }}
