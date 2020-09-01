@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.consent.model.ConsentStatusRequest;
 import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
 import lombok.AllArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -22,6 +23,7 @@ import reactor.core.publisher.Mono;
 import javax.validation.Valid;
 
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 
 @RestController
 @AllArgsConstructor
@@ -55,21 +57,27 @@ public class ConsentController {
     @PostMapping(Constants.PATH_CONSENTS_HIU_NOTIFY)
     public Mono<ResponseEntity<HttpStatus>> hiuConsentNotification(
             @RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
-        consentService.handleNotification(hiuNotification).subscribe();
+        consentService.handleNotification(hiuNotification)
+                .subscriberContext(ctx -> ctx.put(CORRELATION_ID, MDC.get(CORRELATION_ID)))
+                .subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
     @PostMapping(Constants.PATH_CONSENTS_ON_FETCH)
     public Mono<ResponseEntity<HttpStatus>> onFetchConsentArtefact(
             @RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
-        consentService.handleConsentArtefact(consentArtefactResponse).subscribe();
+        consentService.handleConsentArtefact(consentArtefactResponse)
+                .subscriberContext(ctx -> ctx.put(CORRELATION_ID, MDC.get(CORRELATION_ID)))
+                .subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
     @PostMapping(Constants.PATH_CONSENT_REQUEST_ON_STATUS)
     public Mono<ResponseEntity<HttpStatus>> onStatusConsentRequest(
             @RequestBody ConsentStatusRequest consentStatusRequest) {
-        consentService.handleConsentRequestStatus(consentStatusRequest).subscribe();
+        consentService.handleConsentRequestStatus(consentStatusRequest)
+                .subscriberContext(ctx -> ctx.put(CORRELATION_ID, MDC.get(CORRELATION_ID)))
+                .subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 }
