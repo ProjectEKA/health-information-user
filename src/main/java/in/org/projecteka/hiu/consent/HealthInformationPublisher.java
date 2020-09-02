@@ -2,10 +2,12 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.amqp.core.AmqpTemplate;
 import reactor.core.publisher.Mono;
@@ -15,7 +17,7 @@ import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 
 @AllArgsConstructor
 public class HealthInformationPublisher {
-    private static final Logger logger = Logger.getLogger(HealthInformationPublisher.class);
+    private static final Logger logger = LoggerFactory.getLogger(HealthInformationPublisher.class);
     private final AmqpTemplate amqpTemplate;
     private final DestinationsConfig destinationsConfig;
     private final RabbitQueueNames queueNames;
@@ -24,9 +26,9 @@ public class HealthInformationPublisher {
     public Mono<Void> publish(ConsentArtefactReference consentArtefactReference) {
         DestinationsConfig.DestinationInfo destinationInfo =
                 destinationsConfig.getQueues().get(queueNames.getHealthInfoQueue());
-        ConsentArtefactTraceableMessage traceableMessage = ConsentArtefactTraceableMessage.builder()
+        TraceableMessage traceableMessage = TraceableMessage.builder()
                 .correlationId(MDC.get(CORRELATION_ID))
-                .consentArtefactReference(consentArtefactReference)
+                .message(consentArtefactReference)
                 .build();
 
         if (destinationInfo == null) {

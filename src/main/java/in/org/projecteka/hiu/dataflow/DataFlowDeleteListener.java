@@ -1,12 +1,14 @@
 package in.org.projecteka.hiu.dataflow;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.consent.TokenUtils;
-import in.org.projecteka.hiu.consent.model.DataFlowDeleteTraceableMessage;
 import in.org.projecteka.hiu.dataflow.model.DataFlowDelete;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -20,8 +22,11 @@ import javax.annotation.PostConstruct;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 import static in.org.projecteka.hiu.common.Serializer.to;
 
 @AllArgsConstructor
@@ -49,13 +54,19 @@ public class DataFlowDeleteListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            var traceableMessage = to(message.getBody(), DataFlowDeleteTraceableMessage.class);
+            var traceableMessage = to(message.getBody(), TraceableMessage.class);
             String correlationId = traceableMessage.get().getCorrelationId();
-            Optional<DataFlowDelete> mayBeDataFlow = Optional.of(traceableMessage.get().getDataFlowDelete());
+            var mayBeDataFlow = Optional.of(convertToDataFlowDelete(traceableMessage.get().getMessage()));
+
             mayBeDataFlow.ifPresentOrElse(dataFlowDelete -> {
                 MDC.put(Constants.CORRELATION_ID, correlationId);
                 logger.info("Received data flow delete for consent artefact id: {}", dataFlowDelete.getConsentId());
-                String transactionId = dataFlowRepository.getTransactionId(dataFlowDelete.getConsentId()).block();
+                String transactionId = dataFlowRepository.getTransactionId(dataFlowDelete.getConsentId())
+                        .subscriberContext(ctx -> {
+                            Optional<String> traceId = Optional.ofNullable(MDC.get(CORRELATION_ID));
+                            return traceId.map(id -> ctx.put(CORRELATION_ID, id))
+                                    .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
+                        }).block();
                 if (transactionId != null) {
                     healthInformationRepository.deleteHealthInformation(transactionId);
                     Path pathToTransactionDirectory = Paths.get(dataFlowServiceProperties.getLocalStoragePath(),
@@ -75,5 +86,14 @@ public class DataFlowDeleteListener {
     @SneakyThrows
     private String getLocalDirectoryName(String directoryName) {
         return String.format("%s", TokenUtils.encode(directoryName));
+    }
+
+    @SneakyThrows
+    private DataFlowDelete convertToDataFlowDelete(Object message) {
+        var objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .configure(WRITE_DATES_AS_TIMESTAMPS, false)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return objectMapper.convertValue(message, DataFlowDelete.class);
     }
 }

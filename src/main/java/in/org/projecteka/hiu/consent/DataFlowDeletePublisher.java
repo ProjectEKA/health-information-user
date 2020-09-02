@@ -2,7 +2,7 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
-import in.org.projecteka.hiu.consent.model.DataFlowDeleteTraceableMessage;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.dataflow.model.DataFlowDelete;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -48,9 +48,9 @@ public class DataFlowDeletePublisher {
     }
 
     private void sendMessage(DataFlowDelete message, String exchange, String routingKey) {
-        DataFlowDeleteTraceableMessage traceableMessage = DataFlowDeleteTraceableMessage.builder()
+        TraceableMessage traceableMessage = TraceableMessage.builder()
                 .correlationId(MDC.get(CORRELATION_ID))
-                .dataFlowDelete(message)
+                .message(message)
                 .build();
         amqpTemplate.convertAndSend(exchange, routingKey, traceableMessage);
     }

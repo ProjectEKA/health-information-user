@@ -22,6 +22,9 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
 import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 
@@ -58,8 +61,11 @@ public class ConsentController {
     public Mono<ResponseEntity<HttpStatus>> hiuConsentNotification(
             @RequestBody @Valid HiuConsentNotificationRequest hiuNotification) {
         consentService.handleNotification(hiuNotification)
-                .subscriberContext(ctx -> ctx.put(CORRELATION_ID, MDC.get(CORRELATION_ID)))
-                .subscribe();
+                .subscriberContext(ctx -> {
+                    Optional<String> correlationId = Optional.ofNullable(MDC.get(CORRELATION_ID));
+                    return correlationId.map(id -> ctx.put(CORRELATION_ID, id))
+                            .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
+                }).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
@@ -67,8 +73,11 @@ public class ConsentController {
     public Mono<ResponseEntity<HttpStatus>> onFetchConsentArtefact(
             @RequestBody @Valid GatewayConsentArtefactResponse consentArtefactResponse) {
         consentService.handleConsentArtefact(consentArtefactResponse)
-                .subscriberContext(ctx -> ctx.put(CORRELATION_ID, MDC.get(CORRELATION_ID)))
-                .subscribe();
+                .subscriberContext(ctx -> {
+                    Optional<String> correlationId = Optional.ofNullable(MDC.get(CORRELATION_ID));
+                    return correlationId.map(id -> ctx.put(CORRELATION_ID, id))
+                            .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
+                }).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 
@@ -76,8 +85,11 @@ public class ConsentController {
     public Mono<ResponseEntity<HttpStatus>> onStatusConsentRequest(
             @RequestBody ConsentStatusRequest consentStatusRequest) {
         consentService.handleConsentRequestStatus(consentStatusRequest)
-                .subscriberContext(ctx -> ctx.put(CORRELATION_ID, MDC.get(CORRELATION_ID)))
-                .subscribe();
+                .subscriberContext(ctx -> {
+                    Optional<String> correlationId = Optional.ofNullable(MDC.get(CORRELATION_ID));
+                    return correlationId.map(id -> ctx.put(CORRELATION_ID, id))
+                            .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
+                }).subscribe();
         return Mono.just(new ResponseEntity<>(HttpStatus.ACCEPTED));
     }
 }

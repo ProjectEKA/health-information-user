@@ -9,9 +9,9 @@ import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.ConsentRepository;
-import in.org.projecteka.hiu.consent.model.DataFlowRequestTraceableMessage;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
@@ -29,10 +29,12 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 import static in.org.projecteka.hiu.common.Serializer.to;
 import static reactor.core.publisher.Mono.defer;
 
@@ -64,10 +66,9 @@ public class DataFlowRequestListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            var traceableMessage = to(message.getBody(), DataFlowRequestTraceableMessage.class);
+            var traceableMessage = to(message.getBody(), TraceableMessage.class);
+            DataFlowRequest dataFlowRequest = convertToDataFlowRequest((traceableMessage.get().getMessage()));
             String correlationId = traceableMessage.get().getCorrelationId();
-            DataFlowRequest dataFlowRequest = traceableMessage.get().getDataFlowRequest();
-
             String consentId = dataFlowRequest.getConsent().getId();
 
             MDC.put(Constants.CORRELATION_ID, correlationId);
@@ -91,7 +92,12 @@ public class DataFlowRequestListener {
                                             consentId,
                                             dataFlowRequest)))
                                     .then(defer(() -> dataFlowCache.put(requestId, dataRequestKeyMaterial)));
-                        }).block();
+                        })
+                        .subscriberContext(ctx -> {
+                            Optional<String> traceId = Optional.ofNullable(MDC.get(CORRELATION_ID));
+                            return traceId.map(id -> ctx.put(CORRELATION_ID, id))
+                                    .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
+                        }).subscribe();
                 MDC.clear();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
@@ -146,11 +152,11 @@ public class DataFlowRequestListener {
     }
 
     @SneakyThrows
-    private DataFlowRequest convertToDataFlowRequest(byte[] message) {
+    private DataFlowRequest convertToDataFlowRequest(Object message) {
         var objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .configure(WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return objectMapper.readValue(message, DataFlowRequest.class);
+        return objectMapper.convertValue(message, DataFlowRequest.class);
     }
 }

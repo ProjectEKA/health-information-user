@@ -18,7 +18,8 @@ import in.org.projecteka.hiu.dataprocessor.model.DataAvailableMessage;
 import in.org.projecteka.hiu.dicomweb.OrthancDicomWebServer;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageListener;
@@ -45,7 +46,7 @@ public class DataAvailabilityListener {
     private final ConsentRepository consentRepository;
     private final RabbitQueueNames queueNames;
 
-    private static final Logger logger = Logger.getLogger(DataAvailabilityListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(DataAvailabilityListener.class);
 
     @PostConstruct
     @SneakyThrows
@@ -61,12 +62,9 @@ public class DataAvailabilityListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-//            var traceableMessage = to(message.getBody(), DataAvailabilityTraceableMessage.class);
-//            String correlationId = traceableMessage.get().getCorrelationId();
-//            DataAvailableMessage dataAvailableMessage = deserializeMessage(traceableMessage.get().getContentRef());
             var traceableMessage = to(message.getBody(), TraceableMessage.class);
-            DataAvailableMessage dataAvailableMessage = deserializeMessage((byte[]) traceableMessage.get().getMessage());
-            String correlationId = to(traceableMessage.get().getCorrelationId(), String.class);
+            DataAvailableMessage dataAvailableMessage = deserializeMessage((traceableMessage.get().getMessage()));
+            String correlationId = traceableMessage.get().getCorrelationId();
             MDC.put(Constants.CORRELATION_ID, correlationId);
             logger.info(String.format("Received notification of data availability for transaction id : %s",
                     dataAvailableMessage.getTransactionId()));
@@ -84,7 +82,7 @@ public class DataAvailabilityListener {
                 healthDataProcessor.process(dataAvailableMessage);
                 MDC.clear();
             } catch (Exception exception) {
-                logger.error(exception);
+                logger.error(exception.toString());
                 throw new AmqpRejectAndDontRequeueException(exception);
             }
         };
@@ -104,10 +102,10 @@ public class DataAvailabilityListener {
     }
 
     @SneakyThrows
-    private DataAvailableMessage deserializeMessage(byte[] message) {
+    private DataAvailableMessage deserializeMessage(Object message) {
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .configure(WRITE_DATES_AS_TIMESTAMPS, false);
-        return mapper.readValue(message, DataAvailableMessage.class);
+        return mapper.convertValue(message, DataAvailableMessage.class);
     }
 }
