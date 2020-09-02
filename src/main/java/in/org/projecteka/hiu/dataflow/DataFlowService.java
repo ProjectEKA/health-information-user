@@ -83,7 +83,7 @@ public class DataFlowService {
         var transactionId = dataFlowRequestResult.getHiRequest().getTransactionId().toString();
         var sessionStatus = dataFlowRequestResult.getHiRequest().getSessionStatus();
 
-        logger.error("[DataFlowService] Received response for data flow request. HIU " +
+        logger.info("[DataFlowService] Received response for data flow request. HIU " +
                 "transactionId={}, sessionStatus={}, requestId={}", transactionId, sessionStatus, requestId);
         return dataFlowRepository.updateDataRequest(transactionId, sessionStatus, requestId)
                 .then(defer(() -> dataFlowCache.get(requestId)))
