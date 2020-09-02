@@ -92,12 +92,8 @@ public class DataFlowRequestListener {
                                             consentId,
                                             dataFlowRequest)))
                                     .then(defer(() -> dataFlowCache.put(requestId, dataRequestKeyMaterial)));
-                        })
-                        .subscriberContext(ctx -> {
-                            Optional<String> traceId = Optional.ofNullable(MDC.get(CORRELATION_ID));
-                            return traceId.map(id -> ctx.put(CORRELATION_ID, id))
-                                    .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
-                        }).subscribe();
+                        }).block();
+                MDC.put(Constants.CORRELATION_ID, correlationId);
                 MDC.clear();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue

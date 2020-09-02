@@ -62,11 +62,8 @@ public class DataFlowDeleteListener {
                 MDC.put(Constants.CORRELATION_ID, correlationId);
                 logger.info("Received data flow delete for consent artefact id: {}", dataFlowDelete.getConsentId());
                 String transactionId = dataFlowRepository.getTransactionId(dataFlowDelete.getConsentId())
-                        .subscriberContext(ctx -> {
-                            Optional<String> traceId = Optional.ofNullable(MDC.get(CORRELATION_ID));
-                            return traceId.map(id -> ctx.put(CORRELATION_ID, id))
-                                    .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
-                        }).block();
+                        .block();
+                MDC.put(Constants.CORRELATION_ID, correlationId);
                 if (transactionId != null) {
                     healthInformationRepository.deleteHealthInformation(transactionId);
                     Path pathToTransactionDirectory = Paths.get(dataFlowServiceProperties.getLocalStoragePath(),
