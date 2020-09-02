@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
@@ -30,6 +31,8 @@ import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -45,6 +48,7 @@ import java.util.function.Function;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.PARTIAL;
 import static java.util.stream.Collectors.joining;
 
@@ -98,17 +102,18 @@ public class HealthDataProcessor {
                     context.getTransactionId(), context.getNumberOfEntries()));
             updateDataProcessStatus(context, "", HealthInfoStatus.PROCESSING, null);
             String transactionId = context.getTransactionId();
-            DataFlowRequestKeyMaterial keyMaterial = dataFlowRepository.getKeys(transactionId).block();
+            DataFlowRequestKeyMaterial keyMaterial = blockPublisher(dataFlowRepository.getKeys(transactionId));
             List<String> dataErrors = new ArrayList<>();
             List<StatusResponse> statusResponses = new ArrayList<>();
             context.getNotifiedData().getEntries().forEach(entry -> {
                 var entryToProcess = entry;
                 String dataPartNumber = context.getDataPartNumber();
                 if (!hasContent(entry)) {
-                    var healthInformation = healthInformationClient.informationFrom(entry.getLink()).block();
+                    var healthInformation = blockPublisher(healthInformationClient.informationFrom(entry.getLink()));
                     if (healthInformation == null) {
                         dataErrors.add("Health Information not found");
-                        healthDataRepository.insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()).block();
+                        blockPublisher(healthDataRepository
+                                .insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()));
                         statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
                         return;
                     }
@@ -122,16 +127,17 @@ public class HealthDataProcessor {
                 var result = processEntryContent(context, entryToProcess, keyMaterial);
                 if (result.hasErrors()) {
                     dataErrors.addAll(result.getErrors());
-                    healthDataRepository.insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()).block();
+                    blockPublisher(healthDataRepository
+                            .insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()));
                     statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
                     return;
                 }
                 context.addTrackedResources(result.getTrackedResources());
-                healthDataRepository.insertDataFor(transactionId,
+                blockPublisher(healthDataRepository.insertDataFor(transactionId,
                         dataPartNumber,
                         result.getResource(),
                         result.latestResourceDate(),
-                        entryToProcess.getCareContextReference()).block();
+                        entryToProcess.getCareContextReference()));
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
 
@@ -154,6 +160,16 @@ public class HealthDataProcessor {
         }
     }
 
+    private <T> T blockPublisher(Mono<T> publisher) {
+        // block() clears the context, we should put correlationId back again in context.
+        // https://github.com/reactor/reactor-core/issues/1667
+
+        String correlationId = MDC.get(CORRELATION_ID);
+        T result = publisher.block();
+        MDC.put(CORRELATION_ID, correlationId);
+        return result;
+    }
+
     private StatusResponse getStatusResponse(Entry entry, HiStatus hiStatus, String msg) {
         return StatusResponse.builder()
                 .careContextReference(entry.getCareContextReference())
@@ -165,13 +181,13 @@ public class HealthDataProcessor {
     private void notifyHealthInfoStatus(DataContext context,
                                         List<StatusResponse> statusResponses,
                                         SessionStatus sessionStatus) {
-        String consentId = dataFlowRepository.getConsentId(context.getTransactionId()).block();
-        String hipId = consentRepository.getHipId(consentId).block();
+        String consentId = blockPublisher(dataFlowRepository.getConsentId(context.getTransactionId()));
+        String hipId = blockPublisher(consentRepository.getHipId(consentId));
         HealthInfoNotificationRequest healthInfoNotificationRequest =
                 getHealthInfoNotificationRequest(context, statusResponses, sessionStatus, consentId, hipId);
-        String token = gateway.token().block();
+        String token = blockPublisher(gateway.token());
         String consentManagerId = fetchCMId(healthInfoNotificationRequest.getNotification().getConsentId());
-        healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token, consentManagerId).block();
+        blockPublisher(healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token, consentManagerId));
     }
 
     private HealthInfoNotificationRequest getHealthInfoNotificationRequest(DataContext context,
@@ -200,15 +216,15 @@ public class HealthDataProcessor {
     }
 
     private String fetchCMId(String consentId) {
-        return consentRepository.getConsentMangerId(consentId).block();
+        return blockPublisher(consentRepository.getConsentMangerId(consentId));
     }
 
     private void updateDataProcessStatus(DataContext context, String allErrors, HealthInfoStatus status, LocalDateTime latestResourceDate) {
-        dataFlowRepository.updateDataFlowWithStatus(context.getTransactionId(),
+        blockPublisher(dataFlowRepository.updateDataFlowWithStatus(context.getTransactionId(),
                 context.getDataPartNumber(),
                 allErrors,
                 status,
-                latestResourceDate).block();
+                latestResourceDate));
     }
 
     private DataContext createDataContext(DataAvailableMessage message) {
