@@ -1,0 +1,93 @@
+pipeline {
+    agent {
+        kubernetes {
+             yaml """
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  containers:
+                    - name: docker
+                      image: registry.nhadclmgm.tcl.com:5000/docker:dind
+                      command:
+                        - sleep
+                      volumeMounts:
+                        - name: docker
+                          mountPath: /var/run/docker.sock
+                      args:
+                        - infinity
+                      resources:
+                        limits:
+                          cpu: '300m'
+                          memory: '500Mi'
+                        requests:
+                          cpu: '100m'
+                          memory: '300Mi'
+                    - name: java11
+                      image: adoptopenjdk/maven-openjdk11
+                      command:
+                        - sleep
+                      args:
+                        - infinity
+                      resources:
+                        limits:
+                          cpu: '1000m'
+                          memory: '2000Mi'
+                        requests:
+                          cpu: '400m'
+                          memory: '1200Mi'
+                  volumes:
+                    - name: docker
+                      hostPath:
+                        path: /var/run/docker.sock
+                        """
+            defaultContainer 'java11'
+        }
+    }
+
+    options {
+        skipDefaultCheckout()
+    }
+
+    environment {
+        def NDHM_DOCKER_HUB_PASSWORD_CRED_ID = 'NDHM_DOCKER_HUB_PASSWORD_DEV'
+        def IMAGE_NAME= 'nha20/jas-health-information-user'
+    }
+
+    stages {
+        stage('Get latest version of code') {
+            steps {
+                script{
+                   def scmVar =  checkout([
+                        $class: 'GitSCM', branches: scm.branches,
+                        extensions: scm.extensions + [[$class: 'CleanBeforeCheckout', deleteUntrackedNestedRepositories: true]],
+                        userRemoteConfigs: scm.userRemoteConfigs])
+                    sh "echo ${scmVar.GIT_COMMIT} | head -c7 >> commit_sha.txt"
+                }
+            }
+        }
+
+        stage("Run tests and Build"){
+            steps{
+                container('java11'){
+                    sh "./gradlew clean test"
+                    sh "./gradlew clean bootJar"
+                }
+            }
+        }
+
+        stage("Build Docker Image and Push to Docker Hub"){
+            steps{
+                container('docker'){
+                    script {
+                        docker.withRegistry( '', 'NDHM_DOCKER_HUB_CRED' ) {
+                            def IMAGE_TAG=readFile(file: 'commit_sha.txt')
+                            dockerImage = docker.build IMAGE_NAME + ":latest"
+                            dockerImage.push()
+                            dockerImage.push("$IMAGE_TAG")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

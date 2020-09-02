@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: patient-hiu-data
+  namespace: nha-app
+  labels:
+    type: local
+spec:
+  storageClassName: gluster
+  capacity:
+    storage: 500Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/patient-hiu-data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: patient-hiu-data
+  namespace: nha-app
+spec:
+  storageClassName: gluster
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi

@@ -1,0 +1,148 @@
+# Default values for hiu.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: "nha20/jas-health-information-user"
+  tag: "7176637"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ndhm-dockerhub-repo
+
+nameOverride: "hiu"
+fullnameOverride: "hiu"
+fullname: "hiu"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+## Persist data to a persistent volume
+
+persistence:
+  enabled: true
+  storageClass: "gluster"
+  mountPath: "/mnt/hiu-data-uat"
+  VolumeName: "hiu-data-uat"
+  accessMode: ReadWriteMany
+  size: 50Gi
+
+service:
+  type: ClusterIP
+  port: 8003
+
+ingress:
+  enabled: true
+  hosts:
+    - preprod.ndhm.gov.in
+  gateway: nha-uat-gw.nha-uat-gw
+  uriPrefix: "/api-hiu/"
+  rewriteUri: "/"
+
+rollingUpdate:
+  maxSurge: 50%
+  maxUnavailable: 0
+
+replicaCount: 3
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 90
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 60
+  timeoutSeconds: 1
+  failureThreshold: 10
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 60
+  timeoutSeconds: 1
+  failureThreshold: 10
+
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "1024Mi"
+  requests:
+    cpu: "1000m"
+    memory: "1024Mi"
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env:
+  normal: 
+    CENTRAL_REGISTRY_JWK_URL: http://client-registry:8080/certs
+    CENTRAL_REGISTRY_URL: http://client-registry:8080
+    CONSENT_MANAGEMENT_SUFFIX: '@ndhm'
+    CONSENT_MANAGEMENT_URL: http://consent-manager:8000
+    CONSENT_NOTIFICATION_URL: http://hiu:8003/consent/notification
+    CONSENT_MANAGER_DB_NAME: health_information_user
+    DATA_PUSH_URL: http://hiu:8003/data/notification
+    DB_CONNECTION_POOL_SIZE: "5"
+    DEFAULT_PAGE_SIZE: "20"
+    GATEWAY_BASE_URL: 'http://gateway.nha-gw.svc.cluster.local:8000/v0.5'
+    GATEWAY_REQUEST_TIMEOUT: "8000"
+    HIU_NAME: Max Health Care
+    LOCAL_STORAGE_PATH: /mnt/hiu-data-uat
+    MAX_IN_MEMORY_SIZE: 500MB
+    MAX_PAGE_SIZE: "100"
+    OFFSET_IN_DAYS: "2"
+    GATEWAY_JWK_URL: 'http://gateway.nha-gw.svc.cluster.local:8000/v0.5/certs'
+    HIU_CLIENT_ID: "10000002"
+    HIU_ID: "10000002"
+    ORTHANC_SERVER_URL: http://orthanc:8042
+    ORTHANC_USERNAME: orthanc
+    POSTGRES_HOST: postgres-uat-1.nhadclmgm.tatacommunications.com
+    POSTGRES_PORT: "5500"
+    POSTGRES_USER: "postgres"
+    USING_GATEWAY: "true"
+    RABBITMQ_HOST: "rabbitmq-uat-1.nhadclmgm.tatacommunications.com"
+    RABBITMQ_PORT: "5503"
+    RABBITMQ_USERNAME: "admin"
+    IDENTITY_JWK_URL: "http://keycloak:8080/auth/realms/consent-manager/protocol/openid-connect/certs"
+    DATA_FLOW_CONSENT_REQUEST_WAIT_TIME: "2000"
+    DATA_FLOW_CONSENT_ARTEFACT_WAIT_TIME: "2000"
+    DATA_FLOW_PART_WAIT_TIME: "2000"
+    REDIS_HOST: redis-uat-1.nhadclmgm.tatacommunications.com
+    REDIS_PORT: "5502"
+    CACHE_METHOD: redis
+    KEEP_ALIVE_ENABLED: true
+    REDIS_RETRY: 1
+    Account_Service_Url: https://accountbeta.nha.gov.in/api/
+    HAS_BEHIND_GATEWAY: "false"
+    RABBITMQ_PREFIX: uat-hiu
+  secrets:
+    HIU_CLIENT_SECRET: ""
+    ORTHANC_PASSWORD: ""
+    POSTGRES_PASSWORD: ""
+    RABBITMQ_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    HIU_SECRET: ""
+
