@@ -250,6 +250,8 @@ public class ConsentService {
             return empty();
         }
         if (consentStatusRequest.getConsentRequest() != null) {
+            logger.info("[ConsentService] Received consent request response for consent-status: {}" +
+                    consentStatusRequest.getConsentRequest());
             return consentRepository
                     .getConsentRequestStatus(consentStatusRequest.getConsentRequest().getId())
                     .switchIfEmpty(Mono.error(ClientError.consentRequestNotFound()))
