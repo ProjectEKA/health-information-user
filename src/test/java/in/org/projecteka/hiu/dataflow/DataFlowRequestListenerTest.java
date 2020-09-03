@@ -9,9 +9,9 @@ import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.ConsentRepository;
-import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestKeyMaterial;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +25,8 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 import static in.org.projecteka.hiu.dataflow.TestBuilders.dataFlowRequest;
 import static org.mockito.Mockito.any;
@@ -86,26 +88,28 @@ class DataFlowRequestListenerTest {
                 queueNames);
     }
 
-    private byte[] convertToByteArray(DataFlowRequest dataFlowRequest) throws JsonProcessingException {
+    private byte[] convertToByteArray(TraceableMessage traceableMessage) throws JsonProcessingException {
         return new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .writeValueAsBytes(dataFlowRequest);
+                .writeValueAsBytes(traceableMessage);
     }
 
     @Test
     void shouldInitiateDataFlowRequestAndPutInCache() throws JsonProcessingException {
         var dataFlowRequest = dataFlowRequest().build();
-        var dataFlowRequestBytes = convertToByteArray(dataFlowRequest);
         var messageListenerCaptor = ArgumentCaptor.forClass(MessageListener.class);
         var mockMessage = Mockito.mock(Message.class);
+        var traceableMessage = TraceableMessage.builder()
+                .message(dataFlowRequest).correlationId(UUID.randomUUID().toString())
+                .build();
+        var traceableMessageBytes = convertToByteArray(traceableMessage);
         when(destinationsConfig.getQueues().get(queueNames.getDataFlowRequestQueue())).thenReturn(destinationInfo);
         when(messageListenerContainerFactory
                 .createMessageListenerContainer(destinationInfo.getRoutingKey())).thenReturn(messageListenerContainer);
         doNothing().when(messageListenerContainer).setupMessageListener(messageListenerCaptor.capture());
-        when(mockMessage.getBody()).thenReturn(dataFlowRequestBytes);
+        when(mockMessage.getBody()).thenReturn(traceableMessageBytes);
         when(dataFlowProperties.isUsingGateway()).thenReturn(true);
-        when(mockMessage.getBody()).thenReturn(dataFlowRequestBytes);
         when(gateway.token()).thenReturn(Mono.just("temp"));
         when(dataFlowClient.initiateDataFlowRequest(any(GatewayDataFlowRequest.class),anyString(),anyString()))
                 .thenReturn(empty());

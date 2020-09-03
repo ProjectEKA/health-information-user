@@ -132,10 +132,7 @@ public class SecurityConfiguration {
         @Override
         public Mono<SecurityContext> load(ServerWebExchange exchange) {
             var path = exchange.getRequest().getPath().toString();
-            var requestMethod = exchange.getRequest().getMethod();
-            if (!path.endsWith("/heartbeat")){
-                logger.info("Received a request for path: {}, method: {}", path, requestMethod);
-            }
+
             if (isSafe(path)) {
                 return empty();
             }

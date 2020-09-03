@@ -4,12 +4,14 @@ import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.dataflow.model.GatewayDataFlowRequest;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.Properties;
 
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 import static in.org.projecteka.hiu.consent.ConsentException.failedToInitiateDataFlowRequest;
 import static java.util.function.Predicate.not;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -27,6 +29,7 @@ public class DataFlowClient {
                 .uri(gatewayProperties.getBaseUrl() + "/health-information/cm/request")
                 .header("Authorization", token)
                 .header("X-CM-ID", cmSuffix)
+                .header(CORRELATION_ID, MDC.get(CORRELATION_ID))
                 .body(Mono.just(dataFlowRequest), GatewayDataFlowRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),

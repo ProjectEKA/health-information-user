@@ -6,8 +6,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.DataFlowProperties;
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.MessageListenerContainerFactory;
+import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequest;
@@ -19,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -26,10 +29,13 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
+import static in.org.projecteka.hiu.common.Serializer.to;
 import static reactor.core.publisher.Mono.defer;
 
 @AllArgsConstructor
@@ -60,10 +66,13 @@ public class DataFlowRequestListener {
                 .createMessageListenerContainer(destinationInfo.getRoutingKey());
 
         MessageListener messageListener = message -> {
-            DataFlowRequest dataFlowRequest = convertToDataFlowRequest(message.getBody());
+            var traceableMessage = to(message.getBody(), TraceableMessage.class);
+            DataFlowRequest dataFlowRequest = convertToDataFlowRequest((traceableMessage.get().getMessage()));
+            String correlationId = traceableMessage.get().getCorrelationId();
             String consentId = dataFlowRequest.getConsent().getId();
-            logger.info("Received data flow request with consent id : {}", consentId);
 
+            MDC.put(Constants.CORRELATION_ID, correlationId);
+            logger.info("Received data flow request with consent id : {}", consentId);
             try {
                 var dataRequestKeyMaterial = dataFlowRequestKeyMaterial();
                 var keyMaterial = keyMaterial(dataRequestKeyMaterial);
@@ -83,7 +92,12 @@ public class DataFlowRequestListener {
                                             consentId,
                                             dataFlowRequest)))
                                     .then(defer(() -> dataFlowCache.put(requestId, dataRequestKeyMaterial)));
-                        }).block();
+                        }).subscriberContext(ctx -> {
+                    Optional<String> traceId = Optional.ofNullable(MDC.get(CORRELATION_ID));
+                    return traceId.map(id -> ctx.put(CORRELATION_ID, id))
+                            .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
+                }).block();
+                MDC.clear();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
                 logger.error("Exception on key creation {exception}", exception);
@@ -137,11 +151,11 @@ public class DataFlowRequestListener {
     }
 
     @SneakyThrows
-    private DataFlowRequest convertToDataFlowRequest(byte[] message) {
+    private DataFlowRequest convertToDataFlowRequest(Object message) {
         var objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .configure(WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return objectMapper.readValue(message, DataFlowRequest.class);
+        return objectMapper.convertValue(message, DataFlowRequest.class);
     }
 }
