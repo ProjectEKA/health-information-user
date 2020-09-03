@@ -96,7 +96,7 @@ public class DataFlowRequestListener {
                     Optional<String> traceId = Optional.ofNullable(MDC.get(CORRELATION_ID));
                     return traceId.map(id -> ctx.put(CORRELATION_ID, id))
                             .orElseGet(() -> ctx.put(CORRELATION_ID, UUID.randomUUID().toString()));
-                }).subscribe();
+                }).block();
                 MDC.clear();
             } catch (Exception exception) {
                 // TODO: Put the message in dead letter queue
