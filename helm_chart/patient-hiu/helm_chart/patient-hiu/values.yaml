@@ -20,6 +20,7 @@ fullname: "patient-hiu"
 
 authpolicy:
   enabled: false
+  policy: '["/patient-hiu/internal/*"]'
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -127,12 +128,10 @@ env:
     POSTGRES_HOST: nhadcl-postges-1.nhadclmgm.tatacommunications.com
     POSTGRES_PORT: "5633"
     POSTGRES_USER: postgres
-    USING_GATEWAY: "true"
     RABBITMQ_HOST: rabbitmq.nhadclmgm.tatacommunications.com
     RABBITMQ_PORT: "5672"
     RABBITMQ_USERNAME: "admin"
     IDENTITY_JWK_URL: "http://keycloak:8080/auth/realms/consent-manager/protocol/openid-connect/certs"
-    USING_GATEWAY: "true"
     DATA_FLOW_REQUEST_WAIT_TIME: "1"
     DATA_FLOW_PART_WAIT_TIME: "5"
     RABBITMQ_PREFIX: patient-hiu

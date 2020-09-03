@@ -16,6 +16,7 @@ imagePullSecrets:
 
 authpolicy:
   enabled: true
+  policy: '["/patient-hiu/internal/*"]'
 
 nameOverride: "patient-hiu"
 fullnameOverride: "patient-hiu"

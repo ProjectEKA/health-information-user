@@ -46,6 +46,10 @@ ingress:
   uriPrefix: "/api-hiu/"
   rewriteUri: "/"
 
+authpolicy:
+  enabled: true
+  policy: '["/api-hiu/internal/*"]'
+
 rollingUpdate:
   maxSurge: 50%
   maxUnavailable: 0

@@ -6,9 +6,6 @@ rollingUpdate:
   maxSurge: 75%
   maxUnavailable: 0
 
-authpolicy:
-  enabled: true
-
 replicaCount: 5
 autoscaling:
   enabled: true
@@ -85,6 +82,10 @@ ingress:
   gateway: nha-gw.nha-prod-gw
   uriPrefix: "/api-hiu/"
   rewriteUri: "/"
+
+authpolicy:
+  enabled: true
+  policy: '["/api-hiu/internal/*"]'
 
 resources:
   limits:

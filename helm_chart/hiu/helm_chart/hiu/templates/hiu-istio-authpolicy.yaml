@@ -2,7 +2,7 @@
 apiVersion: "security.istio.io/v1beta1"
 kind: "AuthorizationPolicy"
 metadata:
-  name: "patient-hiu-authpolicy-deny"
+  name: "hiu-authpolicy-deny"
   namespace: istio-system
 spec:
   selector:
