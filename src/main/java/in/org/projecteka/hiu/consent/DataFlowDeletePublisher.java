@@ -2,16 +2,19 @@ package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.DestinationsConfig;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
+import in.org.projecteka.hiu.common.TraceableMessage;
 import in.org.projecteka.hiu.dataflow.model.DataFlowDelete;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ClientError.queueNotFound;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 
 @AllArgsConstructor
 public class DataFlowDeletePublisher {
@@ -44,7 +47,11 @@ public class DataFlowDeletePublisher {
         });
     }
 
-    private void sendMessage(Object message, String exchange, String routingKey) {
-        amqpTemplate.convertAndSend(exchange, routingKey, message);
+    private void sendMessage(DataFlowDelete message, String exchange, String routingKey) {
+        TraceableMessage traceableMessage = TraceableMessage.builder()
+                .correlationId(MDC.get(CORRELATION_ID))
+                .message(message)
+                .build();
+        amqpTemplate.convertAndSend(exchange, routingKey, traceableMessage);
     }
 }
