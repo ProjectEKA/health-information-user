@@ -6,6 +6,7 @@ import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -14,6 +15,7 @@ import java.util.Properties;
 
 import static in.org.projecteka.hiu.clients.PatientSearchThrowable.notFound;
 import static in.org.projecteka.hiu.clients.PatientSearchThrowable.unknown;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 import static in.org.projecteka.hiu.common.Constants.X_CM_ID;
 import static in.org.projecteka.hiu.consent.ConsentException.creationFailed;
 import static java.time.Duration.ofMillis;
@@ -49,6 +51,7 @@ public class GatewayServiceClient {
                         .uri(GATEWAY_PATH_CONSENT_REQUESTS_INIT)
                         .header(AUTHORIZATION, token)
                         .header(X_CM_ID, cmSuffix)
+                        .header(CORRELATION_ID, MDC.get(CORRELATION_ID))
                         .body(just(request), ConsentRequest.class)
                         .retrieve()
                         .onStatus(not(HttpStatus::is2xxSuccessful),
@@ -67,6 +70,7 @@ public class GatewayServiceClient {
                         .uri("/patients/find")
                         .header(AUTHORIZATION, token)
                         .header(X_CM_ID, cmSuffix)
+                        .header(CORRELATION_ID, MDC.get(CORRELATION_ID))
                         .body(just(request), FindPatientRequest.class)
                         .retrieve()
                         .onStatus(httpStatus -> httpStatus == NOT_FOUND, clientResponse -> error(notFound()))
@@ -83,6 +87,7 @@ public class GatewayServiceClient {
                         .uri(GATEWAY_PATH_CONSENT_ARTEFACT_FETCH)
                         .header(AUTHORIZATION, token)
                         .header(X_CM_ID, cmSuffix)
+                        .header(CORRELATION_ID, MDC.get(CORRELATION_ID))
                         .body(just(request), ConsentArtefactRequest.class)
                         .retrieve()
                         .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(creationFailed()))
