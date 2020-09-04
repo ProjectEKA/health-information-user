@@ -44,10 +44,10 @@ hiu:
   accountservice:
     usingUnsecureSSL: false
     url: ${ACCOUNT_SERVICE_URL}
-    hasBehindGateway: false
-    clientId: 'client-id'
-    clientSecret: 'client-secret'
-    hasAuthUrl: ${ACCOUNT_SERVICE_AUTH_URL}
+    hasBehindGateway: true
+    clientId: consent-manager
+    clientSecret: 6b92a30b-1b08-4c9d-8c6a-c4a1177e931d
+    hasAuthUrl: https://dev.ndhm.gov.in/gateway/v0.5
 spring:
   rabbitmq:
     host: localhost
