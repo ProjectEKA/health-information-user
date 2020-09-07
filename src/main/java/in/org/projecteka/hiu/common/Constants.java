@@ -31,6 +31,8 @@ public class Constants {
     public static final String BLOCK_LIST = "blockList";
     public static final String BLOCK_LIST_FORMAT = "%s:%s";
 
+    public static final String HAS_GATEWAY_DUMMY_TOKEN = "DUMMY_TOKEN";
+
     private Constants() {
     }
 
