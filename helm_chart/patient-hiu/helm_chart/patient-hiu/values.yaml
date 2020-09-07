@@ -8,8 +8,8 @@ rollingUpdate:
 
 image:
   repository: "nha20/jas-health-information-user"
-  tag: "7176637"
-  pullPolicy: IfNotPresent
+  tag: "v1.0.1"
+  pullPolicy: Always
 
 imagePullSecrets:
   - name: ndhm-dockerhub-repo
@@ -54,7 +54,7 @@ ingress:
   gateway: nha-gateway
   uriPrefix: "/patient-hiu/"
   rewriteUri: "/"
-  
+
 replicaCount: 1
 autoscaling:
   enabled: false
@@ -81,7 +81,7 @@ resources:
   requests:
     cpu: "500m"
     memory: "1024Mi"
-    
+
 livenessProbe:
   enabled: false
   initialDelaySeconds: 30
@@ -102,7 +102,7 @@ tolerations: []
 affinity: {}
 
 env:
-  normal: 
+  normal:
     CENTRAL_REGISTRY_JWK_URL: http://client-registry:8080/certs
     CENTRAL_REGISTRY_URL: http://client-registry:8080
     CONSENT_MANAGEMENT_SUFFIX: '@sbx'
@@ -135,11 +135,11 @@ env:
     DATA_FLOW_REQUEST_WAIT_TIME: "1"
     DATA_FLOW_PART_WAIT_TIME: "5"
     RABBITMQ_PREFIX: patient-hiu
-    HAS_BEHIND_GATEWAY: "true"
+    HAS_BEHIND_GATEWAY: "false"
     HAS_CLIENT_ID: "00e70546"
     HAS_AUTH_URL: https://apis-prd.pmjay.gov.in/auth
     LOGIN_METHOD: both
-    Account_Service_Url: https://apis-prd.pmjay.gov.in/NDHM/HAS/stage/api
+    Account_Service_Url: https://healthidbeta.ndhm.gov.in/api
     MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES: 2
     REDIS_HOST: redis.nhadclmgm.tatacommunications.com
     CACHE_METHOD: redis
