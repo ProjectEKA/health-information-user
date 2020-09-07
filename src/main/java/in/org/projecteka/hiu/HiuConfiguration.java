@@ -138,6 +138,7 @@ import java.util.function.BiFunction;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static in.org.projecteka.hiu.common.Constants.GET_CERT;
+import static in.org.projecteka.hiu.common.Constants.HAS_GATEWAY_DUMMY_TOKEN;
 import static io.lettuce.core.ReadFrom.MASTER_PREFERRED;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
@@ -800,7 +801,7 @@ public class HiuConfiguration {
         if (!accountServiceProperties.isEnableOfflineVerification()) {
             return new CMAccountServiceAuthenticator(sessionServiceClient, blockListedTokens);
         }
-        String gateWayToken = accountServiceProperties.isHasBehindGateway() ? identityService.authenticateForHASGateway().block() : "";
+        String gateWayToken = accountServiceProperties.isHasBehindGateway() ? identityService.authenticateForHASGateway().block() : HAS_GATEWAY_DUMMY_TOKEN;
         var tokenVerification = offlineTokenVerification(webClientBuilder,
                 accountServiceProperties.getUrl(), gateWayToken);
         return new CMAccountServiceOfflineAuthenticator(tokenVerification, blockListedTokens);
@@ -861,7 +862,7 @@ public class HiuConfiguration {
         if (accountServiceProperties.isHasBehindGateway()) {
             return new SessionServiceClient(builder, accountServiceProperties.getUrl(), identityService::authenticateForHASGateway);
         }
-        return new SessionServiceClient(builder, accountServiceProperties.getUrl(), () -> Mono.just(""));
+        return new SessionServiceClient(builder, accountServiceProperties.getUrl(), () -> Mono.just(HAS_GATEWAY_DUMMY_TOKEN));
     }
 
     @Bean
