@@ -3,34 +3,42 @@ package in.org.projecteka.hiu.consent;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.Patient;
+import in.org.projecteka.hiu.common.RespError;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
+import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
+import java.util.HashMap;
 import java.util.UUID;
 
+import static in.org.projecteka.hiu.common.Constants.STATUS;
 import static in.org.projecteka.hiu.common.TestBuilders.dateRange;
 import static in.org.projecteka.hiu.common.TestBuilders.gatewayResponse;
 import static in.org.projecteka.hiu.common.TestBuilders.string;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefact;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusDetail;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.gatewayConsentArtefactResponse;
 import static in.org.projecteka.hiu.consent.TestBuilders.hiuProperties;
+import static in.org.projecteka.hiu.consent.TestBuilders.patient;
 import static in.org.projecteka.hiu.consent.TestBuilders.permission;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,6 +74,9 @@ class ConsentServiceTest {
     @Mock
     private HiuProperties hiuProperties;
     private ConsentService consentService;
+
+    @Mock
+    private PatientService patientService;
 
     @BeforeEach
     void setUp() {
@@ -181,5 +192,79 @@ class ConsentServiceTest {
         StepVerifier.create(statusProducer)
                 .verifyComplete();
         verify(consentRepository).getConsentRequestStatus(consentRequest.getConsentRequest().getId());
+    }
+
+    @Test
+    void shouldThrowErrorIFConsentRequestHasError() {
+        var respError = RespError.builder().code(00).message("error").build();
+        var consentRequest = consentStatusRequest().consentRequest(null).error(respError).build();
+
+        var statusProducer = consentService.handleConsentRequestStatus(consentRequest);
+        StepVerifier.create(statusProducer)
+                .verifyComplete();
+        verify(consentRepository,never()).getConsentRequestStatus(any());
+        verify(consentRepository,never()).updateConsentRequestStatus(any(), any());
+    }
+
+    @Test
+    void shouldThrowErrorIFGatewayResponseHasError() {
+        var requestId = UUID.randomUUID();
+        var respError = RespError.builder().code(00).message("error").build();
+        ConsentService consentService = new ConsentService(
+                hiuProperties,
+                consentRepository,
+                dataFlowRequestPublisher,
+                null,
+                null,
+                healthInformationPublisher,
+                conceptValidator,
+                gatewayServiceClient,
+                patientConsentRepository,
+                consentServiceProperties,
+                patientRequestCache,
+                gatewayCache);
+        var gatewayResponse = gatewayResponse().requestId(requestId.toString()).build();
+        var gatewayConsentArtefactResponse = gatewayConsentArtefactResponse()
+                .consent(null)
+                .error(respError)
+                .resp(gatewayResponse)
+                .build();
+        var publisher = consentService.handleConsentArtefact(gatewayConsentArtefactResponse);
+
+        StepVerifier.create(publisher).expectComplete().verify();
+        verify(consentRepository,never()).insertConsentArtefact(any(), any(), any());
+        verify(dataFlowRequestPublisher,never()).broadcastDataFlowRequest(any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldReturnConsentRequests() {
+        String requesterId = string();
+        ConsentService consentService = new ConsentService(
+                hiuProperties,
+                consentRepository,
+                dataFlowRequestPublisher,
+                null,
+                patientService,
+                healthInformationPublisher,
+                conceptValidator,
+                gatewayServiceClient,
+                patientConsentRepository,
+                consentServiceProperties,
+                patientRequestCache,
+                gatewayCache);
+
+        var consentRequest = consentRequest().build();
+        var patient = patient().build();
+
+        var map = new HashMap<String, Object>();
+        map.put("consentRequest",consentRequest);
+        map.put(STATUS,GRANTED);
+        map.put("consentRequestId","consentRequestId");
+
+        when(consentRepository.requestsOf(requesterId)).thenReturn(Flux.just(map));
+        when(patientService.tryFind(any())).thenReturn(just(patient));
+
+        StepVerifier.create(consentService.requestsOf(requesterId))
+                .expectComplete().verify();
     }
 }
