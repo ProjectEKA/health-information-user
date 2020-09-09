@@ -67,7 +67,7 @@ hiu:
     usingUnsecureSSL: ${Account_Service_Uses_Unsecure_SSL:true}
     url: ${Account_Service_Url}
     enable-offline-verification: ${ENABLE_OFFLINE_VERIFICATION:true}
-    hasBehindGateway: ${HAS_BEHIND_GATEWAY:true}
+    hasBehindGateway: ${HAS_BEHIND_GATEWAY:false}
     clientId: ${HAS_CLIENT_ID}
     clientSecret: ${HAS_CLIENT_SECRET}
     hasAuthUrl: ${HAS_AUTH_URL}
