@@ -25,6 +25,7 @@ public class Constants {
     public static final String INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO = "/internal/patient/hip/data-transfer-status";
     public static final String GET_CERT = "/v1/auth/cert";
     public static final String PATH_CONSENT_REQUEST_ON_STATUS = CURRENT_VERSION + "/consent-requests/on-status";
+    public static final String GATEWAY_SESSIONS = "/sessions";
 
     public static final String STATUS = "status";
     public static final String DELIMITER = "@";

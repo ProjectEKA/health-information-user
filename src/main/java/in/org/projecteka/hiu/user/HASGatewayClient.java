@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import static in.org.projecteka.hiu.ClientError.networkServiceCallFailed;
 import static in.org.projecteka.hiu.ClientError.unAuthorized;
+import static in.org.projecteka.hiu.common.Constants.GATEWAY_SESSIONS;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 public class HASGatewayClient {
@@ -23,7 +24,7 @@ public class HASGatewayClient {
     public Mono<Session> getToken(String clientId, String clientSecret) {
         return webClient
                 .post()
-                .uri("/sessions")
+                .uri(GATEWAY_SESSIONS)
                 .contentType(APPLICATION_JSON)
                 .accept(APPLICATION_JSON)
                 .body(BodyInserters.fromValue(requestWith(clientId, clientSecret)))
