@@ -19,6 +19,7 @@ import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -234,4 +235,18 @@ class PatientConsentServiceTest {
         verify(gatewayServiceClient, times(0)).sendConsentRequest(eq("ncg"), capture.capture());
     }
 
+    @Test
+    void shouldReturnLatestCareContextResourceData() {
+        String patientId = string();
+        String hipId = string();
+        var list = new ArrayList<Map<String, Object>>();
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("careContextReference",new Object());
+        list.add(map);
+
+        when(patientConsentRepository.getLatestResourceDateByHipCareContext(anyString(),anyString())).thenReturn(just(list));
+
+        StepVerifier.create(consentService.getLatestCareContextResourceDates(patientId,hipId))
+                .expectNext(list).verifyComplete();
+    }
 }
