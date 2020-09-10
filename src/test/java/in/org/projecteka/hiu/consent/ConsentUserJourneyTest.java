@@ -13,6 +13,7 @@ import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
+import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
 import in.org.projecteka.hiu.consent.model.Patient;
 import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.Permission;
@@ -20,6 +21,7 @@ import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
 import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
+import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.user.Role;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -50,17 +52,24 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_INIT;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUEST_ON_STATUS;
+import static in.org.projecteka.hiu.common.Constants.STATUS;
+import static in.org.projecteka.hiu.common.TestBuilders.string;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentArtefactResponse;
+import static in.org.projecteka.hiu.consent.TestBuilders.consentRequest;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentRequestDetails;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusDetail;
 import static in.org.projecteka.hiu.consent.TestBuilders.consentStatusRequest;
+import static in.org.projecteka.hiu.consent.TestBuilders.gatewayConsentArtefactResponse;
+import static in.org.projecteka.hiu.consent.TestBuilders.patient;
 import static in.org.projecteka.hiu.consent.TestBuilders.randomString;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
@@ -151,6 +160,9 @@ class ConsentUserJourneyTest {
 
     @MockBean
     HealthInfoManager healthInfoManager;
+
+    @MockBean
+    PatientService patientService;
 
 
     @AfterAll
@@ -567,5 +579,56 @@ class ConsentUserJourneyTest {
                 .exchange()
                 .expectStatus()
                 .isAccepted();
+    }
+
+    @Test
+    void shouldReturnAcceptedOnFetchConsentRequest() {
+        String token = randomString();
+        GatewayConsentArtefactResponse gatewayConsentArtefactResponse = gatewayConsentArtefactResponse().build();
+        var caller = ServiceCaller.builder()
+                .clientId(randomString())
+                .roles(List.of(Role.GATEWAY))
+                .build();
+
+        when(gatewayTokenVerifier.verify(token)).thenReturn(just(caller));
+        when(consentRepository.insertConsentArtefact(any(),any(),any())).thenReturn(empty());
+        when(dataFlowRequestPublisher.broadcastDataFlowRequest(any(),any(),any(),any())).thenReturn(empty());
+        when(gatewayResponseCache.get(anyString())).thenReturn(just("requestId"));
+
+        webTestClient
+                .post()
+                .uri(PATH_CONSENTS_ON_FETCH)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(gatewayConsentArtefactResponse)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus()
+                .isAccepted();
+    }
+
+    @Test
+    void shouldReturnConsentRequests() {
+        String token = randomString();
+        String requesterId = string();
+        var consentRequest = consentRequest().build();
+        in.org.projecteka.hiu.clients.Patient patient = patient().build();
+        var caller = new Caller(requesterId, false, Role.ADMIN.toString(), true);
+        var map = new HashMap<String, Object>();
+        map.put("consentRequest",consentRequest);
+        map.put(STATUS,GRANTED);
+        map.put("consentRequestId","consentRequestId");
+
+        when(authenticator.verify(token)).thenReturn(just(caller));
+        when(consentRepository.requestsOf(requesterId)).thenReturn(Flux.just(map));
+        when(patientService.tryFind(any())).thenReturn(just(patient));
+
+        webTestClient
+                .get()
+                .uri(APP_PATH_HIU_CONSENT_REQUESTS)
+                .header("Authorization", token)
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 }
