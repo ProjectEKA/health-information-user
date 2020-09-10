@@ -10,6 +10,7 @@ import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
+import in.org.projecteka.hiu.consent.model.CareContextInfoRequest;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentRequest;
 import in.org.projecteka.hiu.consent.model.ConsentStatus;
@@ -49,15 +50,18 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_HIU_CONSENT_REQUESTS;
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENTS_ON_FETCH;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUESTS_ON_INIT;
 import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUEST_ON_STATUS;
@@ -627,6 +631,35 @@ class ConsentUserJourneyTest {
                 .get()
                 .uri(APP_PATH_HIU_CONSENT_REQUESTS)
                 .header("Authorization", token)
+                .exchange()
+                .expectStatus()
+                .isOk();
+    }
+
+    @Test
+    void shouldReturnCareContextStatus() {
+        String token = string();
+        String requesterId = "hinapatel79@ncg";
+        String hipId = "100005";
+        CareContextInfoRequest careContextInfoRequest = CareContextInfoRequest
+                .builder()
+                .hipId(hipId)
+                .patientId(requesterId)
+                .build();
+        var map = new HashMap<String, Object>();
+        map.put("careContextReference","care_context_reference");
+        map.put("consentArtefactId","consent_artefact_id");
+        map.put("lastResourceDate",LocalDateTime.now(Clock.systemUTC()));
+
+        when(patientConsentRepository.getLatestResourceDateByHipCareContext(requesterId,hipId)).thenReturn(just(Collections.singletonList(map)));
+
+        webTestClient
+                .post()
+                .uri(INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO)
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(careContextInfoRequest)
+                .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus()
                 .isOk();
