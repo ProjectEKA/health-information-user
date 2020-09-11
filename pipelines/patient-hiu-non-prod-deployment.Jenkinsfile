@@ -51,7 +51,6 @@ podTemplate(containers: [
         def PATIENT_HIU_CLIENT_SECRET_CRED_ID = (params.environment == 'dev') ? 'PATIENT_HIU_CLIENT_SECRET_DEV' : 'PATIENT_HIU_CLIENT_SECRET_UAT'
         def HAS_CLIENT_SECRET_CRED_ID = (params.environment == 'dev') ? 'HAS_CLIENT_SECRET_DEV' : 'HAS_CLIENT_SECRET_UAT'
         def RABBITMQ_CRED_ID = (params.environment == 'dev') ? 'RABBITMQ_CRED_DEV' : 'RABBITMQ_CRED_UAT'
-        def HAS_CLIENT_SECRET_CRED_ID = (params.environment == 'dev') ? 'HAS_CLIENT_SECRET_DEV' : 'UAT_HAS_CLIENT_SECRET'
         def HELM_APP_NAME = "patient-hiu"
         def HELM_CHART_DIRECTORY = "helm_chart/patient-hiu/helm_chart/patient-hiu"
 
@@ -65,7 +64,6 @@ podTemplate(containers: [
                     string(credentialsId: "${PATIENT_HIU_CLIENT_SECRET_CRED_ID}", variable: 'PATIENT_HIU_CLIENT_SECRET'),
                     string(credentialsId: "${HAS_CLIENT_SECRET_CRED_ID}", variable: 'HAS_CLIENT_SECRET'),
                     string(credentialsId: "${REDIS_PASSWORD_CRED_ID}", variable: 'REDIS_PASSWORD'),
-                    string(credentialsId: "${HAS_CLIENT_SECRET_CRED_ID}", variable: 'HAS_CLIENT_SECRET'),
                     string(credentialsId: "${ORTHANC_PASSWORD_CRED_ID}", variable: 'ORTHANC_PASSWORD'),
                     usernamePassword(credentialsId: "${RABBITMQ_CRED_ID}",
                                  usernameVariable: 'RABBITMQ_CRED_USR',
@@ -74,7 +72,7 @@ podTemplate(containers: [
                     withKubeConfig([credentialsId: "${KUBE_CONFIG_ID}"]) {
                         sh "helm lint ./${HELM_CHART_DIRECTORY}"
                         sh "kubectl create secret docker-registry ndhm-dockerhub-repo --docker-server=index.docker.io --docker-username=ndhm --docker-password=${NDHM_DOCKER_HUB_PASSWORD} --docker-email=ndhm.fhr.eka@gmailcom -n ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
-                        sh "helm upgrade --install --atomic --cleanup-on-fail -f ./${HELM_CHART_DIRECTORY}/${VALUES_YAML} --namespace ${NAMESPACE} ${HELM_APP_NAME} ./${HELM_CHART_DIRECTORY} --set image.tag='${IMAGE_TAG}' --set-string env.secrets.POSTGRES_PASSWORD='${DB_PASSWORD}' --set-string env.secrets.REDIS_PASSWORD='${REDIS_PASSWORD}' --set-string env.secrets.ORTHANC_PASSWORD='${ORTHANC_PASSWORD}' --set-string env.secrets.HAS_CLIENT_SECRET='${HAS_CLIENT_SECRET}' --set-string env.secrets.HAS_CLIENT_SECRET='${HAS_CLIENT_SECRET}' --set-string env.secrets.HIU_CLIENT_SECRET='${PATIENT_HIU_CLIENT_SECRET}' --set-string env.normal.RABBITMQ_USERNAME='${RABBITMQ_CRED_USR}' --set-string env.secrets.RABBITMQ_PASSWORD='${RABBITMQ_CRED_PSW}'"
+                        sh "helm upgrade --install --atomic --cleanup-on-fail -f ./${HELM_CHART_DIRECTORY}/${VALUES_YAML} --namespace ${NAMESPACE} ${HELM_APP_NAME} ./${HELM_CHART_DIRECTORY} --set image.tag='${IMAGE_TAG}' --set-string env.secrets.POSTGRES_PASSWORD='${DB_PASSWORD}' --set-string env.secrets.REDIS_PASSWORD='${REDIS_PASSWORD}' --set-string env.secrets.ORTHANC_PASSWORD='${ORTHANC_PASSWORD}'  --set-string env.secrets.HAS_CLIENT_SECRET='${HAS_CLIENT_SECRET}' --set-string env.secrets.HIU_CLIENT_SECRET='${PATIENT_HIU_CLIENT_SECRET}' --set-string env.normal.RABBITMQ_USERNAME='${RABBITMQ_CRED_USR}' --set-string env.secrets.RABBITMQ_PASSWORD='${RABBITMQ_CRED_PSW}'"
                         sh "kubectl get pods -n ${NAMESPACE}"
                     }
                 }
