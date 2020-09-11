@@ -11,6 +11,10 @@ spec:
   hosts:
   {{- toYaml .Values.ingress.hosts | nindent 2 }}
   http:
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
   - match:
     - uri:
         prefix: {{ .Values.ingress.uriPrefix }}
