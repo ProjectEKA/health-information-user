@@ -146,6 +146,7 @@ env:
     REDIS_PORT: "6379"
     REDIS_RETRY: 1
     KEEP_ALIVE_ENABLED: "true"
+    HAS_CLIENT_SECRET: f9287684-d3ab-4974-bcfe-2b65f6a5022c
   secrets:
     HIU_CLIENT_SECRET: ""
     ORTHANC_PASSWORD: ""
