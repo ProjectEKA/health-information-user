@@ -1,5 +1,6 @@
 server:
   port: 8003
+  forward-headers-strategy: ${FORWARD-HEADER-STRATEGY:NATIVE}
 hiu:
   id: ${HIU_ID}
   name: ${HIU_NAME}
