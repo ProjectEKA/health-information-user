@@ -155,7 +155,6 @@ env:
     HAS_BEHIND_GATEWAY: "false"
     KEEP_ALIVE_ENABLED: "true"
     HAS_CLIENT_ID: sbx
-    HAS_CLIENT_SECRET: f9287684-d3ab-4974-bcfe-2b65f6a5022c
     HAS_AUTH_URL: https://dev.ndhm.gov.in/gateway/v0.5
   secrets:
     HIU_CLIENT_SECRET: ""
@@ -163,4 +162,4 @@ env:
     POSTGRES_PASSWORD: ""
     RABBITMQ_PASSWORD: ""
     REDIS_PASSWORD: ""
-
+    HAS_CLIENT_SECRET: ""
