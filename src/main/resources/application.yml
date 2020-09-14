@@ -78,7 +78,11 @@ spring:
   codec:
     max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
 webclient:
-  keepAlive: ${HIU_KEEP_ALIVE:true}
+  use-connection-pool: ${USE_HTTP_CONNECTION_POOL:true}
+  connection-pool:
+    poolSize: ${HTTP_CONNECTION_POOL_SIZE:500}
+    maxLifeTime: ${HTTP_CONNECTION_MAX_LIFETIME:10}
+    maxIdleTimeout: ${HTTP_CONNECTION_MAX_IDLETIME:5}
 logging:
   level:
     ROOT: ${LOG_LEVEL:INFO}
