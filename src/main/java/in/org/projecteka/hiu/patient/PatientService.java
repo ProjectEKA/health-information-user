@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import static in.org.projecteka.hiu.ClientError.gatewayTimeOut;
 import static in.org.projecteka.hiu.ClientError.unknownError;
 import static in.org.projecteka.hiu.ErrorCode.PATIENT_NOT_FOUND;
+import static in.org.projecteka.hiu.common.Constants.DELIMITER;
 import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
 import static in.org.projecteka.hiu.common.CustomScheduler.scheduleThis;
 import static in.org.projecteka.hiu.common.ErrorMappings.get;
@@ -85,7 +86,13 @@ public class PatientService {
     private FindPatientRequest getFindPatientRequest(String id) {
         var requestId = UUID.randomUUID();
         var timestamp = LocalDateTime.now(ZoneOffset.UTC);
-        var patient = new in.org.projecteka.hiu.consent.model.Patient(id);
+        String cmIdWithoutSuffix = id.split(DELIMITER)[0];
+        in.org.projecteka.hiu.consent.model.Patient patient;
+        if(cmIdWithoutSuffix.matches(".*[a-zA-Z]+.*")) {
+            patient = new in.org.projecteka.hiu.consent.model.Patient(id);
+        } else {
+           patient = new in.org.projecteka.hiu.consent.model.Patient(cmIdWithoutSuffix);
+        }
         var requester = new Requester("HIU", hiuProperties.getId());
         var query = new FindPatientQuery(patient, requester);
         return new FindPatientRequest(requestId, timestamp, query);
