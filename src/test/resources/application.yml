@@ -23,3 +23,5 @@ hiu:
     requestTimeout: 1000
   authorization:
     header: authorization
+webclient:
+  use-connection-pool: ${USE_HTTP_CONNECTION_POOL:false} 
