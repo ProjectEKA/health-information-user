@@ -79,3 +79,6 @@ spring:
     max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
 webclient:
   keepAlive: ${HIU_KEEP_ALIVE:true}
+logging:
+  level:
+    ROOT: ${LOG_LEVEL:INFO}
