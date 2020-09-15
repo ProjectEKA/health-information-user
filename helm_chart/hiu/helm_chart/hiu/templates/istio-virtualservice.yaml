@@ -15,7 +15,7 @@ spec:
       request:
         set:
           X-Forwarded-Proto: https
-  - match:
+    match:
     - uri:
         prefix: {{ .Values.ingress.uriPrefix }}
     rewrite:
@@ -25,7 +25,11 @@ spec:
         host: hiu
         port:
           number: 8003
-  - match:
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
+    match:
     - uri:
         prefix: /swagger.yaml
     route:
