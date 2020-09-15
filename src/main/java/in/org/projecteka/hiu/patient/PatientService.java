@@ -86,13 +86,8 @@ public class PatientService {
     private FindPatientRequest getFindPatientRequest(String id) {
         var requestId = UUID.randomUUID();
         var timestamp = LocalDateTime.now(ZoneOffset.UTC);
-        String cmIdWithoutSuffix = id.split(DELIMITER)[0];
         in.org.projecteka.hiu.consent.model.Patient patient;
-        if(cmIdWithoutSuffix.matches(".*[a-zA-Z]+.*")) {
-            patient = new in.org.projecteka.hiu.consent.model.Patient(id);
-        } else {
-           patient = new in.org.projecteka.hiu.consent.model.Patient(cmIdWithoutSuffix);
-        }
+        patient = new in.org.projecteka.hiu.consent.model.Patient(id);
         var requester = new Requester("HIU", hiuProperties.getId());
         var query = new FindPatientQuery(patient, requester);
         return new FindPatientRequest(requestId, timestamp, query);
