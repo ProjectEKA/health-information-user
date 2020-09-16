@@ -7,7 +7,6 @@ import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.user.model.UserAuthOnConfirmResponse;
 import in.org.projecteka.hiu.user.model.UserAuthOnInitResponse;
 import lombok.AllArgsConstructor;
-import lombok.extern.java.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -16,8 +15,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoSink;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_CONFIRM;
@@ -25,6 +24,7 @@ import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_INIT;
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.ACCEPTED;
 
 @RestController
 @AllArgsConstructor
@@ -78,6 +78,7 @@ public class UserController {
                 .switchIfEmpty(Mono.just(true));
     }
 
+    @ResponseStatus(ACCEPTED)
     @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
     @PostMapping(PATH_ON_AUTH_INIT)
     public Mono<Void> usersAuthOnInit(@RequestBody UserAuthOnInitResponse userAuthOnInitResponse) {
@@ -98,9 +99,10 @@ public class UserController {
                     keyValue("authMetaExpiry", userAuthOnInitResponse.getAuth().getMeta().getExpiry()));
         }
         logger.info("ResponseRequestId", keyValue("", userAuthOnInitResponse.getResp().getRequestId()));
-        return Mono.create(MonoSink::success);
+        return Mono.empty();
     }
 
+    @ResponseStatus(ACCEPTED)
     @PostMapping(PATH_ON_AUTH_CONFIRM)
     public Mono<Void> usersAuthOnConfirm(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
         return Mono.empty();
