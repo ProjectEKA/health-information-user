@@ -105,6 +105,31 @@ public class UserController {
     @ResponseStatus(ACCEPTED)
     @PostMapping(PATH_ON_AUTH_CONFIRM)
     public Mono<Void> usersAuthOnConfirm(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
+        logger.info("Session request received {}", keyValue("requestId", userAuthOnConfirmResponse.getRequestId()),
+                keyValue("timestamp", userAuthOnConfirmResponse.getTimestamp()));
+
+        if (userAuthOnConfirmResponse.getError()!=null)
+        {
+            if (userAuthOnConfirmResponse.getAuth().getAccessToken()!=null)
+                logger.info("Access Token: ", userAuthOnConfirmResponse.getAuth().getAccessToken());
+            if (userAuthOnConfirmResponse.getAuth().getPatient() != null)
+            {
+                logger.info("Patient Demographics Details:",
+                        keyValue(" Name: ",userAuthOnConfirmResponse.getAuth().getPatient().getName()),
+                        keyValue(" Id: ",userAuthOnConfirmResponse.getAuth().getPatient().getId()),
+                        keyValue(" Birth Year: ",userAuthOnConfirmResponse.getAuth().getPatient().getYearOfBirth()),
+                        keyValue(" Gender: ",userAuthOnConfirmResponse.getAuth().getPatient().getGender()));
+                if (userAuthOnConfirmResponse.getAuth().getPatient().getAddress() != null)
+                {
+                    logger.info("Patient Address Details:",
+                            keyValue(" District: " ,userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getLine()),
+                            keyValue(" Line: ",userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getDistrict()),
+                            keyValue(" Pincode: ",userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getPincode()),
+                            keyValue(" State: ",userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getState()));
+                }
+            }
+        }
+        logger.info("ResponseRequestId", keyValue("", userAuthOnConfirmResponse.getResp().getRequestId()));
         return Mono.empty();
     }
 }
