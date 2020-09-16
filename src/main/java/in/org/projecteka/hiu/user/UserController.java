@@ -5,7 +5,11 @@ import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.user.model.UserAuthOnConfirmResponse;
+import in.org.projecteka.hiu.user.model.UserAuthOnInitResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.java.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,8 +17,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_REQUEST;
+import static net.logstash.logback.argument.StructuredArguments.keyValue;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
@@ -23,6 +29,8 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 public class UserController {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+
 
     @PostMapping("/users")
     public Mono<Void> createNew(@RequestBody Mono<User> userPublisher) {
@@ -68,9 +76,27 @@ public class UserController {
                 .switchIfEmpty(Mono.just(true));
     }
 
+    @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
     @PostMapping("/users/auth/on-init")
-    public Mono<Void> usersAuthOnInit(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
-        return Mono.empty();
+    public Mono<Void> usersAuthOnInit(@RequestBody UserAuthOnInitResponse userAuthOnInitResponse) {
+
+        logger.info("Session request received {}", keyValue("requestId", userAuthOnInitResponse.getRequestId()),
+                keyValue("timestamp", userAuthOnInitResponse.getTimestamp()));
+
+        if (userAuthOnInitResponse.getError()!=null)
+        {
+            logger.info("",keyValue("errorCode", userAuthOnInitResponse.getError().getCode()),
+                    keyValue("errorMessage", userAuthOnInitResponse.getError().getMessage()));
+        }
+        else
+        {
+            logger.info("",keyValue("transactionId", userAuthOnInitResponse.getAuth().getTransactionId()),
+                    keyValue("authMetaMode", userAuthOnInitResponse.getAuth().getMode()),
+                    keyValue("authMetaHint", userAuthOnInitResponse.getAuth().getMeta().getHint()),
+                    keyValue("authMetaExpiry", userAuthOnInitResponse.getAuth().getMeta().getExpiry()));
+        }
+        logger.info("ResponseRequestId", keyValue("", userAuthOnInitResponse.getResp().getRequestId()));
+        return Mono.create(MonoSink::success);
     }
 
     @PostMapping("/users/auth/on-confrim")
