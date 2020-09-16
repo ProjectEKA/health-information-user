@@ -103,6 +103,8 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializationContext.RedisSerializationContextBuilder;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.ServerCodecConfigurer;
@@ -111,7 +113,9 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
@@ -893,5 +897,17 @@ public class HiuConfiguration {
                     configurer.defaultCodecs().jackson2JsonEncoder(encoder);
                     configurer.defaultCodecs().jackson2JsonDecoder(decoder);
                 }).build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "hiu.disableHttpOptionsMethod", havingValue = "true")
+    public WebFilter disableOptionsMethodFilter(){
+        return (exchange, chain) -> {
+            if(exchange.getRequest().getMethod().equals(HttpMethod.OPTIONS)) {
+                exchange.getResponse().setStatusCode(HttpStatus.METHOD_NOT_ALLOWED);
+                return Mono.empty();
+            }
+            return chain.filter(exchange);
+        };
     }
 }
