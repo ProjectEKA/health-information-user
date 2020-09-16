@@ -20,6 +20,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_CONFIRM;
+import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_INIT;
 import static net.logstash.logback.argument.StructuredArguments.keyValue;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -77,7 +79,7 @@ public class UserController {
     }
 
     @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
-    @PostMapping("/users/auth/on-init")
+    @PostMapping(PATH_ON_AUTH_INIT)
     public Mono<Void> usersAuthOnInit(@RequestBody UserAuthOnInitResponse userAuthOnInitResponse) {
 
         logger.info("Session request received {}", keyValue("requestId", userAuthOnInitResponse.getRequestId()),
@@ -99,7 +101,7 @@ public class UserController {
         return Mono.create(MonoSink::success);
     }
 
-    @PostMapping("/users/auth/on-confrim")
+    @PostMapping(PATH_ON_AUTH_CONFIRM)
     public Mono<Void> usersAuthOnConfirm(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
         return Mono.empty();
     }
