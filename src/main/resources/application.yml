@@ -7,6 +7,7 @@ hiu:
   dataPushUrl: ${DATA_PUSH_URL}
   valueSets: classpath:/static/ValueSet/valuesets.json
   secret: ${HIU_SECRET:RiPzliMKlBf67mgLpvn6LBg2Fz5OqBBmJNzi4nQ9YMZy0pq2uu}
+  disableHttpOptionsMethod: ${DISABLE_HTTP_OPTIONS:false}
   consentmanager:
     suffix: ${CONSENT_MANAGEMENT_SUFFIX}
     url: ${CONSENT_MANAGEMENT_URL}
