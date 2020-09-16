@@ -4,6 +4,7 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
+import in.org.projecteka.hiu.user.model.UserAuthOnConfirmResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -65,6 +66,16 @@ public class UserController {
         return userRepository.with(user.getUsername())
                 .map(x -> false)
                 .switchIfEmpty(Mono.just(true));
+    }
+
+    @PostMapping("/users/auth/on-init")
+    public Mono<Void> usersAuthOnInit(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
+        return Mono.empty();
+    }
+
+    @PostMapping("/users/auth/on-confrim")
+    public Mono<Void> usersAuthOnConfirm(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
+        return Mono.empty();
     }
 }
 
