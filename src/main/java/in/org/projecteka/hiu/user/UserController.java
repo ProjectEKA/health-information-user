@@ -88,7 +88,7 @@ public class UserController {
 
         if (userAuthOnInitResponse.getError() != null) {
             logger.info("errorCode: " + userAuthOnInitResponse.getError().getCode() +
-                    "errorMessage: " + userAuthOnInitResponse.getError().getMessage());
+                    " errorMessage: " + userAuthOnInitResponse.getError().getMessage());
         } else {
             logger.info("transactionId: " + userAuthOnInitResponse.getAuth().getTransactionId() +
                     ", authMetaMode: " + userAuthOnInitResponse.getAuth().getMode() +
