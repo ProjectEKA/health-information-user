@@ -1,20 +1,24 @@
-# {{ if .Values.persistence.enabled -}}
-# apiVersion: v1
-# kind: PersistentVolume
-# metadata:
-#   name: "{{ .Values.persistence.VolumeName }}"
-#   labels:
-#     app.kubernetes.io/instance: {{ .Release.Name }}
-#     app.kubernetes.io/managed-by: {{ .Release.Service }}
-#     type: {{ .Values.persistence.storageClass }}
-# spec:
-#   storageClassName: {{ .Values.persistence.storageClass }}
-#   capacity:
-#     storage: {{ .Values.persistence.size | quote }}
-#   accessModes:
-#     - {{ .Values.persistence.accessMode | quote }}
-#   persistentVolumeReclaimPolicy: Retain
-# {{ end -}}
+{{ if .Values.pv.enabled -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+ name: "{{ .Values.pv.VolumeName }}"
+ labels:
+   app.kubernetes.io/instance: {{ .Release.Name }}
+   app.kubernetes.io/managed-by: {{ .Release.Service }}
+   type: {{ .Values.pv.storageClass }}
+spec:
+ storageClassName: {{ .Values.pv.storageClass }}
+ capacity:
+   storage: {{ .Values.pv.size | quote }}
+ volumeMode: {{ .Values.pv.volumeMode | quote }}
+ accessModes:
+   - {{ .Values.pv.accessMode | quote }}
+ persistentVolumeReclaimPolicy: Retain
+ csi:
+   driver: {{ .Values.pv.driver | quote }}
+   volumeHandle: {{ .Values.pv.volumeHandle | quote }}
+{{ end -}}
 ---
 {{ if .Values.persistence.enabled -}}
 apiVersion: v1
