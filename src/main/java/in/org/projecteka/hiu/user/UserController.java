@@ -107,14 +107,14 @@ public class UserController {
 
         if (userAuthOnConfirmResponse.getError() != null) {
             logger.info("errorCode: " + userAuthOnConfirmResponse.getError().getCode() +
-                    "errorMessage: " + userAuthOnConfirmResponse.getError().getMessage());
+                    ", errorMessage: " + userAuthOnConfirmResponse.getError().getMessage());
         } else {
             if (userAuthOnConfirmResponse.getAuth().getPatient() != null) {
                 logger.info("Patient Demographics Details:" +
                         " Id: " + userAuthOnConfirmResponse.getAuth().getPatient().getId() +
                         " Name: " + userAuthOnConfirmResponse.getAuth().getPatient().getName() +
                         ", Birth Year: " + userAuthOnConfirmResponse.getAuth().getPatient().getYearOfBirth() +
-                        ", Gender: ", userAuthOnConfirmResponse.getAuth().getPatient().getGender());
+                        ", Gender: " + userAuthOnConfirmResponse.getAuth().getPatient().getGender());
                 if (userAuthOnConfirmResponse.getAuth().getPatient().getAddress() != null) {
                     logger.info("Patient Address Details: District: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getLine() +
                             ", Line: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getDistrict() +
