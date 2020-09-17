@@ -60,7 +60,9 @@ podTemplate(containers: [
         stage('Deploy patient-hiu to aws-dev cluster') {
              if(params.environment == 'aws-dev'){
                 container('aws-k8s-helm3') {
-                    withCredentials([string(credentialsId: "${DB_PASSWORD_CRED_ID}", variable: 'DB_PASSWORD'),
+                    withCredentials([
+                        [ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_dev_credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
+                        string(credentialsId: "${DB_PASSWORD_CRED_ID}", variable: 'DB_PASSWORD'),
                         string(credentialsId: "${NDHM_DOCKER_HUB_PASSWORD_CRED_ID}", variable: 'NDHM_DOCKER_HUB_PASSWORD'),
                         string(credentialsId: "${PATIENT_HIU_CLIENT_SECRET_CRED_ID}", variable: 'PATIENT_HIU_CLIENT_SECRET'),
                         string(credentialsId: "${HAS_CLIENT_SECRET_CRED_ID}", variable: 'HAS_CLIENT_SECRET'),
