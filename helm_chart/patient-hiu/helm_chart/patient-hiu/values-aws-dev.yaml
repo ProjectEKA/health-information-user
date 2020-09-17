@@ -118,7 +118,7 @@ env:
     CONSENT_MANAGEMENT_SUFFIX: '@ndhm'
     CONSENT_MANAGEMENT_URL: http://consent-manager:8000
     CONSENT_MANAGER_DB_NAME: patient_hiu
-    DATA_PUSH_URL: http://patient-hiu:9070/data/notification
+    DATA_PUSH_URL: http://patient-hiu:8003/data/notification
     DB_CONNECTION_POOL_SIZE: "5"
     DEFAULT_PAGE_SIZE: "10"
     GATEWAY_BASE_URL: http://gateway:8000/v0.5
