@@ -41,6 +41,8 @@ import static in.org.projecteka.hiu.common.Constants.PATH_CONSENT_REQUEST_ON_STA
 import static in.org.projecteka.hiu.common.Constants.PATH_DATA_TRANSFER;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEALTH_INFORMATION_HIU_ON_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
+import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_CONFIRM;
+import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_INIT;
 import static in.org.projecteka.hiu.user.Role.GATEWAY;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.of;
@@ -69,17 +71,19 @@ public class SecurityConfiguration {
             Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO),
             Map.entry(HttpMethod.POST, API_PATH_GET_HEALTH_INFO_STATUS));
     private static final String[] ALLOWED_LISTS = new String[]{"/**.json",
-                                                               "/ValueSet/**.json",
-                                                               "/**.html",
-                                                               "/**.js",
-                                                               "/**.yaml",
-                                                               "/**.css",
-                                                               "/**.png",
-                                                               PATH_DATA_TRANSFER,
-                                                               PATH_HEARTBEAT,
-                                                               INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO,
-                                                               "/sessions",
-                                                               "/config"};
+            "/ValueSet/**.json",
+            "/**.html",
+            "/**.js",
+            "/**.yaml",
+            "/**.css",
+            "/**.png",
+            PATH_DATA_TRANSFER,
+            PATH_HEARTBEAT,
+            INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO,
+            PATH_ON_AUTH_INIT,
+            PATH_ON_AUTH_CONFIRM,
+            "/sessions",
+            "/config"};
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
@@ -140,8 +144,8 @@ public class SecurityConfiguration {
             if (isCMPatientRequest(path, exchange.getRequest().getMethod())) {
                 var patientToken = exchange.getRequest().getHeaders().getFirst(authHeader);
                 return isEmpty(patientToken)
-                       ? error(unauthorizedRequester())
-                       : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
+                        ? error(unauthorizedRequester())
+                        : checkUserToken(patientToken).switchIfEmpty(error(unauthorizedRequester()));
             }
 
             var token = exchange.getRequest().getHeaders().getFirst(AUTHORIZATION);

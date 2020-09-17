@@ -5,7 +5,7 @@ import lombok.Value;
 
 @Builder
 @Value
-public class PatientRepresentation {
+public class Patient {
     String id;
     String name;
     Gender gender;

@@ -83,53 +83,47 @@ public class UserController {
     @PostMapping(PATH_ON_AUTH_INIT)
     public Mono<Void> usersAuthOnInit(@RequestBody UserAuthOnInitResponse userAuthOnInitResponse) {
 
-        logger.info("Session request received {}", keyValue("requestId", userAuthOnInitResponse.getRequestId()),
-                keyValue("timestamp", userAuthOnInitResponse.getTimestamp()));
+        logger.info("Session request received {} requestId: " + userAuthOnInitResponse.getRequestId() +
+                "timestamp: " + userAuthOnInitResponse.getTimestamp());
 
-        if (userAuthOnInitResponse.getError()!=null)
-        {
-            logger.info("",keyValue("errorCode", userAuthOnInitResponse.getError().getCode()),
-                    keyValue("errorMessage", userAuthOnInitResponse.getError().getMessage()));
+        if (userAuthOnInitResponse.getError() != null) {
+            logger.info("errorCode: " + userAuthOnInitResponse.getError().getCode() +
+                    "errorMessage: " + userAuthOnInitResponse.getError().getMessage());
+        } else {
+            logger.info("transactionId: " + userAuthOnInitResponse.getAuth().getTransactionId() +
+                    ", authMetaMode: " + userAuthOnInitResponse.getAuth().getMode() +
+                    ", authMetaHint: " + userAuthOnInitResponse.getAuth().getMeta().getHint() +
+                    ", authMetaExpiry: " + userAuthOnInitResponse.getAuth().getMeta().getExpiry());
         }
-        else
-        {
-            logger.info("",keyValue("transactionId", userAuthOnInitResponse.getAuth().getTransactionId()),
-                    keyValue("authMetaMode", userAuthOnInitResponse.getAuth().getMode()),
-                    keyValue("authMetaHint", userAuthOnInitResponse.getAuth().getMeta().getHint()),
-                    keyValue("authMetaExpiry", userAuthOnInitResponse.getAuth().getMeta().getExpiry()));
-        }
-        logger.info("ResponseRequestId", keyValue("", userAuthOnInitResponse.getResp().getRequestId()));
+        logger.info("ResponseRequestId: " + userAuthOnInitResponse.getResp().getRequestId());
         return Mono.empty();
     }
 
     @ResponseStatus(ACCEPTED)
     @PostMapping(PATH_ON_AUTH_CONFIRM)
     public Mono<Void> usersAuthOnConfirm(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
-        logger.info("Session request received {}", keyValue("requestId", userAuthOnConfirmResponse.getRequestId()),
-                keyValue("timestamp", userAuthOnConfirmResponse.getTimestamp()));
+        logger.info("Session request received {} requestId:" + userAuthOnConfirmResponse.getRequestId() +
+                "timestamp: " + userAuthOnConfirmResponse.getTimestamp());
 
-        if (userAuthOnConfirmResponse.getError()!=null)
-        {
-            if (userAuthOnConfirmResponse.getAuth().getAccessToken()!=null)
-                logger.info("Access Token: ", userAuthOnConfirmResponse.getAuth().getAccessToken());
-            if (userAuthOnConfirmResponse.getAuth().getPatient() != null)
-            {
-                logger.info("Patient Demographics Details:",
-                        keyValue(" Name: ",userAuthOnConfirmResponse.getAuth().getPatient().getName()),
-                        keyValue(" Id: ",userAuthOnConfirmResponse.getAuth().getPatient().getId()),
-                        keyValue(" Birth Year: ",userAuthOnConfirmResponse.getAuth().getPatient().getYearOfBirth()),
-                        keyValue(" Gender: ",userAuthOnConfirmResponse.getAuth().getPatient().getGender()));
-                if (userAuthOnConfirmResponse.getAuth().getPatient().getAddress() != null)
-                {
-                    logger.info("Patient Address Details:",
-                            keyValue(" District: " ,userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getLine()),
-                            keyValue(" Line: ",userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getDistrict()),
-                            keyValue(" Pincode: ",userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getPincode()),
-                            keyValue(" State: ",userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getState()));
+        if (userAuthOnConfirmResponse.getError() != null) {
+            logger.info("errorCode: " + userAuthOnConfirmResponse.getError().getCode() +
+                    "errorMessage: " + userAuthOnConfirmResponse.getError().getMessage());
+        } else {
+            if (userAuthOnConfirmResponse.getAuth().getPatient() != null) {
+                logger.info("Patient Demographics Details:" +
+                        " Id: " + userAuthOnConfirmResponse.getAuth().getPatient().getId() +
+                        " Name: " + userAuthOnConfirmResponse.getAuth().getPatient().getName() +
+                        ", Birth Year: " + userAuthOnConfirmResponse.getAuth().getPatient().getYearOfBirth() +
+                        ", Gender: ", userAuthOnConfirmResponse.getAuth().getPatient().getGender());
+                if (userAuthOnConfirmResponse.getAuth().getPatient().getAddress() != null) {
+                    logger.info("Patient Address Details: District: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getLine() +
+                            ", Line: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getDistrict() +
+                            ", Pincode: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getPincode() +
+                            ", State: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getState());
                 }
             }
         }
-        logger.info("ResponseRequestId", keyValue("", userAuthOnConfirmResponse.getResp().getRequestId()));
+        logger.info("ResponseRequestId :" + userAuthOnConfirmResponse.getResp().getRequestId());
         return Mono.empty();
     }
 }

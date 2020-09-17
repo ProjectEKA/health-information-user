@@ -9,5 +9,5 @@ import lombok.Value;
 @Value
 public class AuthorizationResponse {
     private String accessToken;
-    PatientRepresentation patient;
+    Patient patient;
 }
