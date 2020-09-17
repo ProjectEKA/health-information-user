@@ -43,6 +43,9 @@ persistence:
   accessMode: ReadWriteMany
   size: 500Gi
 
+pv:
+  enabled: false
+
 service:
   type: ClusterIP
   port: 8003

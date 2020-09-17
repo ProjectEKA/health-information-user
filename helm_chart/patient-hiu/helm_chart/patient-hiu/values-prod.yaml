@@ -57,7 +57,10 @@ persistence:
   VolumeName: "patient-hiu-data-prod"
   accessMode: ReadWriteMany
   size: 500Gi
-  
+
+pv:
+  enabled: false
+
 livenessProbe:
   enabled: true
   initialDelaySeconds: 30

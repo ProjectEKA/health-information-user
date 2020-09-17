@@ -30,21 +30,28 @@ serviceAccount:
   name:
 
 podSecurityContext: {}
-  # fsGroup: 2000
+# fsGroup: 2000
 
 ## Persist data to a persistent volume
 
 persistence:
   enabled: true
   existingClaim: ""
-  storageClass: "gluster"
+  storageClass: "efs-sc"
   mountPath: "/mnt/patient-hiu-data"
   VolumeName: "patient-hiu-data"
-  accessMode: ReadWriteOnce
+  accessMode: ReadWriteMany
   size: 20Gi
 
 pv:
-  enabled: false
+  enabled: true
+  storageClass: "efs-sc"
+  size: "20Gi"
+  volumeMode: "Filesystem"
+  VolumeName: "patient-hiu-data"
+  accessMode: "ReadWriteMany"
+  driver: "efs.csi.aws.com"
+  volumeHandle: "fs-5f4dda8e"
 
 service:
   type: ClusterIP
@@ -53,8 +60,8 @@ service:
 ingress:
   enabled: true
   hosts:
-    - dev.ndhm.gov.in
-  gateway: nha-gateway
+    - dev.tweka.in
+  gateway: nha-gateway.nha-dev.cluster.svc.local
   uriPrefix: "/patient-hiu/"
   rewriteUri: "/"
 
@@ -108,19 +115,18 @@ env:
   normal:
     CENTRAL_REGISTRY_JWK_URL: http://client-registry:8080/certs
     CENTRAL_REGISTRY_URL: http://client-registry:8080
-    CONSENT_MANAGEMENT_SUFFIX: '@sbx'
+    CONSENT_MANAGEMENT_SUFFIX: '@ndhm'
     CONSENT_MANAGEMENT_URL: http://consent-manager:8000
-    CONSENT_NOTIFICATION_URL: https://dev.ndhm.gov.in/patient-hiu/consent/notification
-    CONSENT_MANAGER_DB_NAME: patient_health_information_user
-    DATA_PUSH_URL: https://dev.ndhm.gov.in/patient-hiu/data/notification
+    CONSENT_MANAGER_DB_NAME: patient_hiu
+    DATA_PUSH_URL: http://patient-hiu:9070/data/notification
     DB_CONNECTION_POOL_SIZE: "5"
-    DEFAULT_PAGE_SIZE: "20"
+    DEFAULT_PAGE_SIZE: "10"
     GATEWAY_BASE_URL: http://gateway:8000/v0.5
     GATEWAY_REQUEST_TIMEOUT: "8000"
-    HIU_NAME: Max Health Care
-    LOCAL_STORAGE_PATH: /mnt/patient-hiu-data/
+    HIU_NAME: Patient HIU
+    LOCAL_STORAGE_PATH: /tmp/patient-hiu/
     MAX_IN_MEMORY_SIZE: 500MB
-    MAX_PAGE_SIZE: "100"
+    MAX_PAGE_SIZE: "20"
     OFFSET_IN_DAYS: "2"
     USING_GATEWAY: "true"
     GATEWAY_JWK_URL: http://gateway:8000/v0.5/certs
@@ -128,32 +134,25 @@ env:
     HIU_ID: "10000009"
     ORTHANC_SERVER_URL: http://orthanc:8042
     ORTHANC_USERNAME: orthanc
-    POSTGRES_HOST: nhadcl-postges-1.nhadclmgm.tatacommunications.com
-    POSTGRES_PORT: "5633"
+    POSTGRES_HOST: db
+    POSTGRES_PORT: "5432"
     POSTGRES_USER: postgres
-    RABBITMQ_HOST: rabbitmq.nhadclmgm.tatacommunications.com
+    RABBITMQ_HOST: rabbitmq
     RABBITMQ_PORT: "5672"
     RABBITMQ_USERNAME: "admin"
     IDENTITY_JWK_URL: "http://keycloak:8080/auth/realms/consent-manager/protocol/openid-connect/certs"
     DATA_FLOW_REQUEST_WAIT_TIME: "1"
     DATA_FLOW_PART_WAIT_TIME: "5"
     RABBITMQ_PREFIX: patient-hiu
-    HAS_BEHIND_GATEWAY: "false"
-    HAS_CLIENT_ID: "00e70546"
-    HAS_AUTH_URL: https://apis-prd.pmjay.gov.in/auth
-    LOGIN_METHOD: both
-    Account_Service_Url: https://healthidbeta.ndhm.gov.in/api
-    MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES: 2
-    REDIS_HOST: redis.nhadclmgm.tatacommunications.com
+    HAS_BEHIND_GATEWAY: "true"
+    HAS_CLIENT_ID: "sbx"
+    HAS_AUTH_URL: https://dev.ndhm.gov.in/gateway/v0.5
+    Account_Service_Url: https://dev.tweka.in/has/
+    MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES: 1
+    REDIS_HOST: redis
     CACHE_METHOD: redis
     REDIS_PORT: "6379"
     REDIS_RETRY: 1
-    KEEP_ALIVE_ENABLED: "true"
-    LOG_LEVEL: "DEBUG"
-    USE_HTTP_CONNECTION_POOL: "true"
-    HTTP_CONNECTION_POOL_SIZE: 500
-    HTTP_CONNECTION_MAX_LIFETIME: 10
-    HTTP_CONNECTION_MAX_IDLETIME: 5
     DISABLE_HTTP_OPTIONS: "true"
   secrets:
     HIU_CLIENT_SECRET: ""
