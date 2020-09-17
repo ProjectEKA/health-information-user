@@ -14,6 +14,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
                                 RabbitMQOptions.class,
                                 CacheMethodProperty.class,
                                 RedisOptions.class,
+                                WebClientOptions.class,
                                 AccountServiceProperties.class})
 public class HiuApplication {
 

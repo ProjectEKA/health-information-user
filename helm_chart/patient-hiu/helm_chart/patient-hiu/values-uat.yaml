@@ -137,19 +137,28 @@ env:
     DATA_FLOW_PART_WAIT_TIME: "2000"
     RABBITMQ_PREFIX: patient-hiu
     LOGIN_METHOD: both
-    Account_Service_Url: https://accountbeta.nha.gov.in/api/
+    Account_Service_Url: https://accountbeta.nha.gov.in/ndhm/api
     REDIS_HOST: redis-uat-1.nhadclmgm.tatacommunications.com
     REDIS_PORT: "5502"
     CACHE_METHOD: redis
     AUTHORIZATION_HEADER: "X-AUTH-TOKEN"
     MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES: 2
     REDIS_RETRY: 1
-    HAS_BEHIND_GATEWAY: "false"
+    HAS_BEHIND_GATEWAY: "true"
     KEEP_ALIVE_ENABLED: "true"
+    HAS_CLIENT_ID: sbx
+    HAS_AUTH_URL: https://dev.ndhm.gov.in/gateway/v0.5
+    LOG_LEVEL: "DEBUG"
+    USE_HTTP_CONNECTION_POOL: "true"
+    HTTP_CONNECTION_POOL_SIZE: 500
+    HTTP_CONNECTION_MAX_LIFETIME: 10
+    HTTP_CONNECTION_MAX_IDLETIME: 5
+    DISABLE_HTTP_OPTIONS: "true"
   secrets:
     HIU_CLIENT_SECRET: ""
     ORTHANC_PASSWORD: ""
     POSTGRES_PASSWORD: ""
     RABBITMQ_PASSWORD: ""
     REDIS_PASSWORD: ""
+    HAS_CLIENT_SECRET: ""
 

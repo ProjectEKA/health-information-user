@@ -107,6 +107,8 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializationContext.RedisSerializationContextBuilder;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.ServerCodecConfigurer;
@@ -115,6 +117,7 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
@@ -130,6 +133,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.util.Base64;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -138,6 +142,7 @@ import java.util.function.BiFunction;
 
 import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
 import static in.org.projecteka.hiu.common.Constants.GET_CERT;
+import static in.org.projecteka.hiu.common.Constants.HAS_GATEWAY_DUMMY_TOKEN;
 import static io.lettuce.core.ReadFrom.MASTER_PREFERRED;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
@@ -800,7 +805,7 @@ public class HiuConfiguration {
         if (!accountServiceProperties.isEnableOfflineVerification()) {
             return new CMAccountServiceAuthenticator(sessionServiceClient, blockListedTokens);
         }
-        String gateWayToken = accountServiceProperties.isHasBehindGateway() ? identityService.authenticateForHASGateway().block() : "";
+        String gateWayToken = accountServiceProperties.isHasBehindGateway() ? identityService.authenticateForHASGateway().block() : HAS_GATEWAY_DUMMY_TOKEN;
         var tokenVerification = offlineTokenVerification(webClientBuilder,
                 accountServiceProperties.getUrl(), gateWayToken);
         return new CMAccountServiceOfflineAuthenticator(tokenVerification, blockListedTokens);
@@ -861,7 +866,7 @@ public class HiuConfiguration {
         if (accountServiceProperties.isHasBehindGateway()) {
             return new SessionServiceClient(builder, accountServiceProperties.getUrl(), identityService::authenticateForHASGateway);
         }
-        return new SessionServiceClient(builder, accountServiceProperties.getUrl(), () -> Mono.just(""));
+        return new SessionServiceClient(builder, accountServiceProperties.getUrl(), () -> Mono.just(HAS_GATEWAY_DUMMY_TOKEN));
     }
 
     @Bean
@@ -933,14 +938,30 @@ public class HiuConfiguration {
         return new Heartbeat(rabbitMQOptions, databaseProperties, cacheHealth);
     }
 
-    @Bean
-    @ConditionalOnProperty(value = "webclient.keepalive", havingValue = "false")
+    @Bean("hiuHttpConnector")
+    @ConditionalOnProperty(value = "webclient.use-connection-pool", havingValue = "false")
     public ClientHttpConnector clientHttpConnector() {
         return new ReactorClientHttpConnector(HttpClient.create(ConnectionProvider.newConnection()));
     }
 
+    @Bean("hiuHttpConnector")
+    @ConditionalOnProperty(value = "webclient.use-connection-pool", havingValue = "true")
+    public ClientHttpConnector pooledClientHttpConnector(WebClientOptions webClientOptions) {
+        return new ReactorClientHttpConnector(
+                HttpClient.create(
+                        ConnectionProvider.builder("hiu-http-connection-pool")
+                                .maxConnections(webClientOptions.getPoolSize())
+                                .maxLifeTime(Duration.ofMinutes(webClientOptions.getMaxLifeTime()))
+                                .maxIdleTime(Duration.ofMinutes(webClientOptions.getMaxIdleTimeout()))
+                                .build()
+                )
+        );
+    }
+
     @Bean("customBuilder")
-    public WebClient.Builder webClient(final ClientHttpConnector clientHttpConnector, ObjectMapper objectMapper) {
+    public WebClient.Builder webClient(
+            @Qualifier("hiuHttpConnector") final ClientHttpConnector clientHttpConnector,
+            ObjectMapper objectMapper) {
         return WebClient
                 .builder()
                 .exchangeStrategies(exchangeStrategies(objectMapper))
@@ -956,5 +977,17 @@ public class HiuConfiguration {
                     configurer.defaultCodecs().jackson2JsonEncoder(encoder);
                     configurer.defaultCodecs().jackson2JsonDecoder(decoder);
                 }).build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "hiu.disableHttpOptionsMethod", havingValue = "true")
+    public WebFilter disableOptionsMethodFilter(){
+        return (exchange, chain) -> {
+            if(exchange.getRequest().getMethod().equals(HttpMethod.OPTIONS)) {
+                exchange.getResponse().setStatusCode(HttpStatus.METHOD_NOT_ALLOWED);
+                return Mono.empty();
+            }
+            return chain.filter(exchange);
+        };
     }
 }

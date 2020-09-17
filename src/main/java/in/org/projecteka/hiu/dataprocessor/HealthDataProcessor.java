@@ -49,6 +49,7 @@ import java.util.function.Function;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
+import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.ERRORED;
 import static in.org.projecteka.hiu.dataflow.model.HealthInfoStatus.PARTIAL;
 import static java.util.stream.Collectors.joining;
 
@@ -155,6 +156,7 @@ public class HealthDataProcessor {
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
             }
         } catch (Exception ex) {
+            updateDataProcessStatus(context, ex.getMessage(), ERRORED, context.latestResourceDate());
             logger.error("Error occurred while processing data from HIP. Transaction id: {}.", context.getTransactionId());
             logger.error(ex.getMessage(), ex);
         }

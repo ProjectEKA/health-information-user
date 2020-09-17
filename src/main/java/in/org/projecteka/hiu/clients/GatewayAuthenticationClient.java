@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 import java.util.Properties;
 
 import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
+import static in.org.projecteka.hiu.common.Constants.GATEWAY_SESSIONS;
 import static java.lang.String.format;
 
 @AllArgsConstructor
@@ -28,7 +29,7 @@ public class GatewayAuthenticationClient {
     public Mono<Token> getTokenFor(String clientId, String clientSecret) {
         return webclient
                 .post()
-                .uri("/sessions")
+                .uri(GATEWAY_SESSIONS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(CORRELATION_ID, MDC.get(CORRELATION_ID))
                 .accept(MediaType.APPLICATION_JSON)

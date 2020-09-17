@@ -22,18 +22,20 @@ public class Constants {
     public static final String CM_API_PATH_GET_ATTACHMENT = "/v1/patient/health-information/fetch/{consent-request-id}/attachments/{file-name}";
     public static final String API_PATH_GET_HEALTH_INFO_STATUS = "/v1/patient/health-information/status";
     public static final String VALIDATE_TOKEN = "/v1/account/token";
-    public static final String HAS_AUTH_ACCESS_TOKEN = "/realms/3scale-sso/protocol/openid-connect/token";
     public static final String INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO = "/internal/patient/hip/data-transfer-status";
     public static final String GET_CERT = "/v1/auth/cert";
     public static final String PATH_CONSENT_REQUEST_ON_STATUS = CURRENT_VERSION + "/consent-requests/on-status";
     public static final String PATH_ON_AUTH_INIT = CURRENT_VERSION + "/users/auth/on-init";
     public static final String PATH_ON_AUTH_CONFIRM = CURRENT_VERSION + "/users/auth/on-confirm";
+    public static final String GATEWAY_SESSIONS = "/sessions";
+
 
     public static final String STATUS = "status";
     public static final String DELIMITER = "@";
     public static final String BLOCK_LIST = "blockList";
     public static final String BLOCK_LIST_FORMAT = "%s:%s";
     public static final String CORRELATION_ID = "CORRELATION-ID";
+    public static final String HAS_GATEWAY_DUMMY_TOKEN = "DUMMY_TOKEN";
 
     private Constants() {
     }

@@ -1,11 +1,13 @@
 server:
   port: 8003
+  forward-headers-strategy: ${FORWARD-HEADER-STRATEGY:NATIVE}
 hiu:
   id: ${HIU_ID}
   name: ${HIU_NAME}
   dataPushUrl: ${DATA_PUSH_URL}
   valueSets: classpath:/static/ValueSet/valuesets.json
   secret: ${HIU_SECRET:RiPzliMKlBf67mgLpvn6LBg2Fz5OqBBmJNzi4nQ9YMZy0pq2uu}
+  disableHttpOptionsMethod: ${DISABLE_HTTP_OPTIONS:false}
   consentmanager:
     suffix: ${CONSENT_MANAGEMENT_SUFFIX}
     url: ${CONSENT_MANAGEMENT_URL}
@@ -81,4 +83,11 @@ spring:
   codec:
     max-in-memory-size: ${MAX_IN_MEMORY_SIZE}
 webclient:
-  keepAlive: ${HIU_KEEP_ALIVE:true}
+  use-connection-pool: ${USE_HTTP_CONNECTION_POOL:true}
+  connection-pool:
+    poolSize: ${HTTP_CONNECTION_POOL_SIZE:500}
+    maxLifeTime: ${HTTP_CONNECTION_MAX_LIFETIME:10}
+    maxIdleTimeout: ${HTTP_CONNECTION_MAX_IDLETIME:5}
+logging:
+  level:
+    ROOT: ${LOG_LEVEL:INFO}
