@@ -139,7 +139,7 @@ env:
     POSTGRES_USER: postgres
     RABBITMQ_HOST: rabbitmq
     RABBITMQ_PORT: "5672"
-    RABBITMQ_USERNAME: "admin"
+    RABBITMQ_USERNAME: "guest"
     IDENTITY_JWK_URL: "http://keycloak:8080/auth/realms/consent-manager/protocol/openid-connect/certs"
     DATA_FLOW_REQUEST_WAIT_TIME: "1"
     DATA_FLOW_PART_WAIT_TIME: "5"
