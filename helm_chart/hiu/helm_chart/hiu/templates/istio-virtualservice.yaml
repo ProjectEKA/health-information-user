@@ -133,9 +133,9 @@ spec:
         port:
           number: 5000
   - headers:
-    request:
-      set:
-        X-Forwarded-Proto: https
+      request:
+        set:
+          X-Forwarded-Proto: https
     match:
     - uri:
         prefix: /hiu
