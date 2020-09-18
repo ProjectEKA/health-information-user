@@ -4,24 +4,35 @@ import in.org.projecteka.hiu.Caller;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
+import in.org.projecteka.hiu.user.model.UserAuthOnConfirmResponse;
+import in.org.projecteka.hiu.user.model.UserAuthOnInitResponse;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_REQUEST;
+import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_CONFIRM;
+import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_INIT;
+import static net.logstash.logback.argument.StructuredArguments.keyValue;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.ACCEPTED;
 
 @RestController
 @AllArgsConstructor
 public class UserController {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+
 
     @PostMapping("/users")
     public Mono<Void> createNew(@RequestBody Mono<User> userPublisher) {
@@ -65,6 +76,55 @@ public class UserController {
         return userRepository.with(user.getUsername())
                 .map(x -> false)
                 .switchIfEmpty(Mono.just(true));
+    }
+
+    @ResponseStatus(ACCEPTED)
+    @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
+    @PostMapping(PATH_ON_AUTH_INIT)
+    public Mono<Void> usersAuthOnInit(@RequestBody UserAuthOnInitResponse userAuthOnInitResponse) {
+
+        logger.info("Session request received {} requestId: " + userAuthOnInitResponse.getRequestId() +
+                "timestamp: " + userAuthOnInitResponse.getTimestamp());
+
+        if (userAuthOnInitResponse.getError() != null) {
+            logger.info("errorCode: " + userAuthOnInitResponse.getError().getCode() +
+                    " errorMessage: " + userAuthOnInitResponse.getError().getMessage());
+        } else {
+            logger.info("transactionId: " + userAuthOnInitResponse.getAuth().getTransactionId() +
+                    ", authMetaMode: " + userAuthOnInitResponse.getAuth().getMode() +
+                    ", authMetaHint: " + userAuthOnInitResponse.getAuth().getMeta().getHint() +
+                    ", authMetaExpiry: " + userAuthOnInitResponse.getAuth().getMeta().getExpiry());
+        }
+        logger.info("ResponseRequestId: " + userAuthOnInitResponse.getResp().getRequestId());
+        return Mono.empty();
+    }
+
+    @ResponseStatus(ACCEPTED)
+    @PostMapping(PATH_ON_AUTH_CONFIRM)
+    public Mono<Void> usersAuthOnConfirm(@RequestBody UserAuthOnConfirmResponse userAuthOnConfirmResponse) {
+        logger.info("Session request received {} requestId:" + userAuthOnConfirmResponse.getRequestId() +
+                "timestamp: " + userAuthOnConfirmResponse.getTimestamp());
+
+        if (userAuthOnConfirmResponse.getError() != null) {
+            logger.info("errorCode: " + userAuthOnConfirmResponse.getError().getCode() +
+                    ", errorMessage: " + userAuthOnConfirmResponse.getError().getMessage());
+        } else {
+            if (userAuthOnConfirmResponse.getAuth().getPatient() != null) {
+                logger.info("Patient Demographics Details:" +
+                        " Id: " + userAuthOnConfirmResponse.getAuth().getPatient().getId() +
+                        " Name: " + userAuthOnConfirmResponse.getAuth().getPatient().getName() +
+                        ", Birth Year: " + userAuthOnConfirmResponse.getAuth().getPatient().getYearOfBirth() +
+                        ", Gender: " + userAuthOnConfirmResponse.getAuth().getPatient().getGender());
+                if (userAuthOnConfirmResponse.getAuth().getPatient().getAddress() != null) {
+                    logger.info("Patient Address Details: District: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getLine() +
+                            ", Line: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getDistrict() +
+                            ", Pincode: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getPincode() +
+                            ", State: " + userAuthOnConfirmResponse.getAuth().getPatient().getAddress().getState());
+                }
+            }
+        }
+        logger.info("ResponseRequestId :" + userAuthOnConfirmResponse.getResp().getRequestId());
+        return Mono.empty();
     }
 }
 
