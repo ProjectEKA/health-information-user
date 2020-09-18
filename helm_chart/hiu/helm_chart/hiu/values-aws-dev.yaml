@@ -58,7 +58,7 @@ dev:
     hosts:
       - dev.tweka.in
     gateway: nha-gateway.nha-dev.cluster.svc.local
-    uriPrefix: "/api-hiu/"
+    uriPrefix: "/hiu-api/"
     rewriteUri: "/"
 
 authpolicy:
