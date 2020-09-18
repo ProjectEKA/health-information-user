@@ -113,7 +113,6 @@ env:
     CENTRAL_REGISTRY_URL: http://client-registry:8080
     CONSENT_MANAGEMENT_SUFFIX: '@sbx'
     CONSENT_MANAGEMENT_URL: http://consent-manager:8000
-    CONSENT_NOTIFICATION_URL: https://dev.ndhm.gov.in/api-hiu/consent/notification
     CONSENT_MANAGER_DB_NAME: health_information_user
     DATA_PUSH_URL: https://dev.ndhm.gov.in/api-hiu/data/notification
     DB_CONNECTION_POOL_SIZE: "5"
