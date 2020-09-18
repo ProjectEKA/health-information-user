@@ -34,9 +34,16 @@ persistence:
   accessMode: ReadWriteMany
   size: 5Gi
 
+pv:
+  enabled: true
+
 service:
   type: ClusterIP
   port: 8003
+
+dev:
+  ingress:
+    enabled: false
 
 ingress:
   enabled: true
@@ -127,13 +134,10 @@ env:
     POSTGRES_HOST: nhadcl-postges-1.nhadclmgm.tatacommunications.com
     POSTGRES_PORT: "5633"
     POSTGRES_USER: postgres
-    USING_GATEWAY: "true"
-    GATEWAY_JWK_URL: "http://gateway:8000/v0.5/certs"
     RABBITMQ_HOST: rabbitmq.nhadclmgm.tatacommunications.com
     RABBITMQ_PORT: "5672"
     RABBITMQ_USERNAME: "admin"
     IDENTITY_JWK_URL: "http://keycloak:8080/auth/realms/consent-manager/protocol/openid-connect/certs"
-    USING_GATEWAY: "true"
     DATA_FLOW_CONSENT_REQUEST_WAIT_TIME: "2000"
     DATA_FLOW_CONSENT_ARTEFACT_WAIT_TIME: "2000"
     DATA_FLOW_PART_WAIT_TIME: "2000"
