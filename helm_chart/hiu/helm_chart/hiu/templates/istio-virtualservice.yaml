@@ -139,11 +139,11 @@ spec:
     match:
     - uri:
         prefix: /hiu
-      rewrite:
-        uri: /
-      route:
-      - destination:
-          host: hiu-ui
-          port:
-            number: 5000
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: hiu-ui
+        port:
+          number: 5000
 {{- end }}
