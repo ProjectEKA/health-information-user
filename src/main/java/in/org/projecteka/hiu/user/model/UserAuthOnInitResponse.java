@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.user.model;
 
+import in.org.projecteka.hiu.common.GatewayResponse;
 import lombok.Builder;
 import lombok.Value;
 
