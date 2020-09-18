@@ -49,6 +49,9 @@ service:
   type: ClusterIP
   port: 8003
 
+ingress:
+  enabled: false
+
 dev:
   ingress:
     enabled: true
@@ -154,4 +157,4 @@ env:
     POSTGRES_PASSWORD: ""
     RABBITMQ_PASSWORD: ""
     REDIS_PASSWORD: ""
-
+    HIU_SECRET: ""
