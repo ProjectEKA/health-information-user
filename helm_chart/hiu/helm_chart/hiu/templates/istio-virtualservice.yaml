@@ -54,96 +54,96 @@ spec:
   hosts:
   {{- toYaml .Values.dev.ingress.hosts | nindent 2 }}
   http:
-    - headers:
-        request:
-          set:
-            X-Forwarded-Proto: https
-      match:
-      - uri:
-          prefix: {{ .Values.dev.ingress.uriPrefix }}
-      rewrite:
-        uri: {{ .Values.dev.ingress.rewriteUri }}
-      route:
-      - destination:
-          host: hiu
-          port:
-            number: 8003
-    - headers:
-        request:
-          set:
-            X-Forwarded-Proto: https
-      match:
-      - uri:
-          prefix: /swagger.yaml
-      route:
-      - destination:
-          host: hiu
-          port:
-            number: 8003
-    - headers:
-        request:
-          set:
-            X-Forwarded-Proto: https
-      match:
-      - uri:
-          prefix: /dicom-web/
-      route:
-      - destination:
-          host: orthanc
-          port:
-            number: 8042
-    - headers:
-        request:
-          set:
-            X-Forwarded-Proto: https
-      match:
-      - uri:
-          regex: /viewer/[\w-.?=]+
-        rewrite:
-          uri: /dicomIndex
-        route:
-        - destination:
-            host: hiu-ui
-            port:
-              number: 5000
-    - headers:
-        request:
-          set:
-            X-Forwarded-Proto: https
-      match:
-        - uri:
-            prefix: /hiu/
-          rewrite:
-            uri: /
-          route:
-          - destination:
-              host: hiu-ui
-              port:
-                number: 5000
-    - headers:
-        request:
-          set:
-            X-Forwarded-Proto: https
-      match:
-      - uri:
-          prefix: /bundle.js
-      route:
-      - destination:
-          host: hiu-ui
-          port:
-            number: 5000
-    - headers:
+  - headers:
       request:
         set:
           X-Forwarded-Proto: https
-      match:
-      - uri:
-          prefix: /hiu
-        rewrite:
-          uri: /
-        route:
-        - destination:
-            host: hiu-ui
-            port:
-              number: 5000
+    match:
+    - uri:
+        prefix: {{ .Values.dev.ingress.uriPrefix }}
+    rewrite:
+      uri: {{ .Values.dev.ingress.rewriteUri }}
+    route:
+    - destination:
+        host: hiu
+        port:
+          number: 8003
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
+    match:
+    - uri:
+        prefix: /swagger.yaml
+    route:
+    - destination:
+        host: hiu
+        port:
+          number: 8003
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
+    match:
+    - uri:
+        prefix: /dicom-web/
+    route:
+    - destination:
+        host: orthanc
+        port:
+          number: 8042
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
+    match:
+    - uri:
+        regex: /viewer/[\w-.?=]+
+    rewrite:
+      uri: /dicomIndex
+    route:
+    - destination:
+        host: hiu-ui
+        port:
+          number: 5000
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
+    match:
+    - uri:
+        prefix: /hiu/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: hiu-ui
+        port:
+          number: 5000
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
+    match:
+    - uri:
+        prefix: /bundle.js
+    route:
+    - destination:
+        host: hiu-ui
+        port:
+          number: 5000
+  - headers:
+      request:
+        set:
+          X-Forwarded-Proto: https
+    match:
+    - uri:
+        prefix: /hiu
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: hiu-ui
+        port:
+          number: 5000
 {{- end }}
