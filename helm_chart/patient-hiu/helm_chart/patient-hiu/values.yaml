@@ -142,7 +142,7 @@ env:
     HAS_CLIENT_ID: "00e70546"
     HAS_AUTH_URL: https://apis-prd.pmjay.gov.in/auth
     LOGIN_METHOD: both
-    Account_Service_Url: https://healthidbeta.ndhm.gov.in/api
+    Account_Service_Url: https://healthidsbx.ndhm.gov.in/api
     MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES: 2
     REDIS_HOST: redis.nhadclmgm.tatacommunications.com
     CACHE_METHOD: redis
