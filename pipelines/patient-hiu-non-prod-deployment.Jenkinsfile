@@ -12,8 +12,7 @@ podTemplate(containers: [
           ],
           volumes: [
             hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock')
-          ]
-  ) {
+    ]) {
     node(POD_LABEL) {
         properties([
             parameters([
@@ -80,25 +79,26 @@ podTemplate(containers: [
                 }
              }
         }
-    }
-    stage('Deploy patient-hiu to k8s cluster') {
-        if(params.environment == 'dev' || params.environment == 'uat'){
-            container('aws-k8s-helm3') {
-                withCredentials([string(credentialsId: "${DB_PASSWORD_CRED_ID}", variable: 'DB_PASSWORD'),
-                    string(credentialsId: "${NDHM_DOCKER_HUB_PASSWORD_CRED_ID}", variable: 'NDHM_DOCKER_HUB_PASSWORD'),
-                    string(credentialsId: "${PATIENT_HIU_CLIENT_SECRET_CRED_ID}", variable: 'PATIENT_HIU_CLIENT_SECRET'),
-                    string(credentialsId: "${HAS_CLIENT_SECRET_CRED_ID}", variable: 'HAS_CLIENT_SECRET'),
-                    string(credentialsId: "${REDIS_PASSWORD_CRED_ID}", variable: 'REDIS_PASSWORD'),
-                    string(credentialsId: "${ORTHANC_PASSWORD_CRED_ID}", variable: 'ORTHANC_PASSWORD'),
-                    usernamePassword(credentialsId: "${RABBITMQ_CRED_ID}",
-                                 usernameVariable: 'RABBITMQ_CRED_USR',
-                                 passwordVariable: 'RABBITMQ_CRED_PSW')
-                ]) {
-                    withKubeConfig([credentialsId: "${KUBE_CONFIG_ID}"]) {
-                        sh "helm lint ./${HELM_CHART_DIRECTORY}"
-                        sh "kubectl create secret docker-registry ndhm-dockerhub-repo --docker-server=index.docker.io --docker-username=ndhm --docker-password=${NDHM_DOCKER_HUB_PASSWORD} --docker-email=ndhm.fhr.eka@gmailcom -n ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
-                        sh "helm upgrade --install --atomic --cleanup-on-fail -f ./${HELM_CHART_DIRECTORY}/${VALUES_YAML} --namespace ${NAMESPACE} ${HELM_APP_NAME} ./${HELM_CHART_DIRECTORY} --set image.tag='${IMAGE_TAG}' --set-string env.secrets.POSTGRES_PASSWORD='${DB_PASSWORD}' --set-string env.secrets.REDIS_PASSWORD='${REDIS_PASSWORD}' --set-string env.secrets.ORTHANC_PASSWORD='${ORTHANC_PASSWORD}'  --set-string env.secrets.HAS_CLIENT_SECRET='${HAS_CLIENT_SECRET}' --set-string env.secrets.HIU_CLIENT_SECRET='${PATIENT_HIU_CLIENT_SECRET}' --set-string env.normal.RABBITMQ_USERNAME='${RABBITMQ_CRED_USR}' --set-string env.secrets.RABBITMQ_PASSWORD='${RABBITMQ_CRED_PSW}'"
-                        sh "kubectl get pods -n ${NAMESPACE}"
+
+        stage('Deploy patient-hiu to k8s cluster') {
+            if(params.environment == 'dev' || params.environment == 'uat'){
+                container('aws-k8s-helm3') {
+                    withCredentials([string(credentialsId: "${DB_PASSWORD_CRED_ID}", variable: 'DB_PASSWORD'),
+                        string(credentialsId: "${NDHM_DOCKER_HUB_PASSWORD_CRED_ID}", variable: 'NDHM_DOCKER_HUB_PASSWORD'),
+                        string(credentialsId: "${PATIENT_HIU_CLIENT_SECRET_CRED_ID}", variable: 'PATIENT_HIU_CLIENT_SECRET'),
+                        string(credentialsId: "${HAS_CLIENT_SECRET_CRED_ID}", variable: 'HAS_CLIENT_SECRET'),
+                        string(credentialsId: "${REDIS_PASSWORD_CRED_ID}", variable: 'REDIS_PASSWORD'),
+                        string(credentialsId: "${ORTHANC_PASSWORD_CRED_ID}", variable: 'ORTHANC_PASSWORD'),
+                        usernamePassword(credentialsId: "${RABBITMQ_CRED_ID}",
+                                     usernameVariable: 'RABBITMQ_CRED_USR',
+                                     passwordVariable: 'RABBITMQ_CRED_PSW')
+                    ]) {
+                        withKubeConfig([credentialsId: "${KUBE_CONFIG_ID}"]) {
+                            sh "helm lint ./${HELM_CHART_DIRECTORY}"
+                            sh "kubectl create secret docker-registry ndhm-dockerhub-repo --docker-server=index.docker.io --docker-username=ndhm --docker-password=${NDHM_DOCKER_HUB_PASSWORD} --docker-email=ndhm.fhr.eka@gmailcom -n ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+                            sh "helm upgrade --install --atomic --cleanup-on-fail -f ./${HELM_CHART_DIRECTORY}/${VALUES_YAML} --namespace ${NAMESPACE} ${HELM_APP_NAME} ./${HELM_CHART_DIRECTORY} --set image.tag='${IMAGE_TAG}' --set-string env.secrets.POSTGRES_PASSWORD='${DB_PASSWORD}' --set-string env.secrets.REDIS_PASSWORD='${REDIS_PASSWORD}' --set-string env.secrets.ORTHANC_PASSWORD='${ORTHANC_PASSWORD}'  --set-string env.secrets.HAS_CLIENT_SECRET='${HAS_CLIENT_SECRET}' --set-string env.secrets.HIU_CLIENT_SECRET='${PATIENT_HIU_CLIENT_SECRET}' --set-string env.normal.RABBITMQ_USERNAME='${RABBITMQ_CRED_USR}' --set-string env.secrets.RABBITMQ_PASSWORD='${RABBITMQ_CRED_PSW}'"
+                            sh "kubectl get pods -n ${NAMESPACE}"
+                        }
                     }
                 }
             }
