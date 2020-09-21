@@ -10,9 +10,9 @@ podTemplate(containers: [
       command: 'cat',
     )
     ],
-  volumes: [
+    volumes: [
     hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock')
-  ]) {
+    ]) {
     node(POD_LABEL) {
         properties([
             parameters([
