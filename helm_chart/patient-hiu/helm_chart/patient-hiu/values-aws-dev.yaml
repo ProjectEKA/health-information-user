@@ -144,7 +144,7 @@ env:
     DATA_FLOW_REQUEST_WAIT_TIME: "1"
     DATA_FLOW_PART_WAIT_TIME: "5"
     RABBITMQ_PREFIX: patient-hiu
-    HAS_BEHIND_GATEWAY: "true"
+    HAS_BEHIND_GATEWAY: "false"
     HAS_CLIENT_ID: "sbx"
     HAS_AUTH_URL: https://dev.ndhm.gov.in/gateway/v0.5
     Account_Service_Url: https://dev.tweka.in/has/
