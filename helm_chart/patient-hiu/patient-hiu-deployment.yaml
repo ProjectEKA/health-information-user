@@ -34,7 +34,7 @@ spec:
             timeoutSeconds: 10
           readinessProbe:
             httpGet:
-              path: /v0.5/heartbeat
+              path: /v0.5/readiness
               port: 8003
             initialDelaySeconds: 120
             timeoutSeconds: 10

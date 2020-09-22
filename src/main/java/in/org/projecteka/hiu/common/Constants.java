@@ -28,6 +28,7 @@ public class Constants {
     public static final String PATH_ON_AUTH_INIT = CURRENT_VERSION + "/users/auth/on-init";
     public static final String PATH_ON_AUTH_CONFIRM = CURRENT_VERSION + "/users/auth/on-confirm";
     public static final String GATEWAY_SESSIONS = "/sessions";
+    public static final String PATH_READINESS = CURRENT_VERSION + "/readiness";
 
 
     public static final String STATUS = "status";

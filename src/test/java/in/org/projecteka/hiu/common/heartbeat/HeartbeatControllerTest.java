@@ -87,12 +87,20 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri(Constants.PATH_HEARTBEAT)
+                .uri(Constants.PATH_READINESS)
                 .exchange()
                 .expectStatus()
                 .isOk()
                 .expectBody()
                 .json(heartbeatResponseJson);
+    }
+    @Test
+    void shouldGiveHIUStatusAsUpForLiveliness() throws JsonProcessingException {
+        webTestClient.get()
+                .uri(Constants.PATH_HEARTBEAT)
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 
     @Test
@@ -107,7 +115,7 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri(Constants.PATH_HEARTBEAT)
+                .uri(Constants.PATH_READINESS)
                 .exchange()
                 .expectStatus()
                 .is5xxServerError()
