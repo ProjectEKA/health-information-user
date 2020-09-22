@@ -30,6 +30,7 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import static in.org.projecteka.hiu.common.Constants.PATH_HEARTBEAT;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -87,7 +88,7 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri(Constants.PATH_HEARTBEAT)
+                .uri(Constants.PATH_READINESS)
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -107,11 +108,20 @@ class HeartbeatControllerTest {
         when(heartbeat.getStatus()).thenReturn(Mono.just(heartbeatResponse));
 
         webTestClient.get()
-                .uri(Constants.PATH_HEARTBEAT)
+                .uri(Constants.PATH_READINESS)
                 .exchange()
                 .expectStatus()
                 .is5xxServerError()
                 .expectBody()
                 .json(heartbeatResponseJson);
+    }
+
+    @Test
+    void shouldGiveCMStatusAsUpForLiveliness() throws JsonProcessingException {
+        webTestClient.get()
+                .uri(PATH_HEARTBEAT)
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 }
