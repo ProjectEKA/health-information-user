@@ -55,7 +55,7 @@ spec:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             httpGet:
-              path: /v0.5/readiness
+              path: /v0.5/heartbeat
               port: 8003
           {{- end }}
           resources:
