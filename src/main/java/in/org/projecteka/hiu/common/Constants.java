@@ -30,6 +30,7 @@ public class Constants {
     public static final String BLOCK_LIST = "blockList";
     public static final String BLOCK_LIST_FORMAT = "%s:%s";
     public static final String CORRELATION_ID = "CORRELATION-ID";
+    public static final String PATH_READINESS = CURRENT_VERSION + "/readiness";
 
     private Constants() {
     }
