@@ -76,6 +76,9 @@ pipeline {
         }
 
         stage("Build Docker Image and Push to Docker Hub"){
+            when {
+                branch 'hiu-fork'
+            }
             steps{
                 container('docker'){
                     script {
