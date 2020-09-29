@@ -139,7 +139,7 @@ env:
     DATA_FLOW_PART_WAIT_TIME: "5"
     RABBITMQ_PREFIX: patient-hiu
     HAS_BEHIND_GATEWAY: "true"
-    HAS_CLIENT_ID: sbx
+    HAS_CLIENT_ID: "10000009"
     HAS_AUTH_URL: https://dev.ndhm.gov.in/gateway/v0.5
     LOGIN_METHOD: both
     Account_Service_Url: https://healthidsbx.ndhm.gov.in/api
