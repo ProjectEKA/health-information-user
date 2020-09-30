@@ -61,11 +61,11 @@ rollingUpdate:
   maxSurge: 50%
   maxUnavailable: 0
 
-replicaCount: 3
+replicaCount: 1
 autoscaling:
   enabled: true
-  minReplicas: 3
-  maxReplicas: 5
+  minReplicas: 1
+  maxReplicas: 1
   metrics:
     - type: Resource
       resource:
