@@ -161,4 +161,4 @@ env:
     RABBITMQ_PASSWORD: ""
     REDIS_PASSWORD: ""
     HIU_SECRET: ""
-
+    HAS_CLIENT_SECRET: ""
