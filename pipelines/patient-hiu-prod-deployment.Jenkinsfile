@@ -49,7 +49,7 @@ podTemplate(containers: [
         def DB_PASSWORD_CRED_ID = 'DB_PASSWORD_PROD'
         def ORTHANC_PASSWORD_CRED_ID = 'ORTHANC_PASSWORD_PROD'
         def PATIENT_HIU_CLIENT_SECRET_CRED_ID = 'PATIENT_HIU_CLIENT_SECRET_PROD'
-        def HAS_CLIENT_SECRET_CRED_ID = 'HAS_CLIENT_SECRET_PROD'
+        def HAS_CLIENT_SECRET_PHIU_CRED_ID = 'HAS_CLIENT_SECRET_PHIU_PROD'
         def NDHM_DOCKER_HUB_PASSWORD_CRED_ID = 'NDHM_DOCKER_HUB_PASSWORD_PROD'
         def RABBITMQ_CRED_ID = 'RABBITMQ_CRED_PROD'
         def HELM_APP_NAME = "patient-hiu"
@@ -63,7 +63,7 @@ podTemplate(containers: [
                 withCredentials([string(credentialsId: "${DB_PASSWORD_CRED_ID}", variable: 'DB_PASSWORD'),
                     string(credentialsId: "${NDHM_DOCKER_HUB_PASSWORD_CRED_ID}", variable: 'NDHM_DOCKER_HUB_PASSWORD'),
                     string(credentialsId: "${PATIENT_HIU_CLIENT_SECRET_CRED_ID}", variable: 'PATIENT_HIU_CLIENT_SECRET'),
-                    string(credentialsId: "${HAS_CLIENT_SECRET_CRED_ID}", variable: 'HAS_CLIENT_SECRET'),
+                    string(credentialsId: "${HAS_CLIENT_SECRET_PHIU_CRED_ID}", variable: 'HAS_CLIENT_SECRET_PHIU'),
                     string(credentialsId: "${REDIS_PASSWORD_CRED_ID}", variable: 'REDIS_PASSWORD'),
                     string(credentialsId: "${ORTHANC_PASSWORD_CRED_ID}", variable: 'ORTHANC_PASSWORD'),
                     usernamePassword(credentialsId: "${RABBITMQ_CRED_ID}",

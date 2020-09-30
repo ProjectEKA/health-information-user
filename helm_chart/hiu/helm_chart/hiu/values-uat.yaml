@@ -35,7 +35,7 @@ persistence:
   size: 50Gi
 
 pv:
-  enabled: true
+  enabled: false
 
 service:
   type: ClusterIP
