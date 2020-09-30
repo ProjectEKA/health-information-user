@@ -145,8 +145,8 @@ env:
     CACHE_METHOD: redis
     KEEP_ALIVE_ENABLED: true
     REDIS_RETRY: 1
-    Account_Service_Url: https://accountbeta.nha.gov.in/api/
-    HAS_BEHIND_GATEWAY: "false"
+    Account_Service_Url: https://healthidbeta.ndhm.gov.in/ndhm/api
+    HAS_BEHIND_GATEWAY: "true"
     RABBITMQ_PREFIX: uat-hiu
     LOG_LEVEL: "DEBUG"
     USE_HTTP_CONNECTION_POOL: "true"
