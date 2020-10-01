@@ -151,6 +151,7 @@ env:
     REDIS_PORT: "6379"
     REDIS_RETRY: 1
     Account_Service_Url: "https://accountbeta.nha.gov.in/api"
+    ENABLE_OFFLINE_VERIFICATION: "false"
   secrets:
     HIU_CLIENT_SECRET: ""
     ORTHANC_PASSWORD: ""
