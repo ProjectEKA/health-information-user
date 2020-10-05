@@ -155,7 +155,7 @@ env:
     AUTHORIZATION_HEADER: "X-AUTH-TOKEN"
     MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES: 2
     REDIS_RETRY: 1
-    HAS_BEHIND_GATEWAY: "false"
+    HAS_BEHIND_GATEWAY: "true"
     KEEP_ALIVE_ENABLED: "true"
     HAS_CLIENT_ID: sbx
     HAS_AUTH_URL: https://dev.ndhm.gov.in/gateway/v0.5
