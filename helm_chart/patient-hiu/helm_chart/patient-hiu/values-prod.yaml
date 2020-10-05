@@ -148,7 +148,7 @@ env:
     DATA_FLOW_PART_WAIT_TIME: "2000"
     RABBITMQ_PREFIX: patient-hiu
     LOGIN_METHOD: both
-    Account_Service_Url: https://accountbeta.nha.gov.in/api/
+    Account_Service_Url: https://healthidbeta.ndhm.gov.in/ndhm/api
     REDIS_HOST: redis-prd1-redis-prod-1.nhadclprdmgm.tatacommunications.com
     REDIS_PORT: "5006"
     CACHE_METHOD: redis
