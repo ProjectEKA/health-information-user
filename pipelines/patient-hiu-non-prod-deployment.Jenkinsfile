@@ -1,7 +1,7 @@
 podTemplate(containers: [
             containerTemplate(
               name: 'aws-k8s-helm3',
-              image: 'projecteka/aws-k8s-helm3:latest',
+              image: 'harbor.nhadclmgm.tatacommunications.com/jenkins/helm:latest',
               resourceRequestCpu: '100m',
               resourceLimitCpu: '300m',
               resourceRequestMemory: '300Mi',
@@ -10,9 +10,7 @@ podTemplate(containers: [
               command: 'cat',
             )
           ],
-          volumes: [
-            hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock')
-    ]) {
+          ) {
     node(POD_LABEL) {
         properties([
             parameters([

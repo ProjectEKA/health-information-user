@@ -8,13 +8,8 @@ pipeline {
                   containers:
                     - name: docker
                       image: registry.nhadclmgm.tcl.com:5000/docker:dind
-                      command:
-                        - sleep
-                      volumeMounts:
-                        - name: docker
-                          mountPath: /var/run/docker.sock
-                      args:
-                        - infinity
+                      securityContext:
+                        privileged: true
                       resources:
                         limits:
                           cpu: '300m'
@@ -35,10 +30,6 @@ pipeline {
                         requests:
                           cpu: '400m'
                           memory: '1200Mi'
-                  volumes:
-                    - name: docker
-                      hostPath:
-                        path: /var/run/docker.sock
                         """
             defaultContainer 'java11'
         }
