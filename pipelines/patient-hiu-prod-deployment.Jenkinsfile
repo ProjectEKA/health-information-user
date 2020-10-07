@@ -2,7 +2,7 @@
 podTemplate(containers: [
     containerTemplate(
       name: 'helm3',
-      image: 'vlasovatgmailcom/helm3-kubectl:latest',
+      image: 'harbor.nhadclmgm.tatacommunications.com/jenkins/helm:latest',
       resourceRequestCpu: '100m',
       resourceLimitCpu: '300m',
       resourceRequestMemory: '300Mi',
@@ -11,10 +11,6 @@ podTemplate(containers: [
       command: 'cat',
     )
   ],
-  volumes: [
-    hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
-    hostPathVolume(mountPath: '/usr/local/bin/helm', hostPath: '/usr/local/bin/helm')
-  ]
   ) {
     node(POD_LABEL) {
         properties([
