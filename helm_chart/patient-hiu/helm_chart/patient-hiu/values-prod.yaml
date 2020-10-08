@@ -148,7 +148,7 @@ env:
     DATA_FLOW_PART_WAIT_TIME: "2000"
     RABBITMQ_PREFIX: patient-hiu
     LOGIN_METHOD: both
-    Account_Service_Url: https://healthidbeta.ndhm.gov.in/api
+    Account_Service_Url: https://healthid.ndhm.gov.in/api
     REDIS_HOST: redis-prd1-redis-prod-1.nhadclprdmgm.tatacommunications.com
     REDIS_PORT: "5006"
     CACHE_METHOD: redis
@@ -157,8 +157,8 @@ env:
     REDIS_RETRY: 1
     HAS_BEHIND_GATEWAY: "true"
     KEEP_ALIVE_ENABLED: "true"
-    HAS_CLIENT_ID: sbx
-    HAS_AUTH_URL: https://dev.ndhm.gov.in/gateway/v0.5
+    HAS_CLIENT_ID: "10000009"
+    HAS_AUTH_URL: https://live.ndhm.gov.in/gateway/v0.5
     LOG_LEVEL: "INFO"
     USE_HTTP_CONNECTION_POOL: "true"
     HTTP_CONNECTION_POOL_SIZE: 500
