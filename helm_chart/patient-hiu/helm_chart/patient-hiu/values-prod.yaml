@@ -10,7 +10,7 @@ replicaCount: 5
 autoscaling:
   enabled: true
   minReplicas: 5
-  maxReplicas: 15
+  maxReplicas: 10
   metrics:
     - type: Resource
       resource:
@@ -92,11 +92,11 @@ authpolicy:
 
 resources:
   limits:
-    cpu: "500m"
-    memory: "1024Mi"
+    cpu: "1000m"
+    memory: "2048Mi"
   requests:
-    cpu: "500m"
-    memory: "1024Mi"
+    cpu: "1000m"
+    memory: "2048Mi"
 
 nodeSelector: {}
 
