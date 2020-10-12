@@ -41,7 +41,15 @@ pipeline {
 
     environment {
         def NDHM_DOCKER_HUB_PASSWORD_CRED_ID = 'NDHM_DOCKER_HUB_PASSWORD_DEV'
-        def IMAGE_NAME= 'nha20/jas-health-information-user'
+        def DOCKER_IMAGE_NAME= 'nha20/jas-health-information-user'
+        def NDHM_HARBOR_HUB_PASSWORD_CRED_ID = 'NDHM_HARBOR_HUB_PASSWORD_HIU'
+        def IMAGE_NAME= 'jas-health-information-user'
+        def DOCKER_FILE_DIRECTORY = "Dockerfile"
+        def DOCKER_HARBOR_URL = "harbor.nhadclmgm.tatacommunications.com"
+        def HARBOR_REPO = "hiu"
+        def IMAGE_TAG = "latest"
+	      def IMAGE_REPO = "${DOCKER_HARBOR_URL + '/' + HARBOR_REPO + '/'+ IMAGE_NAME}"
+        def IMAGE = "${IMAGE_REPO + ':' + IMAGE_TAG}"
     }
 
     stages {
@@ -75,9 +83,30 @@ pipeline {
                     script {
                         docker.withRegistry( '', 'NDHM_DOCKER_HUB_CRED' ) {
                             def IMAGE_TAG=readFile(file: 'commit_sha.txt')
-                            dockerImage = docker.build IMAGE_NAME + ":latest"
+                            dockerImage = docker.build DOCKER_IMAGE_NAME + ":latest"
                             dockerImage.push()
                             dockerImage.push("$IMAGE_TAG")
+                        }
+                    }
+                }
+            }
+        }
+        stage ('Build Docker Image and Push to NHA Harbor') {
+            when {
+                branch 'hiu-fork'
+            }
+         steps {
+                 withCredentials([
+                        usernamePassword(credentialsId: 'NDHM_HARBOR_HUB_PASSWORD_HIU', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                        container('docker'){
+                        script{
+                            def COMMIT_SHA=readFile(file: 'commit_sha.txt')
+                            sh "docker login ${DOCKER_HARBOR_URL} -u ${USERNAME} -p ${PASSWORD}"
+                            sh "docker image tag ${DOCKER_IMAGE_NAME} ${IMAGE}"
+                            // sh "docker build --no-cache -f ${DOCKER_FILE_DIRECTORY} . -t ${IMAGE}"
+                            sh "docker push ${IMAGE}"
+                            sh "docker tag ${IMAGE_REPO} ${IMAGE_REPO}:${COMMIT_SHA}"
+                            sh "docker push ${IMAGE_REPO}:${COMMIT_SHA}"
                         }
                     }
                 }
