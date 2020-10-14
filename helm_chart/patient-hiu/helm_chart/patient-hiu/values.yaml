@@ -7,12 +7,12 @@ rollingUpdate:
   maxUnavailable: 0
 
 image:
-  repository: "nha20/jas-health-information-user"
-  tag: "v1.0.1"
+  repository: "harbor.nhadclmgm.tatacommunications.com/hiu/jas-health-information-user"
+  tag: "latest"
   pullPolicy: Always
 
-imagePullSecrets:
-  - name: ndhm-dockerhub-repo
+# imagePullSecrets:
+#   - name: ndhm-dockerhub-repo
 
 nameOverride: "patient-hiu"
 fullnameOverride: "patient-hiu"

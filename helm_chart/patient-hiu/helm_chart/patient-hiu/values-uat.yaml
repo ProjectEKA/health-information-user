@@ -7,12 +7,12 @@ rollingUpdate:
   maxUnavailable: 0
 
 image:
-  repository: "nha20/jas-health-information-user"
-  tag: "7176637"
-  pullPolicy: IfNotPresent
+  repository: "harbor.nhadclmgm.tatacommunications.com/hiu/jas-health-information-user"
+  tag: "latest"
+  pullPolicy: Always
 
-imagePullSecrets:
-  - name: ndhm-dockerhub-repo
+# imagePullSecrets:
+#   - name: ndhm-dockerhub-repo
 
 authpolicy:
   enabled: true

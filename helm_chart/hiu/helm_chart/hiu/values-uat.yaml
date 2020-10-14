@@ -3,12 +3,12 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: "nha20/jas-health-information-user"
-  tag: "7176637"
-  pullPolicy: IfNotPresent
+  repository: "harbor.nhadclmgm.tatacommunications.com/hiu/jas-health-information-user"
+  tag: "latest"
+  pullPolicy: Always
 
-imagePullSecrets:
-  - name: ndhm-dockerhub-repo
+# imagePullSecrets:
+#   - name: ndhm-dockerhub-repo
 
 nameOverride: "hiu"
 fullnameOverride: "hiu"
