@@ -12,7 +12,8 @@ public enum HIType {
     MEDICATION_REQUEST("MedicationRequest"),
     DOCUMENT_REFERENCE("DocumentReference"),
     PRESCRIPTION("Prescription"),
-    DISCHARGE_SUMMARY("DischargeSummary");
+    DISCHARGE_SUMMARY("DischargeSummary"),
+    OP_CONSULTATION("OPConsultation");
 
     private final String resourceType;
     HIType(String value) {

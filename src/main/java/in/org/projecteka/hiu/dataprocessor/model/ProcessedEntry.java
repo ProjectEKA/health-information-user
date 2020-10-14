@@ -12,6 +12,8 @@ public class ProcessedEntry {
     private String encodedResource;
     private List<TrackedResourceReference> trackedResources = new ArrayList<>();
     private LocalDateTime contextDate;
+    private String uniqueResourceId;
+    private String documentType;
 
     public List<String> getErrors() {
         return errors;
@@ -53,5 +55,21 @@ public class ProcessedEntry {
                 .map(res -> res.getLocalDateTime())
                 .filter(resDate -> resDate != null).collect(Collectors.toList());
         return dateTimes.isEmpty() ?  null : dateTimes.stream().max(LocalDateTime::compareTo).get();
+    }
+
+    public String getUniqueResourceId() {
+        return uniqueResourceId;
+    }
+
+    public void setUniqueResourceId(String uniqueResourceId) {
+        this.uniqueResourceId = uniqueResourceId;
+    }
+
+    public void setDocumentType(String documentType) {
+        this.documentType = documentType;
+    }
+
+    public String getDocumentType() {
+        return documentType;
     }
 }

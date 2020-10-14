@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
-import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
@@ -57,7 +56,7 @@ public class HealthDataProcessor {
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
     public static final String MEDIA_APPLICATION_FHIR_XML = "application/fhir+xml";
     private static final Logger logger = LoggerFactory.getLogger(HealthDataProcessor.class);
-    public static final String COULDN_T_RECEIVE_DATA = "Couldn't receive data";
+    private static final String COULD_NOT_RECEIVE_DATA = "Couldn't receive data";
     private final HealthDataRepository healthDataRepository;
     private final DataFlowRepository dataFlowRepository;
     private final Decryptor decryptor;
@@ -115,7 +114,7 @@ public class HealthDataProcessor {
                         dataErrors.add("Health Information not found");
                         blockPublisher(healthDataRepository
                                 .insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()));
-                        statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
+                        statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULD_NOT_RECEIVE_DATA));
                         return;
                     }
                     entryToProcess = Entry.builder()
@@ -130,7 +129,7 @@ public class HealthDataProcessor {
                     dataErrors.addAll(result.getErrors());
                     blockPublisher(healthDataRepository
                             .insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()));
-                    statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
+                    statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULD_NOT_RECEIVE_DATA));
                     return;
                 }
                 context.addTrackedResources(result.getTrackedResources());
@@ -138,7 +137,10 @@ public class HealthDataProcessor {
                         dataPartNumber,
                         result.getResource(),
                         result.latestResourceDate(),
-                        entryToProcess.getCareContextReference()));
+                        entryToProcess.getCareContextReference(),
+                        result.getUniqueResourceId(),
+                        result.getDocumentType(),
+                        context.getHipId()));
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
 
@@ -156,9 +158,9 @@ public class HealthDataProcessor {
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
             }
         } catch (Exception ex) {
-            updateDataProcessStatus(context, ex.getMessage(), ERRORED, context.latestResourceDate());
             logger.error("Error occurred while processing data from HIP. Transaction id: {}.", context.getTransactionId());
             logger.error(ex.getMessage(), ex);
+            updateDataProcessStatus(context, ex.getMessage(), ERRORED, context.latestResourceDate());
         }
     }
 
@@ -183,10 +185,8 @@ public class HealthDataProcessor {
     private void notifyHealthInfoStatus(DataContext context,
                                         List<StatusResponse> statusResponses,
                                         SessionStatus sessionStatus) {
-        String consentId = blockPublisher(dataFlowRepository.getConsentId(context.getTransactionId()));
-        String hipId = blockPublisher(consentRepository.getHipId(consentId));
         HealthInfoNotificationRequest healthInfoNotificationRequest =
-                getHealthInfoNotificationRequest(context, statusResponses, sessionStatus, consentId, hipId);
+                getHealthInfoNotificationRequest(context, statusResponses, sessionStatus);
         String token = blockPublisher(gateway.token());
         String consentManagerId = fetchCMId(healthInfoNotificationRequest.getNotification().getConsentId());
         blockPublisher(healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token, consentManagerId));
@@ -194,14 +194,12 @@ public class HealthDataProcessor {
 
     private HealthInfoNotificationRequest getHealthInfoNotificationRequest(DataContext context,
                                                                            List<StatusResponse> statusResponses,
-                                                                           SessionStatus sessionStatus,
-                                                                           String consentId,
-                                                                           String hipId) {
+                                                                           SessionStatus sessionStatus) {
         return HealthInfoNotificationRequest.builder()
                 .requestId(UUID.randomUUID())
                 .timestamp(LocalDateTime.now(ZoneOffset.UTC))
                 .notification(Notification.builder()
-                        .consentId(consentId)
+                        .consentId(context.getConsentId())
                         .transactionId(context.getTransactionId())
                         .doneAt(LocalDateTime.now(ZoneOffset.UTC))
                         .notifier(Notifier.builder()
@@ -210,7 +208,7 @@ public class HealthDataProcessor {
                                 .build())
                         .statusNotification(StatusNotification.builder()
                                 .sessionStatus(sessionStatus)
-                                .hipId(hipId)
+                                .hipId(context.getHipId())
                                 .statusResponses(statusResponses)
                                 .build())
                         .build())
@@ -239,11 +237,15 @@ public class HealthDataProcessor {
 
             DataNotificationRequest dataNotificationRequest = objectMapper.readValue(inputStream,
                     DataNotificationRequest.class);
+            String consentId = blockPublisher(dataFlowRepository.getConsentId(dataNotificationRequest.getTransactionId()));
+            String hipId = blockPublisher(consentRepository.getHipId(consentId));
             return DataContext.builder()
                     .notifiedData(dataNotificationRequest)
                     .dataFilePath(dataFilePath)
                     .dataPartNumber(message.getPartNumber())
                     .trackedResources(new ArrayList<>())
+                    .hipId(hipId)
+                    .consentId(consentId)
                     .build();
         } catch (Exception e) {
             logger.error("Could not create context from data file path", e);
@@ -255,16 +257,16 @@ public class HealthDataProcessor {
                                                Entry entry,
                                                DataFlowRequestKeyMaterial keyMaterial) {
         logger.info("Process entry for care-context: {}", entry.getCareContextReference());
-        ProcessedEntry result = new ProcessedEntry();
         var mayBeParser = getEntryParser(entry.getMedia());
 
         return mayBeParser.map(parser -> {
+            ProcessedEntry result = new ProcessedEntry();
             String decryptedContent;
             try {
                 decryptedContent = decryptor.decrypt(context.getKeyMaterial(), keyMaterial, entry.getContent());
             } catch (Exception e) {
                 logger.error("Error while decrypting {exception}", e);
-                result.getErrors().add("Could not decrypt content");
+                result.addError("Could not read encrypted content from file");
                 return result;
             }
             Bundle bundle = parser.parseResource(Bundle.class, decryptedContent);
@@ -277,7 +279,7 @@ public class HealthDataProcessor {
             Function<ResourceType, HITypeResourceProcessor> resourceProcessor = this::identifyResourceProcessor;
             BundleContext bundleContext = new BundleContext(bundle, resourceProcessor);
             try {
-                logger.info("Processing bundle id:" + bundle.getId());
+                logger.info("Processing bundle id: {}", bundle.getId());
                 bundle.getEntry().forEach(bundleEntry -> {
                     ResourceType resourceType = bundleEntry.getResource().getResourceType();
                     logger.info("bundle entry resource type:  {}", resourceType);
@@ -287,15 +289,18 @@ public class HealthDataProcessor {
                     }
                 });
                 result.setEncoded(parser.encodeResourceToString(bundle));
+                result.setUniqueResourceId(bundleContext.getBundleUniqueId());
+                result.setDocumentType(bundleContext.getDocumentType());
                 result.addTrackedResources(bundleContext.getTrackedResources(), bundleContext.getBundleDate());
                 return result;
             } catch (Exception e) {
                 logger.error("Could not process bundle {exception}", e);
-                result.getErrors().add(String.format("Could not process bundle with id: %s, error-message: %s",
+                result.addError(String.format("Could not process bundle with id: %s, error-message: %s",
                         bundle.getId(), e.getMessage()));
                 return result;
             }
         }).orElseGet(() -> {
+            ProcessedEntry result = new ProcessedEntry();
             result.addError("Can't process entry content. Unknown media type.");
             return result;
         });
