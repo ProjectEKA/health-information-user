@@ -1,5 +1,7 @@
 package in.org.projecteka.hiu.dataprocessor.model;
 
+import org.hl7.fhir.r4.model.Organization;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -12,6 +14,9 @@ public class ProcessedEntry {
     private String encodedResource;
     private List<TrackedResourceReference> trackedResources = new ArrayList<>();
     private LocalDateTime contextDate;
+    private String uniqueResourceId;
+    private String documentType;
+    private List<Organization> origins;
 
     public List<String> getErrors() {
         return errors;
@@ -53,5 +58,29 @@ public class ProcessedEntry {
                 .map(res -> res.getLocalDateTime())
                 .filter(resDate -> resDate != null).collect(Collectors.toList());
         return dateTimes.isEmpty() ?  null : dateTimes.stream().max(LocalDateTime::compareTo).get();
+    }
+
+    public String getUniqueResourceId() {
+        return uniqueResourceId;
+    }
+
+    public void setUniqueResourceId(String uniqueResourceId) {
+        this.uniqueResourceId = uniqueResourceId;
+    }
+
+    public void setDocumentType(String documentType) {
+        this.documentType = documentType;
+    }
+
+    public String getDocumentType() {
+        return documentType;
+    }
+
+    public void setOrigins(List<Organization> origins) {
+        this.origins = origins;
+    }
+
+    public List<Organization> getOrigins() {
+        return origins;
     }
 }

@@ -1,22 +1,31 @@
 package in.org.projecteka.hiu.dataprocessor.model;
 
+import in.org.projecteka.hiu.dataprocessor.FHIRUtils;
 import in.org.projecteka.hiu.dataprocessor.HITypeResourceProcessor;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.Composition;
+import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class BundleContext {
     private Bundle bundle;
     private Function<ResourceType, HITypeResourceProcessor> resourceProcessor;
     private List<Resource> processedResList = new ArrayList<>();
     private List<TrackedResourceReference> trackedResources = new ArrayList<>();
+
+    private static final String VERSION_UNKNOWN = "UNKNOWN";
 
     public Date getBundleDate() {
         return bundle.getTimestamp();
@@ -60,5 +69,68 @@ public class BundleContext {
 
     public List<TrackedResourceReference> getTrackedResources() {
         return trackedResources;
+    }
+
+    public String getBundleUniqueId() {
+        String version = getBundleVersion(bundle);
+        return String.format("%s.%s",bundle.getId(), version);
+    }
+
+    private String getBundleVersion(Bundle bundle) {
+        if (!bundle.hasMeta()) {
+            return VERSION_UNKNOWN;
+        }
+        return bundle.getMeta().getVersionId() != null ? bundle.getMeta().getVersionId() : VERSION_UNKNOWN;
+    }
+
+    public String getDocumentType() {
+        Optional<Bundle.BundleEntryComponent> entryComponent
+                = bundle.getEntry().stream().filter(e ->
+                e.getResource().getResourceType().equals(ResourceType.Composition)).findFirst();
+        if (entryComponent.isEmpty()) {
+            return "";
+        }
+        Composition composition = (Composition) entryComponent.get().getResource();
+        CodeableConcept concept = composition.getType();
+        Optional<String> hiType = concept.getCoding().stream().map(c -> FHIRUtils.getHiTypeForCode(c.getCode()))
+                .filter(type -> !"".equals(type))
+                .findFirst();
+        return hiType.orElse("");
+    }
+
+    public List<Organization> getOrigins() {
+        Optional<Bundle.BundleEntryComponent> entryComponent
+                = bundle.getEntry().stream().filter(e ->
+                e.getResource().getResourceType().equals(ResourceType.Composition)).findFirst();
+        if (entryComponent.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Composition composition = (Composition) entryComponent.get().getResource();
+        List<Organization> organizations = identifyOrgFromAttester(composition);
+        if (organizations.isEmpty()) {
+            organizations = identifyOrgFromAuthor(composition);
+        }
+        return organizations;
+    }
+
+    private List<Organization> identifyOrgFromAttester(Composition composition) {
+        if (!composition.hasAttester()) {
+            return Collections.emptyList();
+        }
+        return composition.getAttester().stream().filter(attesterRef -> {
+            if (!attesterRef.hasParty()) {
+                return false;
+            }
+            return attesterRef.getParty().getResource() instanceof Organization;
+        }).map(ref -> (Organization) ref.getParty().getResource()).collect(Collectors.toList());
+    }
+
+    private List<Organization> identifyOrgFromAuthor(Composition composition) {
+        if (!composition.hasAuthor()) {
+            return Collections.emptyList();
+        }
+        return composition.getAuthor().stream()
+                .filter(authorRef -> authorRef.getResource() instanceof Organization)
+                .map(authorRef -> (Organization) authorRef.getResource()).collect(Collectors.toList());
     }
 }

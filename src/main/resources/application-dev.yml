@@ -6,6 +6,7 @@ hiu:
   dataPushUrl: http://localhost:8003/data/notification
   consentNotificationUrl: http://localhost:8003/consent/notification
   valueSets: classpath:/static/ValueSet/valuesets.json
+  hfrAffinityDomains: ${HFR_AFFINITY_DOMAINS:hfr.projecteka.in}
   consentmanager:
     suffix: ncg
     url: http://localhost:9000
