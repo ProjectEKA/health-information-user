@@ -3,7 +3,6 @@ package in.org.projecteka.hiu.dataprocessor.model;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Composition;
 import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.junit.Assert;
