@@ -4,7 +4,6 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Organization;
-import org.hl7.fhir.r4.model.ResourceType;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,9 +24,6 @@ class BundleContextTest {
         String content = lines.collect(Collectors.joining());
         IParser jsonParser = FhirContext.forR4().newJsonParser();
         Bundle bundle = jsonParser.parseResource(Bundle.class, content);
-        Optional<Bundle.BundleEntryComponent> entryComponent
-                = bundle.getEntry().stream().filter(e ->
-                e.getResource().getResourceType().equals(ResourceType.Composition)).findFirst();
         BundleContext bundleContext = new BundleContext(bundle, null);
         List<Organization> organizations = bundleContext.getOrigins();
         //one of the orgs will have a proper domain
