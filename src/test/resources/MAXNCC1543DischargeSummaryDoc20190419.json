@@ -1,0 +1,771 @@
+{
+  "resourceType": "Bundle",
+  "id": "e24d0d35-a976-4eec-9598-c0f061a56b8b",
+  "meta": {
+    "lastUpdated": "2019-04-19T00:00:00.000+05:30"
+  },
+  "identifier": {
+    "system": "https://www.max.in/bundle",
+    "value": "e24d0d35-a976-4eec-9598-c0f061a56b8b"
+  },
+  "type": "document",
+  "timestamp": "2019-04-19T00:00:00.000+05:30",
+  "entry": [
+    {
+      "fullUrl": "Composition/fb8c668f-8e53-47dd-802b-aa2ff4763e8c",
+      "resource": {
+        "resourceType": "Composition",
+        "id": "fb8c668f-8e53-47dd-802b-aa2ff4763e8c",
+        "identifier": {
+          "system": "https://www.max.in/document",
+          "value": "fb8c668f-8e53-47dd-802b-aa2ff4763e8c"
+        },
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "https://projecteka.in/sct",
+              "code": "373942005",
+              "display": "Discharge Summary Record"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        },
+        "encounter": {
+          "reference": "Encounter/ece47f53-28dc-48bf-9232-79efa964defd"
+        },
+        "date": "2019-04-19T00:00:00.605+05:30",
+        "author": [
+          {
+            "reference": "Practitioner/MAX191101",
+            "display": "Dr Akshatha M K"
+          },
+          {
+            "reference": "Organization/MaxSaket01"
+          }
+        ],
+        "attester": [
+          {
+            "mode": "legal",
+            "time": "2012-01-04T09:10:14Z",
+            "party": {
+              "reference": "Organization/MaxSaket01"
+            }
+          },
+          {
+            "mode": "legal",
+            "time": "2012-01-04T09:10:14Z",
+            "party": {
+              "reference": "Organization/MaxSaket02"
+            }
+          },
+          {
+            "mode": "legal",
+            "time": "2012-01-04T09:10:14Z",
+            "party": {
+              "reference": "Practitioner/MAX191101"
+            }
+          }
+        ],
+        "title": "Discharge Summary Document",
+        "custodian": {
+          "reference": "Organization/MaxSaket01"
+        },
+        "section": [
+          {
+            "title": "Presenting Problems",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://projecteka.in/sct",
+                  "code": "422843007",
+                  "display": "Chief Complaint Section"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "Condition/194208f1-a058-4b21-88bd-7ca38bbfe68f"
+              }
+            ]
+          },
+          {
+            "title": "Allergy Section",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://projecteka.in/sct",
+                  "code": "722446000",
+                  "display": "Allergy Record"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "AllergyIntolerance/example"
+              },
+              {
+                "reference": "AllergyIntolerance/medication"
+              }
+            ]
+          },
+          {
+            "title": "Physical Examination",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://projecteka.in/sct",
+                  "code": "425044008",
+                  "display": "Physical exam section"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "Observation/5d4cf222-76d0-4da1-9beb-c44d676db85c"
+              },
+              {
+                "reference": "Observation/3e1db0b3-46bb-4f23-a5ea-6ed3b3a34cf2"
+              }
+            ]
+          },
+          {
+            "title": "Prescribed medications during Admission",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://projecteka.in/sct",
+                  "code": "440545006",
+                  "display": "Prescription"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "MedicationRequest/b07e48bc-1554-4eaa-bee3-0370982eb8f0"
+              },
+              {
+                "reference": "MedicationRequest/27e444a7-379d-44b8-9e4b-24a52a29ff8e"
+              }
+            ]
+          },
+          {
+            "title": "Procedures",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://projecteka.in/sct",
+                  "code": "371525003",
+                  "display": "Clinical procedure report"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "Procedure/e6c5e7fd-c22a-4d5a-a568-270753e51249"
+              }
+            ]
+          },
+          {
+            "title": "Care Plan",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://projecteka.in/sct",
+                  "code": "734163000",
+                  "display": "Care Plan"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "CarePlan/00bc7230-101b-4339-bbed-89be3918663c"
+              }
+            ]
+          },
+          {
+            "title": "Follow up",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://projecteka.in/sct",
+                  "code": "736271009",
+                  "display": "Follow up"
+                }
+              ]
+            },
+            "entry": [
+              {
+                "reference": "Appointment/4976fe22-7475-4545-a11b-5160b4950878"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Practitioner/MAX191101",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "MAX191101",
+        "identifier": [
+          {
+            "system": "https://www.mciindia.in/doctor",
+            "value": "MAX191101"
+          }
+        ],
+        "name": [
+          {
+            "text": "Akshatha M K",
+            "prefix": [
+              "Dr"
+            ],
+            "suffix": [
+              "MD"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Organization/MaxSaket01",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "MaxSaket01",
+        "name": "Max 01",
+        "alias": [
+          "Max"
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "(+91) 011-2651-5050"
+          },
+          {
+            "system": "fax",
+            "value": "(+91) 011-2651-5051"
+          }
+        ],
+        "address": [
+          {
+            "line": [
+              "1, 2, Press Enclave Marg, Saket Institutional Area, Saket"
+            ],
+            "city": "New Delhi",
+            "state": "New Delhi",
+            "postalCode": "110017",
+            "country": "INDIA"
+          }
+        ],
+        "endpoint": [
+          {
+            "reference": "https://www.max.in/hospital-network/max-super-speciality-hospital-saket",
+            "display": "Website"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Organization/MaxSaket02",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "MaxSaket02",
+        "name": "Max 02",
+        "identifier": [
+          {
+            "system": "http://hfr.projecteka.in",
+            "value": "1234"
+          }
+        ],
+        "alias": [
+          "Max"
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "(+91) 011-2651-5050"
+          },
+          {
+            "system": "fax",
+            "value": "(+91) 011-2651-5051"
+          }
+        ],
+        "address": [
+          {
+            "line": [
+              "1, 2, Press Enclave Marg, Saket Institutional Area, Saket"
+            ],
+            "city": "New Delhi",
+            "state": "New Delhi",
+            "postalCode": "110017",
+            "country": "INDIA"
+          }
+        ],
+        "endpoint": [
+          {
+            "reference": "https://www.max.in/hospital-network/max-super-speciality-hospital-saket",
+            "display": "Website"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Patient/NCC1543",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "NCC1543",
+        "name": [
+          {
+            "text": "Keith David"
+          }
+        ],
+        "gender": "male"
+      }
+    },
+    {
+      "fullUrl": "Condition/3a55eee8-8ed2-496b-8492-a2ee82fae9ab",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "3a55eee8-8ed2-496b-8492-a2ee82fae9ab",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "recurrence",
+              "display": "recurrence"
+            }
+          ],
+          "text": "recurrence"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ],
+            "text": "Encounter Diagnosis"
+          }
+        ],
+        "severity": {
+          "text": "Mild"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "https://projecteka.in/sct",
+              "code": "128944008",
+              "display": "Bacterial infection due to Bacillus"
+            }
+          ],
+          "text": "Bacterial infection due to Bacillus"
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        }
+      }
+    },
+    {
+      "fullUrl": "Encounter/ece47f53-28dc-48bf-9232-79efa964defd",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "ece47f53-28dc-48bf-9232-79efa964defd",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "IMP",
+          "display": "Inpatient visit"
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        },
+        "period": {
+          "start": "2019-04-15T00:00:00+05:30",
+          "end": "2019-04-19T00:00:00+05:30"
+        },
+        "diagnosis": [
+          {
+            "condition": {
+              "reference": "Condition/3a55eee8-8ed2-496b-8492-a2ee82fae9ab"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Condition/194208f1-a058-4b21-88bd-7ca38bbfe68f",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "194208f1-a058-4b21-88bd-7ca38bbfe68f",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "problem list"
+              }
+            ],
+            "text": "problem list"
+          }
+        ],
+        "severity": {
+          "coding": [
+            {
+              "system": "https://projecteka.in/sct",
+              "code": "24484000",
+              "display": "Severe"
+            }
+          ],
+          "text": "Severe"
+        },
+        "code": {
+          "text": "Toothache"
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        }
+      }
+    },
+    {
+      "fullUrl": "AllergyIntolerance/example",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "example",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "type": "allergy",
+        "category": [
+          "food"
+        ],
+        "criticality": "high",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "227493005",
+              "display": "Cashew nuts"
+            }
+          ]
+        },
+        "patient": {
+          "reference": "Patient/NCC1543"
+        },
+        "onsetString": "Past 1 year",
+        "asserter": {
+          "reference": "Practitioner/MAX191101",
+          "display": "Dr Akshatha M K"
+        },
+        "note": [
+          {
+            "text": "The criticality is high becasue of the observed anaphylactic reaction when challenged with cashew extract."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "AllergyIntolerance/medication",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "medication",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "category": [
+          "medication"
+        ],
+        "criticality": "high",
+        "code": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "7980",
+              "display": "Penicillin G"
+            }
+          ]
+        },
+        "patient": {
+          "reference": "Patient/NCC1543"
+        },
+        "onsetString": "Past 2 year",
+        "asserter": {
+          "reference": "Practitioner/MAX191101",
+          "display": "Dr Akshatha M K"
+        }
+      }
+    },
+    {
+      "fullUrl": "Observation/5d4cf222-76d0-4da1-9beb-c44d676db85c",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "5d4cf222-76d0-4da1-9beb-c44d676db85c",
+        "status": "final",
+        "code": {
+          "text": "Temperature"
+        },
+        "effectiveDateTime": "2019-04-15T00:00:00+05:30",
+        "valueQuantity": {
+          "value": 99.5,
+          "unit": "C"
+        }
+      }
+    },
+    {
+      "fullUrl": "Observation/3e1db0b3-46bb-4f23-a5ea-6ed3b3a34cf2",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "3e1db0b3-46bb-4f23-a5ea-6ed3b3a34cf2",
+        "status": "final",
+        "code": {
+          "text": "pulse"
+        },
+        "effectiveDateTime": "2019-04-16T00:00:00+05:30",
+        "valueString": "72 bpm"
+      }
+    },
+    {
+      "fullUrl": "Condition/c34917cd-616b-43de-8f2b-5a755bef6bca",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c34917cd-616b-43de-8f2b-5a755bef6bca",
+        "code": {
+          "text": "inflammation"
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        }
+      }
+    },
+    {
+      "fullUrl": "MedicationRequest/b07e48bc-1554-4eaa-bee3-0370982eb8f0",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "b07e48bc-1554-4eaa-bee3-0370982eb8f0",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "text": "ibuprofen 500 mg"
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        },
+        "authoredOn": "2019-04-18T00:00:00+05:30",
+        "requester": {
+          "reference": "Practitioner/MAX191101"
+        },
+        "reasonReference": [
+          {
+            "reference": "Condition/c34917cd-616b-43de-8f2b-5a755bef6bca"
+          }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "1 tablet 3 times a day"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Medication/bacc4303-b5d7-4c2d-b6d6-84d4c8559b22",
+      "resource": {
+        "resourceType": "Medication",
+        "id": "bacc4303-b5d7-4c2d-b6d6-84d4c8559b22",
+        "code": {
+          "text": "albendazole 400 mg"
+        }
+      }
+    },
+    {
+      "fullUrl": "MedicationRequest/27e444a7-379d-44b8-9e4b-24a52a29ff8e",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "27e444a7-379d-44b8-9e4b-24a52a29ff8e",
+        "status": "active",
+        "intent": "order",
+        "medicationReference": {
+          "reference": "Medication/bacc4303-b5d7-4c2d-b6d6-84d4c8559b22"
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        },
+        "authoredOn": "2019-04-18T00:00:00+05:30",
+        "requester": {
+          "reference": "Practitioner/MAX191101"
+        },
+        "dosageInstruction": [
+          {
+            "text": "1 time only"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Practitioner/MAX1234",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "MAX1234",
+        "identifier": [
+          {
+            "system": "https://www.mciindia.in/doctor",
+            "value": "MAX1234"
+          }
+        ],
+        "name": [
+          {
+            "text": "Manju Sengar",
+            "prefix": [
+              "Dr"
+            ],
+            "suffix": [
+              "MD"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Practitioner/MAX5001",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "MAX5001",
+        "identifier": [
+          {
+            "system": "https://www.mciindia.in/doctor",
+            "value": "MAX5001"
+          }
+        ],
+        "name": [
+          {
+            "text": "Laxmikanth J",
+            "prefix": [
+              "Dr"
+            ],
+            "suffix": [
+              "MD"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Procedure/e6c5e7fd-c22a-4d5a-a568-270753e51249",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "e6c5e7fd-c22a-4d5a-a568-270753e51249",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "https://projecteka.in/sct",
+              "code": "90105005",
+              "display": "Biopsy of soft tissue of forearm (Procedure)"
+            }
+          ],
+          "text": "Biopsy of suspected melanoma L) arm"
+        },
+        "subject": {
+          "reference": "Patient/NCC1543"
+        },
+        "performedDateTime": "2019-04-17T00:00:00+05:30",
+        "asserter": {
+          "reference": "Practitioner/MAX191101",
+          "display": "Dr Akshatha M K"
+        },
+        "performer": [
+          {
+            "actor": {
+              "reference": "Practitioner/MAX5001"
+            }
+          }
+        ],
+        "complication": [
+          {
+            "coding": [
+              {
+                "system": "https://projecteka.in/sct",
+                "code": "131148009",
+                "display": "Bleeding"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "CarePlan/00bc7230-101b-4339-bbed-89be3918663c",
+      "resource": {
+        "resourceType": "CarePlan",
+        "id": "00bc7230-101b-4339-bbed-89be3918663c",
+        "status": "draft",
+        "intent": "proposal",
+        "title": "Tentative Plan for next 2 months",
+        "description": "Actively monitor progress. Review every week to start with. Medications to be revised after 2 weeks.",
+        "subject": {
+          "reference": "Patient/NCC1543"
+        },
+        "period": {
+          "start": "2019-04-19T00:00:00+05:30",
+          "end": "2019-06-18T00:00:00+05:30"
+        },
+        "author": {
+          "reference": "Practitioner/MAX191101",
+          "display": "Dr Akshatha M K"
+        },
+        "note": [
+          {
+            "text": "Actively monitor progress."
+          },
+          {
+            "text": "Review every week to start with. Medications to be revised after 2 weeks."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "Appointment/4976fe22-7475-4545-a11b-5160b4950878",
+      "resource": {
+        "resourceType": "Appointment",
+        "id": "4976fe22-7475-4545-a11b-5160b4950878",
+        "status": "booked",
+        "description": "Review progress in 7 days",
+        "start": "2019-04-22T00:00:00.000+05:30",
+        "end": "2019-04-22T00:30:00.000+05:30",
+        "participant": [
+          {
+            "actor": {
+              "reference": "Practitioner/MAX191101",
+              "display": "Dr Akshatha M K"
+            },
+            "status": "accepted"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -8,6 +8,7 @@ hiu:
   valueSets: classpath:/static/ValueSet/valuesets.json
   secret: ${HIU_SECRET:RiPzliMKlBf67mgLpvn6LBg2Fz5OqBBmJNzi4nQ9YMZy0pq2uu}
   disableHttpOptionsMethod: ${DISABLE_HTTP_OPTIONS:false}
+  hfrAffinityDomains: ${HFR_AFFINITY_DOMAINS}
   consentmanager:
     suffix: ${CONSENT_MANAGEMENT_SUFFIX}
     url: ${CONSENT_MANAGEMENT_URL}

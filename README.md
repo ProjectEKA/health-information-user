@@ -44,16 +44,25 @@ docker run -d -p 8002:8080 hiu
 ```
 
 ## :rocket: Running From Source
-To run
+
+### Database
+clone the db initializer repo. Please see instructions in https://github.com/ProjectEKA/hiu-db-initializer
+ 
+### To run
 
 ```
 ./gradlew bootRun
 ```
 
-or if you want to run in dev environment setup
+or if you want to run in local environment setup
 ```
-./gradlew bootRun --args='--spring.profiles.active=dev'
+CLIENT_SECRET=${CLIENT_SECRET} HFR_AFFINITY_DOMAINS=projecteka.in ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
+or 
+```
+CLIENT_SECRET=${CLIENT_SECRET} HFR_AFFINITY_DOMAINS=projecteka.in ./gradlew bootRunLocal
+```
+Note, in the above case, remember to set the **gatewayservice.clientId** appropriately in application*.yml  
 
 ## Running The Tests
 

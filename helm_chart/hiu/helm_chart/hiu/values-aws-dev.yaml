@@ -152,6 +152,7 @@ env:
     REDIS_RETRY: 1
     Account_Service_Url: "https://accountbeta.nha.gov.in/api"
     ENABLE_OFFLINE_VERIFICATION: "false"
+    HFR_AFFINITY_DOMAINS: "facilitysbx.ndhm.gov.in"
   secrets:
     HIU_CLIENT_SECRET: ""
     ORTHANC_PASSWORD: ""

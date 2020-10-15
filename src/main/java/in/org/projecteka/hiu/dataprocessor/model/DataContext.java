@@ -21,6 +21,8 @@ public class DataContext {
     private Path dataFilePath;
     private String dataPartNumber;
     private List<TrackedResourceReference> trackedResources;
+    private String hipId;
+    private String consentId;
     private static final Logger logger = LoggerFactory.getLogger(DataContext.class);
 
     public Path getLocalStoragePath() {

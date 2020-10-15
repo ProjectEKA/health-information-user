@@ -154,6 +154,7 @@ env:
     REDIS_PORT: "6379"
     REDIS_RETRY: 1
     DISABLE_HTTP_OPTIONS: "true"
+    HFR_AFFINITY_DOMAINS: "facilitysbx.ndhm.gov.in"
   secrets:
     HIU_CLIENT_SECRET: ""
     ORTHANC_PASSWORD: ""
