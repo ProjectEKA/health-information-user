@@ -61,16 +61,24 @@
               "display": "Clinical Notes/Examination"
             },
             {
-              "code": "DiagnosticReport",
-              "display": "Diagnostic Reports"
-            },
-            {
               "code": "MedicationRequest",
               "display": "Prescribed Medications"
             },
             {
+              "code": "DiagnosticReport",
+              "display": "Diagnostic Reports"
+            },
+            {
               "code": "DischargeSummary",
               "display": "Discharge Summary"
+            },
+            {
+              "code": "Prescription",
+              "display": "Prescription"
+            },
+            {
+              "code": "OPConsultation",
+              "display": "OPD Consultation"
             }
           ]
         }
