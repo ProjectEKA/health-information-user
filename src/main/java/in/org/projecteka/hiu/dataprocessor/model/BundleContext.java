@@ -6,7 +6,6 @@ import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Composition;
-import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
@@ -123,8 +122,7 @@ public class BundleContext {
             if (!attesterRef.hasParty()) {
                 return false;
             }
-            IBaseResource resource = attesterRef.getParty().getResource();
-            return resource != null && resource instanceof Organization;
+            return attesterRef.getParty().getResource() instanceof Organization;
         }).map(ref -> (Organization) ref.getParty().getResource()).collect(Collectors.toList());
         return organizations;
     }
@@ -134,8 +132,7 @@ public class BundleContext {
             return Collections.emptyList();
         }
         List<Organization> organizations = composition.getAuthor().stream().filter(authorRef -> {
-            IBaseResource resource = authorRef.getResource();
-            return resource != null && resource instanceof Organization;
+            return authorRef.getResource() instanceof Organization;
         }).map(authorRef -> (Organization) authorRef.getResource()).collect(Collectors.toList());
         return organizations;
     }
