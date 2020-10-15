@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
-import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.ConsentRepository;
 import in.org.projecteka.hiu.dataflow.DataFlowRepository;
@@ -28,10 +27,13 @@ import in.org.projecteka.hiu.dataprocessor.model.StatusNotification;
 import in.org.projecteka.hiu.dataprocessor.model.StatusResponse;
 import in.org.projecteka.hiu.dataprocessor.model.Type;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Identifier;
+import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.data.util.Pair;
 import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
@@ -41,10 +43,13 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
@@ -57,7 +62,7 @@ public class HealthDataProcessor {
     public static final String MEDIA_APPLICATION_FHIR_JSON = "application/fhir+json";
     public static final String MEDIA_APPLICATION_FHIR_XML = "application/fhir+xml";
     private static final Logger logger = LoggerFactory.getLogger(HealthDataProcessor.class);
-    public static final String COULDN_T_RECEIVE_DATA = "Couldn't receive data";
+    private static final String COULD_NOT_RECEIVE_DATA = "Couldn't receive data";
     private final HealthDataRepository healthDataRepository;
     private final DataFlowRepository dataFlowRepository;
     private final Decryptor decryptor;
@@ -115,7 +120,7 @@ public class HealthDataProcessor {
                         dataErrors.add("Health Information not found");
                         blockPublisher(healthDataRepository
                                 .insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()));
-                        statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
+                        statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULD_NOT_RECEIVE_DATA));
                         return;
                     }
                     entryToProcess = Entry.builder()
@@ -130,15 +135,20 @@ public class HealthDataProcessor {
                     dataErrors.addAll(result.getErrors());
                     blockPublisher(healthDataRepository
                             .insertErrorFor(transactionId, dataPartNumber, entryToProcess.getCareContextReference()));
-                    statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULDN_T_RECEIVE_DATA));
+                    statusResponses.add(getStatusResponse(entry, HiStatus.ERRORED, COULD_NOT_RECEIVE_DATA));
                     return;
                 }
                 context.addTrackedResources(result.getTrackedResources());
+                Optional<Pair<String, String>> originIdAndName = identifyOrigin(result.getOrigins());
+                String sourceId = originIdAndName.isPresent() ? originIdAndName.get().getFirst() : context.getHipId();
                 blockPublisher(healthDataRepository.insertDataFor(transactionId,
                         dataPartNumber,
                         result.getResource(),
                         result.latestResourceDate(),
-                        entryToProcess.getCareContextReference()));
+                        entryToProcess.getCareContextReference(),
+                        result.getUniqueResourceId(),
+                        result.getDocumentType(),
+                        sourceId));
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
 
@@ -156,9 +166,9 @@ public class HealthDataProcessor {
                 notifyHealthInfoStatus(context, statusResponses, SessionStatus.TRANSFERRED);
             }
         } catch (Exception ex) {
-            updateDataProcessStatus(context, ex.getMessage(), ERRORED, context.latestResourceDate());
             logger.error("Error occurred while processing data from HIP. Transaction id: {}.", context.getTransactionId());
             logger.error(ex.getMessage(), ex);
+            updateDataProcessStatus(context, ex.getMessage(), ERRORED, context.latestResourceDate());
         }
     }
 
@@ -183,10 +193,8 @@ public class HealthDataProcessor {
     private void notifyHealthInfoStatus(DataContext context,
                                         List<StatusResponse> statusResponses,
                                         SessionStatus sessionStatus) {
-        String consentId = blockPublisher(dataFlowRepository.getConsentId(context.getTransactionId()));
-        String hipId = blockPublisher(consentRepository.getHipId(consentId));
         HealthInfoNotificationRequest healthInfoNotificationRequest =
-                getHealthInfoNotificationRequest(context, statusResponses, sessionStatus, consentId, hipId);
+                getHealthInfoNotificationRequest(context, statusResponses, sessionStatus);
         String token = blockPublisher(gateway.token());
         String consentManagerId = fetchCMId(healthInfoNotificationRequest.getNotification().getConsentId());
         blockPublisher(healthInformationClient.notifyHealthInfo(healthInfoNotificationRequest, token, consentManagerId));
@@ -194,14 +202,12 @@ public class HealthDataProcessor {
 
     private HealthInfoNotificationRequest getHealthInfoNotificationRequest(DataContext context,
                                                                            List<StatusResponse> statusResponses,
-                                                                           SessionStatus sessionStatus,
-                                                                           String consentId,
-                                                                           String hipId) {
+                                                                           SessionStatus sessionStatus) {
         return HealthInfoNotificationRequest.builder()
                 .requestId(UUID.randomUUID())
                 .timestamp(LocalDateTime.now(ZoneOffset.UTC))
                 .notification(Notification.builder()
-                        .consentId(consentId)
+                        .consentId(context.getConsentId())
                         .transactionId(context.getTransactionId())
                         .doneAt(LocalDateTime.now(ZoneOffset.UTC))
                         .notifier(Notifier.builder()
@@ -210,7 +216,7 @@ public class HealthDataProcessor {
                                 .build())
                         .statusNotification(StatusNotification.builder()
                                 .sessionStatus(sessionStatus)
-                                .hipId(hipId)
+                                .hipId(context.getHipId())
                                 .statusResponses(statusResponses)
                                 .build())
                         .build())
@@ -239,11 +245,15 @@ public class HealthDataProcessor {
 
             DataNotificationRequest dataNotificationRequest = objectMapper.readValue(inputStream,
                     DataNotificationRequest.class);
+            String consentId = blockPublisher(dataFlowRepository.getConsentId(dataNotificationRequest.getTransactionId()));
+            String hipId = blockPublisher(consentRepository.getHipId(consentId));
             return DataContext.builder()
                     .notifiedData(dataNotificationRequest)
                     .dataFilePath(dataFilePath)
                     .dataPartNumber(message.getPartNumber())
                     .trackedResources(new ArrayList<>())
+                    .hipId(hipId)
+                    .consentId(consentId)
                     .build();
         } catch (Exception e) {
             logger.error("Could not create context from data file path", e);
@@ -255,16 +265,16 @@ public class HealthDataProcessor {
                                                Entry entry,
                                                DataFlowRequestKeyMaterial keyMaterial) {
         logger.info("Process entry for care-context: {}", entry.getCareContextReference());
-        ProcessedEntry result = new ProcessedEntry();
         var mayBeParser = getEntryParser(entry.getMedia());
 
         return mayBeParser.map(parser -> {
+            ProcessedEntry result = new ProcessedEntry();
             String decryptedContent;
             try {
                 decryptedContent = decryptor.decrypt(context.getKeyMaterial(), keyMaterial, entry.getContent());
             } catch (Exception e) {
                 logger.error("Error while decrypting {exception}", e);
-                result.getErrors().add("Could not decrypt content");
+                result.addError("Could not read encrypted content from file");
                 return result;
             }
             Bundle bundle = parser.parseResource(Bundle.class, decryptedContent);
@@ -277,7 +287,7 @@ public class HealthDataProcessor {
             Function<ResourceType, HITypeResourceProcessor> resourceProcessor = this::identifyResourceProcessor;
             BundleContext bundleContext = new BundleContext(bundle, resourceProcessor);
             try {
-                logger.info("Processing bundle id:" + bundle.getId());
+                logger.info("Processing bundle id: {}", bundle.getId());
                 bundle.getEntry().forEach(bundleEntry -> {
                     ResourceType resourceType = bundleEntry.getResource().getResourceType();
                     logger.info("bundle entry resource type:  {}", resourceType);
@@ -287,15 +297,19 @@ public class HealthDataProcessor {
                     }
                 });
                 result.setEncoded(parser.encodeResourceToString(bundle));
+                result.setUniqueResourceId(bundleContext.getBundleUniqueId());
+                result.setDocumentType(bundleContext.getDocumentType());
+                result.setOrigins(bundleContext.getOrigins());
                 result.addTrackedResources(bundleContext.getTrackedResources(), bundleContext.getBundleDate());
                 return result;
             } catch (Exception e) {
                 logger.error("Could not process bundle {exception}", e);
-                result.getErrors().add(String.format("Could not process bundle with id: %s, error-message: %s",
+                result.addError(String.format("Could not process bundle with id: %s, error-message: %s",
                         bundle.getId(), e.getMessage()));
                 return result;
             }
         }).orElseGet(() -> {
+            ProcessedEntry result = new ProcessedEntry();
             result.addError("Can't process entry content. Unknown media type.");
             return result;
         });
@@ -332,5 +346,42 @@ public class HealthDataProcessor {
 
     private boolean hasContent(Entry entry) {
         return (entry.getContent() != null) && !entry.getContent().isBlank();
+    }
+
+    private Optional<Identifier> getAffinityDomainIdentifier(List<String> domains, Organization organization) {
+        if (!organization.hasIdentifier()) {
+            return Optional.empty();
+        }
+        if (domains.isEmpty()) {
+            return Optional.empty();
+        }
+        return organization.getIdentifier().stream().filter(identifier -> identifier.hasSystem())
+                .filter(identifier -> domains.stream().anyMatch(domain -> identifier.getSystem().toUpperCase().contains(domain.toUpperCase())))
+                .findFirst();
+    }
+
+    private List<String> getHFRAffinityDomains() {
+        Optional<String> hfrAffinityDomains = Optional.ofNullable(hiuProperties.getHfrAffinityDomains());
+        if (hfrAffinityDomains.isPresent()) {
+            return Arrays.asList(hfrAffinityDomains.get().split(","));
+        }
+        return Collections.emptyList();
+    }
+
+
+    private Optional<Pair<String, String>> identifyOrigin(List<Organization> origins) {
+        if ((origins == null) || origins.isEmpty()) {
+            return Optional.empty();
+        }
+        List<String> hfrAffinityDomains = getHFRAffinityDomains();
+        List<Organization> domainOrgList = origins.stream().filter(
+                    org -> org.hasIdentifier() && getAffinityDomainIdentifier(hfrAffinityDomains, org).isPresent())
+                .collect(Collectors.toList());
+        if (domainOrgList.isEmpty()) {
+            return Optional.empty();
+        }
+        Organization organization = domainOrgList.get(0);
+        Optional<Identifier> identifier = getAffinityDomainIdentifier(hfrAffinityDomains, organization);
+        return  identifier.isPresent() ? Optional.of(Pair.of(identifier.get().getValue(), organization.getName())) : Optional.empty();
     }
 }
