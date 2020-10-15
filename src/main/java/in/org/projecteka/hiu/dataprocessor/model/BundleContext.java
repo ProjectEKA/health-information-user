@@ -2,7 +2,6 @@ package in.org.projecteka.hiu.dataprocessor.model;
 
 import in.org.projecteka.hiu.dataprocessor.FHIRUtils;
 import in.org.projecteka.hiu.dataprocessor.HITypeResourceProcessor;
-import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Composition;
@@ -118,22 +117,20 @@ public class BundleContext {
         if (!composition.hasAttester()) {
             return Collections.emptyList();
         }
-        List<Organization> organizations = composition.getAttester().stream().filter(attesterRef -> {
+        return composition.getAttester().stream().filter(attesterRef -> {
             if (!attesterRef.hasParty()) {
                 return false;
             }
             return attesterRef.getParty().getResource() instanceof Organization;
         }).map(ref -> (Organization) ref.getParty().getResource()).collect(Collectors.toList());
-        return organizations;
     }
 
     private List<Organization> identifyOrgFromAuthor(Composition composition) {
         if (!composition.hasAuthor()) {
             return Collections.emptyList();
         }
-        List<Organization> organizations = composition.getAuthor().stream().filter(authorRef -> {
-            return authorRef.getResource() instanceof Organization;
-        }).map(authorRef -> (Organization) authorRef.getResource()).collect(Collectors.toList());
-        return organizations;
+        return composition.getAuthor().stream()
+                .filter(authorRef -> authorRef.getResource() instanceof Organization)
+                .map(authorRef -> (Organization) authorRef.getResource()).collect(Collectors.toList());
     }
 }

@@ -30,7 +30,6 @@ class BundleContextTest {
         Optional<Bundle.BundleEntryComponent> entryComponent
                 = bundle.getEntry().stream().filter(e ->
                 e.getResource().getResourceType().equals(ResourceType.Composition)).findFirst();
-        Composition composition = (Composition) entryComponent.get().getResource();
         BundleContext bundleContext = new BundleContext(bundle, null);
         List<Organization> organizations = bundleContext.getOrigins();
         //one of the orgs will have a proper domain
