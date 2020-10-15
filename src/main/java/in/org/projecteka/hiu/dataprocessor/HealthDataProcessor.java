@@ -27,10 +27,13 @@ import in.org.projecteka.hiu.dataprocessor.model.StatusNotification;
 import in.org.projecteka.hiu.dataprocessor.model.StatusResponse;
 import in.org.projecteka.hiu.dataprocessor.model.Type;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Identifier;
+import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.data.util.Pair;
 import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
@@ -40,10 +43,13 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
@@ -133,6 +139,8 @@ public class HealthDataProcessor {
                     return;
                 }
                 context.addTrackedResources(result.getTrackedResources());
+                Optional<Pair<String, String>> originIdAndName = identifyOrigin(result.getOrigins());
+                String sourceId = originIdAndName.isPresent() ? originIdAndName.get().getFirst() : context.getHipId();
                 blockPublisher(healthDataRepository.insertDataFor(transactionId,
                         dataPartNumber,
                         result.getResource(),
@@ -140,7 +148,7 @@ public class HealthDataProcessor {
                         entryToProcess.getCareContextReference(),
                         result.getUniqueResourceId(),
                         result.getDocumentType(),
-                        context.getHipId()));
+                        sourceId));
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
 
@@ -291,6 +299,7 @@ public class HealthDataProcessor {
                 result.setEncoded(parser.encodeResourceToString(bundle));
                 result.setUniqueResourceId(bundleContext.getBundleUniqueId());
                 result.setDocumentType(bundleContext.getDocumentType());
+                result.setOrigins(bundleContext.getOrigins());
                 result.addTrackedResources(bundleContext.getTrackedResources(), bundleContext.getBundleDate());
                 return result;
             } catch (Exception e) {
@@ -337,5 +346,42 @@ public class HealthDataProcessor {
 
     private boolean hasContent(Entry entry) {
         return (entry.getContent() != null) && !entry.getContent().isBlank();
+    }
+
+    private Optional<Identifier> getAffinityDomainIdentifier(List<String> domains, Organization organization) {
+        if (!organization.hasIdentifier()) {
+            return Optional.empty();
+        }
+        if (domains.isEmpty()) {
+            return Optional.empty();
+        }
+        return organization.getIdentifier().stream().filter(identifier -> identifier.hasSystem())
+                .filter(identifier -> domains.stream().anyMatch(domain -> identifier.getSystem().toUpperCase().contains(domain.toUpperCase())))
+                .findFirst();
+    }
+
+    private List<String> getHFRAffinityDomains() {
+        Optional<String> hfrAffinityDomains = Optional.ofNullable(hiuProperties.getHfrAffinityDomains());
+        if (hfrAffinityDomains.isPresent()) {
+            return Arrays.asList(hfrAffinityDomains.get().split(","));
+        }
+        return Collections.emptyList();
+    }
+
+
+    private Optional<Pair<String, String>> identifyOrigin(List<Organization> origins) {
+        if ((origins == null) || origins.isEmpty()) {
+            return Optional.empty();
+        }
+        List<String> hfrAffinityDomains = getHFRAffinityDomains();
+        List<Organization> domainOrgList = origins.stream().filter(
+                    org -> org.hasIdentifier() && getAffinityDomainIdentifier(hfrAffinityDomains, org).isPresent())
+                .collect(Collectors.toList());
+        if (domainOrgList.isEmpty()) {
+            return Optional.empty();
+        }
+        Organization organization = domainOrgList.get(0);
+        Optional<Identifier> identifier = getAffinityDomainIdentifier(hfrAffinityDomains, organization);
+        return  identifier.isPresent() ? Optional.of(Pair.of(identifier.get().getValue(), organization.getName())) : Optional.empty();
     }
 }

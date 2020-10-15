@@ -1,5 +1,7 @@
 package in.org.projecteka.hiu.dataprocessor.model;
 
+import org.hl7.fhir.r4.model.Organization;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ public class ProcessedEntry {
     private LocalDateTime contextDate;
     private String uniqueResourceId;
     private String documentType;
+    private List<Organization> origins;
 
     public List<String> getErrors() {
         return errors;
@@ -71,5 +74,13 @@ public class ProcessedEntry {
 
     public String getDocumentType() {
         return documentType;
+    }
+
+    public void setOrigins(List<Organization> origins) {
+        this.origins = origins;
+    }
+
+    public List<Organization> getOrigins() {
+        return origins;
     }
 }

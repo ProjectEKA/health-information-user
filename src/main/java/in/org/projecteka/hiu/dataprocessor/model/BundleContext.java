@@ -2,19 +2,24 @@ package in.org.projecteka.hiu.dataprocessor.model;
 
 import in.org.projecteka.hiu.dataprocessor.FHIRUtils;
 import in.org.projecteka.hiu.dataprocessor.HITypeResourceProcessor;
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Composition;
+import org.hl7.fhir.r4.model.Identifier;
+import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ResourceType;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class BundleContext {
     private Bundle bundle;
@@ -93,5 +98,45 @@ public class BundleContext {
                 .filter(type -> !"".equals(type))
                 .findFirst();
         return hiType.orElse("");
+    }
+
+    public List<Organization> getOrigins() {
+        Optional<Bundle.BundleEntryComponent> entryComponent
+                = bundle.getEntry().stream().filter(e ->
+                e.getResource().getResourceType().equals(ResourceType.Composition)).findFirst();
+        if (entryComponent.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Composition composition = (Composition) entryComponent.get().getResource();
+        List<Organization> organizations = identifyOrgFromAttester(composition);
+        if (organizations.isEmpty()) {
+            organizations = identifyOrgFromAuthor(composition);
+        }
+        return organizations;
+    }
+
+    private List<Organization> identifyOrgFromAttester(Composition composition) {
+        if (!composition.hasAttester()) {
+            return Collections.emptyList();
+        }
+        List<Organization> organizations = composition.getAttester().stream().filter(attesterRef -> {
+            if (!attesterRef.hasParty()) {
+                return false;
+            }
+            IBaseResource resource = attesterRef.getParty().getResource();
+            return resource != null && resource instanceof Organization;
+        }).map(ref -> (Organization) ref.getParty().getResource()).collect(Collectors.toList());
+        return organizations;
+    }
+
+    private List<Organization> identifyOrgFromAuthor(Composition composition) {
+        if (!composition.hasAuthor()) {
+            return Collections.emptyList();
+        }
+        List<Organization> organizations = composition.getAuthor().stream().filter(authorRef -> {
+            IBaseResource resource = authorRef.getResource();
+            return resource != null && resource instanceof Organization;
+        }).map(authorRef -> (Organization) authorRef.getResource()).collect(Collectors.toList());
+        return organizations;
     }
 }
