@@ -46,7 +46,7 @@ docker run -d -p 8002:8080 hiu
 ## :rocket: Running From Source
 
 ### Database
-clone the db initializer repo. Please see instructions in https://github.com/ProjectEKA/hiu-db-initializer
+clone the db initializer repo. Please see instructions in [hiu-db-initializer](https://github.com/ProjectEKA/hiu-db-initializer)
  
 ### To run
 
