@@ -15,4 +15,6 @@ public class DataEntry {
     private String hipName;
     private EntryStatus status;
     private Object data;
+    private String docId;
+    private String docSourceId;
 }

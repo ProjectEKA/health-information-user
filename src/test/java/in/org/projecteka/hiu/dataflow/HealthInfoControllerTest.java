@@ -131,7 +131,9 @@ class HealthInfoControllerTest {
         List<Map<String, Object>> healthInfo = List.of(Map.of(
                 "data", JsonNodeFactory.instance.objectNode(),
                 "status", "SUCCEEDED",
-                "transaction_id", transactionIds.get(0)));
+                "transaction_id", transactionIds.get(0),
+                "doc_id", "1.v1",
+                "doc_source", "hip1d-11"));
 
         when(authenticator.verify(token)).thenReturn(just(caller));
         when(patientConsentRepository.fetchConsentRequestIds(healthInfoRequest.getRequestIds())).thenReturn(Flux.fromIterable(dataRequestMappings));

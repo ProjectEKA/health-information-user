@@ -16,4 +16,6 @@ public class PatientDataEntry {
     private String consentArtefactId;
     private EntryStatus status;
     private Object data;
+    private String docId;
+    private String docSourceId;
 }
