@@ -99,7 +99,10 @@ public class HealthInfoManager {
         return healthInformationRepository.getHealthInformation(transactionIds, limit, offset)
                 .map(healthInfo -> dataEntries.get(healthInfo.get("transaction_id").toString())
                         .status(toStatus((String) healthInfo.get(STATUS)))
-                        .data(healthInfo.get("data")).build())
+                        .data(healthInfo.get("data"))
+                        .docId((String) healthInfo.get("doc_id"))
+                        .docSourceId((String) healthInfo.get("doc_source"))
+                        .build())
                 .collectList()
                 .zipWith(healthInformationRepository.getTotalCountOfEntries(transactionIds));
     }
@@ -251,6 +254,8 @@ public class HealthInfoManager {
                         .hipName(hipName)
                         .status(toStatus((String) healthInfo.get(STATUS)))
                         .data(healthInfo.get("data"))
+                        .docId((String) healthInfo.get("doc_id"))
+                        .docSourceId((String) healthInfo.get("doc_source"))
                         .build());
     }
 
