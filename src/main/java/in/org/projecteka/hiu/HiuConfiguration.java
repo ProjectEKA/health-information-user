@@ -731,12 +731,6 @@ public class HiuConfiguration {
         return JWKSet.load(new URL(gatewayProperties.getJwkUrl()));
     }
 
-    @Bean("identityServiceJWKSet")
-    public JWKSet identityServiceJWKSet(IdentityServiceProperties identityServiceProperties)
-            throws IOException, ParseException {
-        return JWKSet.load(new URL(identityServiceProperties.getJwkUrl()));
-    }
-
     @Bean
     public GatewayTokenVerifier centralRegistryTokenVerifier(@Qualifier("centralRegistryJWKSet") JWKSet jwkSet) {
         return new GatewayTokenVerifier(jwkSet);
@@ -754,8 +748,9 @@ public class HiuConfiguration {
 
     @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak", matchIfMissing = true)
     @Bean("userAuthenticator")
-    public Authenticator userAuthenticator(@Qualifier("identityServiceJWKSet") JWKSet jwkSet,
-                                           ConfigurableJWTProcessor<SecurityContext> jwtProcessor) {
+    public Authenticator userAuthenticator(IdentityServiceProperties identityServiceProperties,
+                                           ConfigurableJWTProcessor<SecurityContext> jwtProcessor) throws IOException, ParseException {
+        var jwkSet = JWKSet.load(new URL(identityServiceProperties.getJwkUrl()));
         return new CMPatientAuthenticator(jwkSet, jwtProcessor);
     }
 
