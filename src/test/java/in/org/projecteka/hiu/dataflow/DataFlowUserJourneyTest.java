@@ -180,8 +180,16 @@ class DataFlowUserJourneyTest {
         String content = "Some dummy content";
         healthInfo.put("data", content);
         healthInfo.put("status", EntryStatus.SUCCEEDED.toString());
-        DataEntry dataEntry =
-                DataEntry.builder().hipId(hipId).hipName(hipName).data(content).status(EntryStatus.SUCCEEDED).build();
+        healthInfo.put("doc_id", "1.v1");
+        healthInfo.put("doc_source", hipId);
+        DataEntry dataEntry = DataEntry.builder()
+                                .hipId(hipId)
+                                .hipName(hipName)
+                                .data(content)
+                                .status(EntryStatus.SUCCEEDED)
+                                .docId("1.v1")
+                                .docSourceId(hipId)
+                                .build();
         List<DataEntry> dataEntries = new ArrayList<>();
         dataEntries.add(dataEntry);
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
