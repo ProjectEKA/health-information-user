@@ -105,6 +105,10 @@ class DataFlowUserJourneyTest {
     @Qualifier("identityServiceJWKSet")
     private JWKSet identityServiceJWKSet;
 
+    @MockBean
+    @Qualifier("userAuthenticator")
+    private Authenticator userAuthenticator;
+
     @AfterAll
     static void tearDown() throws IOException {
         dataFlowServer.shutdown();

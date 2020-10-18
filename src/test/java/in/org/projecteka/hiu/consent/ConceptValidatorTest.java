@@ -2,6 +2,7 @@ package in.org.projecteka.hiu.consent;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.consent.model.HIType;
 import in.org.projecteka.hiu.dataflow.DataFlowDeleteListener;
 import in.org.projecteka.hiu.dataflow.DataFlowRequestListener;
@@ -51,6 +52,10 @@ public class ConceptValidatorTest {
 
     @MockBean
     DataFlowDeleteListener dataFlowDeleteListener;
+
+    @MockBean
+    @Qualifier("userAuthenticator")
+    private Authenticator userAuthenticator;
 
     @BeforeEach
     public void setUp() {
