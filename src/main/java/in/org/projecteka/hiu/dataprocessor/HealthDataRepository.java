@@ -21,7 +21,7 @@ public class HealthDataRepository {
     //TODO: change the column data_flow_part_id to data_part_number
     private static final String INSERT_HEALTH_DATA
             = "INSERT INTO health_information " +
-            "(transaction_id, part_number, data, status, latest_res_date, care_context_reference, doc_source, doc_id, doc_type) " +
+            "(transaction_id, part_number, data, status, latest_res_date, care_context_reference, doc_origin, doc_id, doc_type) " +
             "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)";
 
     private final PgPool readWriteClient;
@@ -30,12 +30,12 @@ public class HealthDataRepository {
                                         String dataPartNumber,
                                         String resource,
                                         EntryStatus entryStatus, LocalDateTime latestResourceDate, String careContextReference,
-                                        String docSource, String docId, String docType) {
+                                        String docOrigin, String docId, String docType) {
         return Mono.create(monoSink ->
                 readWriteClient.preparedQuery(INSERT_HEALTH_DATA)
                         .execute(Tuple.of(transactionId, dataPartNumber, resource,
                                 entryStatus.toString(), latestResourceDate, careContextReference,
-                                docSource, docId, docType),
+                                docOrigin, docId, docType),
                                 handler -> {
                                     if (handler.failed()) {
                                         logger.error(handler.cause().getMessage(), handler.cause());
@@ -54,9 +54,9 @@ public class HealthDataRepository {
 
     public Mono<Void> insertDataFor(String transactionId, String dataPartNumber,
                                     String resource, LocalDateTime latestResourceDate, String careContextReference,
-                                    String resourceId, String docType, String docSource) {
+                                    String resourceId, String docType, String docOrigin) {
         return insertHealthData(transactionId, dataPartNumber, resource,
                 SUCCEEDED, latestResourceDate, careContextReference,
-                docSource, resourceId, docType);
+                docOrigin, resourceId, docType);
     }
 }
