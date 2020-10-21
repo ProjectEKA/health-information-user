@@ -140,7 +140,7 @@ public class HealthDataProcessor {
                 }
                 context.addTrackedResources(result.getTrackedResources());
                 Optional<Pair<String, String>> originIdAndName = identifyOrigin(result.getOrigins());
-                String sourceId = originIdAndName.isPresent() ? originIdAndName.get().getFirst() : context.getHipId();
+                String originId = originIdAndName.isPresent() ? originIdAndName.get().getFirst() : context.getHipId();
                 blockPublisher(healthDataRepository.insertDataFor(transactionId,
                         dataPartNumber,
                         result.getResource(),
@@ -148,7 +148,7 @@ public class HealthDataProcessor {
                         entryToProcess.getCareContextReference(),
                         result.getUniqueResourceId(),
                         result.getDocumentType(),
-                        sourceId));
+                        originId));
                 statusResponses.add(getStatusResponse(entry, HiStatus.OK, "Data received successfully"));
             });
 
