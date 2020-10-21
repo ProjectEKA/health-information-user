@@ -26,10 +26,10 @@ import static in.org.projecteka.hiu.ClientError.dbOperationFailure;
 
 @AllArgsConstructor
 public class HealthInformationRepository {
-    private static final String SELECT_HEALTH_INFORMATION = "SELECT data, status, transaction_id, doc_id, doc_source " +
+    private static final String SELECT_HEALTH_INFORMATION = "SELECT data, status, transaction_id, doc_id, doc_origin " +
             "FROM health_information " +
             "WHERE transaction_id=$1";
-    private static final String SELECT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS = "SELECT data, status, transaction_id, doc_id, doc_source " +
+    private static final String SELECT_HEALTH_INFO_FOR_MULTIPLE_TRANSACTIONS = "SELECT data, status, transaction_id, doc_id, doc_origin " +
             "FROM health_information WHERE transaction_id in (%s) " +
             "ORDER BY transaction_id, latest_res_date DESC NULLS LAST " +
             "LIMIT $1 OFFSET $2";
@@ -101,7 +101,7 @@ public class HealthInformationRepository {
         healthInfo.put("status", row.getString("status"));
         healthInfo.put("transaction_id", row.getString("transaction_id"));
         healthInfo.put("doc_id", row.getString("doc_id"));
-        healthInfo.put("doc_source", row.getString("doc_source"));
+        healthInfo.put("doc_origin", row.getString("doc_origin"));
         return healthInfo;
     }
 
