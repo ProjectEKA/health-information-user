@@ -6,14 +6,7 @@ import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.HiuProperties;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
-import in.org.projecteka.hiu.consent.model.ConsentNotification;
-import in.org.projecteka.hiu.consent.model.ConsentRequestData;
-import in.org.projecteka.hiu.consent.model.ConsentRequestInitResponse;
-import in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation;
-import in.org.projecteka.hiu.consent.model.ConsentStatus;
-import in.org.projecteka.hiu.consent.model.ConsentStatusRequest;
-import in.org.projecteka.hiu.consent.model.GatewayConsentArtefactResponse;
-import in.org.projecteka.hiu.consent.model.HiuConsentNotificationRequest;
+import in.org.projecteka.hiu.consent.model.*;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.PatientService;
 import org.slf4j.Logger;
@@ -30,24 +23,15 @@ import java.util.UUID;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
-import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
-import static in.org.projecteka.hiu.common.Constants.STATUS;
-import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
+import static in.org.projecteka.hiu.common.Constants.*;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.ERRORED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.EXPIRED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.GRANTED;
-import static in.org.projecteka.hiu.consent.model.ConsentStatus.REVOKED;
+import static in.org.projecteka.hiu.consent.model.ConsentStatus.*;
 import static java.time.LocalDateTime.now;
 import static java.time.ZoneOffset.UTC;
 import static java.util.UUID.fromString;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static reactor.core.publisher.Flux.fromIterable;
-import static reactor.core.publisher.Mono.defer;
-import static reactor.core.publisher.Mono.empty;
-import static reactor.core.publisher.Mono.error;
-import static reactor.core.publisher.Mono.just;
+import static reactor.core.publisher.Mono.*;
 
 public class ConsentService {
     private static final Logger logger = LoggerFactory.getLogger(ConsentService.class);
@@ -200,13 +184,13 @@ public class ConsentService {
             String consentRequestId) {
         var consent = consentRequest.toBuilder().status(reqStatus).build();
         return reqStatus.equals(ConsentStatus.POSTED)
-               ? just(consent)
-               : consentRepository.getConsentDetails(consentRequestId)
-                       .take(1)
-                       .next()
-                       .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
-                       .switchIfEmpty(just(reqStatus))
-                       .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
+                ? just(consent)
+                : consentRepository.getConsentDetails(consentRequestId)
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
+                .switchIfEmpty(just(reqStatus))
+                .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
     public Mono<Void> handleNotification(HiuConsentNotificationRequest hiuNotification) {
@@ -273,8 +257,8 @@ public class ConsentService {
     @PostConstruct
     private void postConstruct() {
         consentTasks.put(GRANTED, new GrantedConsentTask(consentRepository, gatewayServiceClient, responseCache));
-        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
-        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
+        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher, gatewayServiceClient));
+        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher, gatewayServiceClient));
         consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));
     }
 }
