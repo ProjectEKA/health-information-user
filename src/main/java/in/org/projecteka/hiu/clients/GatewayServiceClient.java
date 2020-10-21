@@ -37,24 +37,6 @@ public class GatewayServiceClient {
     private final Gateway gateway;
     private static final Logger logger = getLogger(GatewayServiceClient.class);
 
-    /*
-    * {
-      "requestId": "5f7a535d-a3fd-416b-b069-c97d021fbacd",
-      "timestamp": "2020-10-21T11:39:45.635Z",
-      "acknowledgement": [
-        {
-          "status": "OK",
-          "consentId": "<consent-artefact-id>"
-        }
-      ],
-      "error": {
-        "code": 1000,
-        "message": "string"
-      },
-      "resp": {
-        "requestId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-      }
-    }*/
     public GatewayServiceClient(WebClient.Builder webClient,
                                 GatewayProperties gatewayProperties,
                                 Gateway gateway) {
