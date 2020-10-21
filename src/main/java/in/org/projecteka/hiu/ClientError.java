@@ -4,21 +4,8 @@ import lombok.Getter;
 import lombok.ToString;
 import org.springframework.http.HttpStatus;
 
-import static in.org.projecteka.hiu.ErrorCode.CONSENT_ARTEFACT_NOT_FOUND;
-import static in.org.projecteka.hiu.ErrorCode.CONSENT_REQUEST_NOT_FOUND;
-import static in.org.projecteka.hiu.ErrorCode.FAILED_TO_NOTIFY_CM;
-import static in.org.projecteka.hiu.ErrorCode.INVALID_TOKEN;
-import static in.org.projecteka.hiu.ErrorCode.NETWORK_SERVICE_ERROR;
-import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
-import static in.org.projecteka.hiu.ErrorCode.QUEUE_NOT_FOUND;
-import static in.org.projecteka.hiu.ErrorCode.UNAUTHORIZED_REQUESTER;
-import static in.org.projecteka.hiu.ErrorCode.UNKNOWN_ERROR;
-import static in.org.projecteka.hiu.ErrorCode.VALIDATION_FAILED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.GATEWAY_TIMEOUT;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static in.org.projecteka.hiu.ErrorCode.*;
+import static org.springframework.http.HttpStatus.*;
 
 @Getter
 @ToString
@@ -46,7 +33,7 @@ public class ClientError extends Throwable {
 
     public static ClientError consentArtefactGone() {
         return new ClientError(INTERNAL_SERVER_ERROR,
-                new ErrorRepresentation(new Error(ErrorCode.CONSENT_ARTEFACT_NOT_FOUND, "Consent artefact expired")));
+                new ErrorRepresentation(new Error(ErrorCode.CONSENT_ARTEFACT_NOT_FOUND, "Consent artefact not found")));
     }
 
     public static ClientError dbOperationFailure(String message) {

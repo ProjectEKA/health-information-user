@@ -3,6 +3,7 @@ package in.org.projecteka.hiu.clients;
 import in.org.projecteka.hiu.GatewayProperties;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactRequest;
+import in.org.projecteka.hiu.consent.model.consentmanager.ConsentOnNotifyRequest;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.patient.model.FindPatientRequest;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ import static reactor.core.publisher.Mono.just;
 public class GatewayServiceClient {
     private static final String GATEWAY_PATH_CONSENT_REQUESTS_INIT = "/consent-requests/init";
     private static final String GATEWAY_PATH_CONSENT_ARTEFACT_FETCH = "/consents/fetch";
+    private static final String GATEWAY_PATH_CONSENT_ON_NOTIFY = "/consents/hiu/on-notify";
 
     private final WebClient webClient;
     private final GatewayProperties gatewayProperties;
@@ -91,6 +93,25 @@ public class GatewayServiceClient {
                         .body(just(request), ConsentArtefactRequest.class)
                         .retrieve()
                         .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(creationFailed()))
+                        .toBodilessEntity()
+                        .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
+                .then();
+    }
+
+    public Mono<Void> sendConsentOnNotify(String cmSuffix, ConsentOnNotifyRequest request) {
+        return gateway.token()
+                .flatMap(token -> webClient
+                        .post()
+                        .uri(GATEWAY_PATH_CONSENT_ON_NOTIFY)
+                        .header(AUTHORIZATION, token)
+                        .header(X_CM_ID, cmSuffix)
+                        .header(CORRELATION_ID, MDC.get(CORRELATION_ID))
+                        .body(just(request), ConsentOnNotifyRequest.class)
+                        .retrieve()
+                        .onStatus(not(HttpStatus::is2xxSuccessful),
+                                clientResponse -> clientResponse.bodyToMono(Properties.class)
+                                        .doOnNext(properties -> logger.error(properties.toString()))
+                                        .then(error(creationFailed())))
                         .toBodilessEntity()
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
