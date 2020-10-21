@@ -101,7 +101,7 @@ public class HealthInfoManager {
                         .status(toStatus((String) healthInfo.get(STATUS)))
                         .data(healthInfo.get("data"))
                         .docId((String) healthInfo.get("doc_id"))
-                        .docSourceId((String) healthInfo.get("doc_source"))
+                        .docOriginId((String) healthInfo.get("doc_origin"))
                         .build())
                 .collectList()
                 .zipWith(healthInformationRepository.getTotalCountOfEntries(transactionIds));
@@ -254,7 +254,7 @@ public class HealthInfoManager {
                         .status(toStatus((String) healthInfo.get(STATUS)))
                         .data(healthInfo.get("data"))
                         .docId((String) healthInfo.get("doc_id"))
-                        .docSourceId((String) healthInfo.get("doc_source"))
+                        .docOriginId((String) healthInfo.get("doc_origin"))
                         .build());
     }
 

@@ -16,5 +16,5 @@ public class DataEntry {
     private EntryStatus status;
     private Object data;
     private String docId;
-    private String docSourceId;
+    private String docOriginId;
 }

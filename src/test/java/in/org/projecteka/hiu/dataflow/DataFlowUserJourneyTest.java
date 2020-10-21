@@ -181,14 +181,14 @@ class DataFlowUserJourneyTest {
         healthInfo.put("data", content);
         healthInfo.put("status", EntryStatus.SUCCEEDED.toString());
         healthInfo.put("doc_id", "1.v1");
-        healthInfo.put("doc_source", hipId);
+        healthInfo.put("doc_origin", hipId);
         DataEntry dataEntry = DataEntry.builder()
                                 .hipId(hipId)
                                 .hipName(hipName)
                                 .data(content)
                                 .status(EntryStatus.SUCCEEDED)
                                 .docId("1.v1")
-                                .docSourceId(hipId)
+                                .docOriginId(hipId)
                                 .build();
         List<DataEntry> dataEntries = new ArrayList<>();
         dataEntries.add(dataEntry);
