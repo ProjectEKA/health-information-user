@@ -30,9 +30,7 @@ import java.util.UUID;
 
 import static in.org.projecteka.hiu.ClientError.consentRequestNotFound;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
-import static in.org.projecteka.hiu.common.Constants.EMPTY_STRING;
-import static in.org.projecteka.hiu.common.Constants.STATUS;
-import static in.org.projecteka.hiu.common.Constants.getCmSuffix;
+import static in.org.projecteka.hiu.common.Constants.*;
 import static in.org.projecteka.hiu.consent.model.ConsentRequestRepresentation.toConsentRequestRepresentation;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.DENIED;
 import static in.org.projecteka.hiu.consent.model.ConsentStatus.ERRORED;
@@ -200,13 +198,13 @@ public class ConsentService {
             String consentRequestId) {
         var consent = consentRequest.toBuilder().status(reqStatus).build();
         return reqStatus.equals(ConsentStatus.POSTED)
-               ? just(consent)
-               : consentRepository.getConsentDetails(consentRequestId)
-                       .take(1)
-                       .next()
-                       .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
-                       .switchIfEmpty(just(reqStatus))
-                       .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
+                ? just(consent)
+                : consentRepository.getConsentDetails(consentRequestId)
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
+                .switchIfEmpty(just(reqStatus))
+                .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
     public Mono<Void> handleNotification(HiuConsentNotificationRequest hiuNotification) {
@@ -273,8 +271,8 @@ public class ConsentService {
     @PostConstruct
     private void postConstruct() {
         consentTasks.put(GRANTED, new GrantedConsentTask(consentRepository, gatewayServiceClient, responseCache));
-        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
-        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
+        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher, gatewayServiceClient));
+        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher, gatewayServiceClient));
         consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));
     }
 }
