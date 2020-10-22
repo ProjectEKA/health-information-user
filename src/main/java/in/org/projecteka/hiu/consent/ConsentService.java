@@ -200,13 +200,13 @@ public class ConsentService {
             String consentRequestId) {
         var consent = consentRequest.toBuilder().status(reqStatus).build();
         return reqStatus.equals(ConsentStatus.POSTED)
-               ? just(consent)
-               : consentRepository.getConsentDetails(consentRequestId)
-                       .take(1)
-                       .next()
-                       .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
-                       .switchIfEmpty(just(reqStatus))
-                       .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
+                ? just(consent)
+                : consentRepository.getConsentDetails(consentRequestId)
+                .take(1)
+                .next()
+                .map(map -> ConsentStatus.valueOf(map.get(STATUS)))
+                .switchIfEmpty(just(reqStatus))
+                .map(artefactStatus -> consent.toBuilder().status(artefactStatus).build());
     }
 
     public Mono<Void> handleNotification(HiuConsentNotificationRequest hiuNotification) {
@@ -273,8 +273,8 @@ public class ConsentService {
     @PostConstruct
     private void postConstruct() {
         consentTasks.put(GRANTED, new GrantedConsentTask(consentRepository, gatewayServiceClient, responseCache));
-        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher));
-        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher));
+        consentTasks.put(REVOKED, new RevokedConsentTask(consentRepository, healthInformationPublisher, gatewayServiceClient));
+        consentTasks.put(EXPIRED, new ExpiredConsentTask(consentRepository, dataFlowDeletePublisher, gatewayServiceClient));
         consentTasks.put(DENIED, new DeniedConsentTask(consentRepository));
     }
 }

@@ -9,6 +9,7 @@ import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.ServiceCaller;
+import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
@@ -72,6 +73,8 @@ class DataFlowUserJourneyTest {
     private DataFlowRepository dataFlowRepository;
     @MockBean
     private HealthInformationRepository healthInformationRepository;
+    @MockBean
+    private GatewayServiceClient gatewayServiceClient;
     @MockBean
     private ConsentRepository consentRepository;
     @SuppressWarnings("unused")
@@ -224,7 +227,7 @@ class DataFlowUserJourneyTest {
         var errorResponseJson = new ObjectMapper().writeValueAsString(errorResponse);
         when(consentRepository.getConsentDetails(consentRequestId)).thenReturn(Flux.fromIterable(consentDetails));
         when(dataFlowRepository.getTransactionId(consentId)).thenReturn(Mono.just(transactionId));
-
+        when(gatewayServiceClient.sendConsentOnNotify(any(), any())).thenReturn(Mono.empty());
         webTestClient
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/health-information/fetch/consentRequestId")
