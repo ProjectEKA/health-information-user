@@ -1,8 +1,6 @@
 package in.org.projecteka.hiu.consent;
 
-import in.org.projecteka.hiu.ErrorCode;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
-import in.org.projecteka.hiu.common.RespError;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentNotification;
@@ -61,7 +59,6 @@ public class RevokedConsentTask extends ConsentTask {
         var consentArtefactRequest = ConsentOnNotifyRequest
                 .builder()
                 .timestamp(LocalDateTime.now(ZoneOffset.UTC))
-                .error(RespError.builder().code(ErrorCode.CONSENT_REVOKED.getValue()).message(CONSENT_REVOKE_MESSAGE).build())
                 .requestId(requestId);
         var acknowledgements = new ArrayList<ConsentAcknowledgement>();
 
