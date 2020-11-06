@@ -54,7 +54,7 @@ class ExternalIdentityProviderTest {
         ClientResponse tokenResponse = ClientResponse
                 .create(HttpStatus.OK)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body("{\"access_token\": \"xyz token\"}")
+                .body("{\"accessToken\": \"xyz token\"}")
                 .build();
 
         ClientResponse certsResponse = ClientResponse
