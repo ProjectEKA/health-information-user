@@ -7,18 +7,21 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import in.org.projecteka.hiu.DestinationsConfig.DestinationInfo;
-import in.org.projecteka.hiu.clients.AccountServiceProperties;
+import in.org.projecteka.hiu.auth.ExternalIDPOfflineAuthenticator;
+import in.org.projecteka.hiu.auth.IDPProperties;
+import in.org.projecteka.hiu.auth.ExternalIdentityProvider;
+import in.org.projecteka.hiu.auth.IdentityProvider;
 import in.org.projecteka.hiu.clients.GatewayAuthenticationClient;
 import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.clients.HealthInformationClient;
 import in.org.projecteka.hiu.clients.Patient;
 import in.org.projecteka.hiu.common.Authenticator;
-import in.org.projecteka.hiu.common.CMAccountServiceAuthenticator;
 import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.CacheMethodProperty;
 import in.org.projecteka.hiu.common.Gateway;
@@ -60,7 +63,6 @@ import in.org.projecteka.hiu.patient.PatientService;
 import in.org.projecteka.hiu.patient.model.PatientSearchGatewayResponse;
 import in.org.projecteka.hiu.user.JWTGenerator;
 import in.org.projecteka.hiu.user.SessionService;
-import in.org.projecteka.hiu.user.SessionServiceClient;
 import in.org.projecteka.hiu.user.UserRepository;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
@@ -122,8 +124,14 @@ import reactor.netty.resources.ConnectionProvider;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.URL;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -746,7 +754,7 @@ public class HiuConfiguration {
         return new DefaultJWTProcessor<>();
     }
 
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "keycloak", matchIfMissing = true)
+    @ConditionalOnProperty(value = "hiu.authorization.useCMAsIDP", havingValue = "true", matchIfMissing = true)
     @Bean("userAuthenticator")
     public Authenticator userAuthenticator(IdentityServiceProperties identityServiceProperties,
                                            ConfigurableJWTProcessor<SecurityContext> jwtProcessor) throws IOException, ParseException {
@@ -754,10 +762,24 @@ public class HiuConfiguration {
         return new CMPatientAuthenticator(jwkSet, jwtProcessor);
     }
 
-    @ConditionalOnProperty(value = "hiu.loginMethod", havingValue = "service")
+    @Bean
+    @ConditionalOnProperty(value = "hiu.authorization.useCMAsIDP", havingValue = "false")
+    public IdentityProvider externalIdentityProvider(@Qualifier("customBuilder") WebClient.Builder builder,
+                                                     IDPProperties idpProperties) {
+        return new ExternalIdentityProvider(builder, idpProperties);
+    }
+
+    @ConditionalOnProperty(value = "hiu.authorization.useCMAsIDP", havingValue = "false")
     @Bean("userAuthenticator")
-    public Authenticator cmAccountServiceTokenAuthenticator(SessionServiceClient sessionServiceClient) {
-        return new CMAccountServiceAuthenticator(sessionServiceClient);
+    public Authenticator cmAccountServiceTokenAuthenticator(IdentityProvider identityProvider,
+                                                            CacheAdapter<String, String> blockListedTokens)
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
+        String certificate = identityProvider.fetchCertificate().block();
+        var kf = KeyFactory.getInstance("RSA");
+        var keySpecX509 = new X509EncodedKeySpec(Base64.getDecoder().decode(certificate));
+        RSASSAVerifier tokenVerifier = new RSASSAVerifier((RSAPublicKey) kf.generatePublic(keySpecX509));
+
+        return new ExternalIDPOfflineAuthenticator(tokenVerifier, blockListedTokens);
     }
 
     @Bean
@@ -775,14 +797,6 @@ public class HiuConfiguration {
         return new ReactorClientHttpConnector(Objects.requireNonNull(httpClient));
     }
 
-    @Bean
-    public SessionServiceClient sessionServiceClient(@Qualifier("customBuilder") WebClient.Builder builder,
-                                                     AccountServiceProperties accountServiceProperties) {
-        if (accountServiceProperties.isUsingUnsecureSSL()) {
-            builder.clientConnector(reactorClientHttpConnector());
-        }
-        return new SessionServiceClient(builder, accountServiceProperties.getUrl());
-    }
 
     @Bean
     public SessionService sessionService(BCryptPasswordEncoder bCryptPasswordEncoder,

@@ -57,6 +57,11 @@ hiu:
     consentRequestDelay: ${MAXIMUM_CONSENT_REQUEST_DELAY_IN_MINUTES:10}
   authorization:
     header: ${AUTHORIZATION_HEADER:Authorization}
+    useCMAsIDP: ${USE_CM_AS_IDP:true}
+    externalIdpCertPath: ${IDP_CERT_PATH}   #Used when useCMAsIDP is false
+    externalIdpClientId: ${IDP_CLIENT_ID}   #Used when useCMAsIDP is false
+    externalIdpClientSecret: ${IDP_SECRET}  #Used when useCMAsIDP is false
+    externalIdpAuthURL: ${IDP_AUTH_URL}     #Used when useCMAsIDP is false
   #Valid values are guava(for local), redis
   cache-method: ${CACHE_METHOD:guava}
   redis:
@@ -66,10 +71,6 @@ hiu:
     password: ${REDIS_PASSWORD:password}
     keep-alive-enabled: ${KEEP_ALIVE_ENABLED:false}
     retry: ${REDIS_RETRY:0}
-  accountservice:
-    usingUnsecureSSL: ${Account_Service_Uses_Unsecure_SSL:true}
-    url: ${Account_Service_Url}
-  loginMethod: ${LOGIN_METHOD:keycloak}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
