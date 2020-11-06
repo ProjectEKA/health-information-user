@@ -4,7 +4,7 @@ hiu:
   id: 10000002
   name: Max Health Care
   dataPushUrl: http://localhost:8003/data/notification
-  valueSets: classpath:/static/ValueSet/valuesets.json
+  valueSets: classpath:/static/ValueSet/ncg-valuesets.json
   disableHttpOptionsMethod: false
   hfrAffinityDomains: facilitysbx.ndhm.gov.in
   consentmanager:

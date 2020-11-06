@@ -5,7 +5,7 @@ hiu:
   name: Max Health Care
   dataPushUrl: http://localhost:8003/data/notification
   consentNotificationUrl: http://localhost:8003/consent/notification
-  valueSets: classpath:/static/ValueSet/valuesets.json
+  valueSets: classpath:/static/ValueSet/ncg-valuesets.json
   hfrAffinityDomains: ${HFR_AFFINITY_DOMAINS:hfr.projecteka.in}
   consentmanager:
     suffix: ncg

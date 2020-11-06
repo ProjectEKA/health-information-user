@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,5 +112,9 @@ public class ConceptValidator implements InitializingBean, ConceptLookup {
             return hiTypes.get(code);
         }
         return null;
+    }
+
+    public List<String> getHITypeCodes(){
+        return new ArrayList<>(hiTypes.keySet());
     }
 }
