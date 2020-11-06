@@ -6,7 +6,7 @@ hiu:
   name: ${HIU_NAME}
   dataPushUrl: ${DATA_PUSH_URL}
   consentNotificationUrl: ${CONSENT_NOTIFICATION_URL}
-  valueSets: classpath:/static/ValueSet/ncg-valuesets.json
+  valueSets: ${VALUESET_JSON:classpath:/static/ValueSet/ncg-valuesets.json}
   secret: ${HIU_SECRET:RiPzliMKlBf67mgLpvn6LBg2Fz5OqBBmJNzi4nQ9YMZy0pq2uu}
   disableHttpOptionsMethod: ${DISABLE_HTTP_OPTIONS:false}
   hfrAffinityDomains: ${HFR_AFFINITY_DOMAINS}
