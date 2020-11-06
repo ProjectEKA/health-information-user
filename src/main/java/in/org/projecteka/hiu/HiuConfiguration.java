@@ -205,7 +205,7 @@ public class HiuConfiguration {
                 });
     }
 
-    @Bean("accessToken")
+    @Bean({"accessToken", "blockListedTokens"})
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "guava", matchIfMissing = true)
     public CacheAdapter<String, String> accessTokenCacheAdapter(
             LoadingCache<String, String> loadingCacheForAccessToken) {
@@ -213,7 +213,7 @@ public class HiuConfiguration {
     }
 
     @ConditionalOnProperty(value = "hiu.cache-method", havingValue = "redis")
-    @Bean("accessToken")
+    @Bean({"accessToken", "blockListedTokens"})
     public CacheAdapter<String, String> redisAccessTokenCacheAdapter(
             ReactiveRedisOperations<String, String> stringReactiveRedisOperations,
             RedisOptions redisOptions,

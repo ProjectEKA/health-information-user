@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import in.org.projecteka.hiu.user.Session;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.slf4j.Logger;
@@ -59,8 +60,8 @@ public class ExternalIdentityProvider implements IdentityProvider {
                 .onStatus(HttpStatus::isError, clientResponse -> clientResponse.bodyToMono(String.class)
                         .doOnNext(logger::error)
                         .then(Mono.error(networkServiceCallFailed())))
-                .bodyToMono(GatewaySession.class)
-                .map(GatewaySession::getAccessToken)
+                .bodyToMono(Session.class)
+                .map(Session::getAccessToken)
                 .doOnSubscribe(subscription -> logger.info("About to call gateway to get access token"));
     }
 
@@ -75,11 +76,4 @@ public class ExternalIdentityProvider implements IdentityProvider {
 class SessionRequest {
     String clientId;
     String clientSecret;
-}
-
-@AllArgsConstructor
-@Value
-class GatewaySession {
-    @JsonProperty("access_token")
-    String accessToken;
 }

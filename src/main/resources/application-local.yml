@@ -6,7 +6,7 @@ hiu:
   dataPushUrl: http://localhost:8003/data/notification
   valueSets: classpath:/static/ValueSet/valuesets.json
   disableHttpOptionsMethod: false
-  hfrAffinityDomains: ${HFR_AFFINITY_DOMAINS:hfr.projecteka.in}
+  hfrAffinityDomains: facilitysbx.ndhm.gov.in
   consentmanager:
     suffix: '@ncg'
     url: http://localhost:9000
