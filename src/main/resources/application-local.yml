@@ -4,9 +4,9 @@ hiu:
   id: 10000002
   name: Max Health Care
   dataPushUrl: http://localhost:8003/data/notification
-  valueSets: classpath:/static/ValueSet/valuesets.json
+  valueSets: classpath:/static/ValueSet/ncg-valuesets.json
   disableHttpOptionsMethod: false
-  hfrAffinityDomains: ${HFR_AFFINITY_DOMAINS:hfr.projecteka.in}
+  hfrAffinityDomains: facilitysbx.ndhm.gov.in
   consentmanager:
     suffix: '@ncg'
     url: http://localhost:9000
@@ -23,6 +23,13 @@ hiu:
     consentRequestFromYears: 7
     consentExpiryInMonths: 2
     consentRequestDelay: 2
+  authorization:
+    header: ${AUTHORIZATION_HEADER:Authorization}
+    useCMAsIDP: ${USE_CM_AS_IDP:true}
+    externalIdpCertPath: ${IDP_CERT_PATH}   #Used when useCMAsIDP is false
+    externalIdpClientId: ${IDP_CLIENT_ID}
+    externalIdpClientSecret: ${IDP_SECRET}
+    externalIdpAuthURL: ${IDP_AUTH_URL}
   database:
     host: localhost
     port: 5432
@@ -43,10 +50,6 @@ hiu:
     clientId: 10000002
     clientSecret: ${CLIENT_SECRET}
     jwkUrl: http://localhost:8000/v0.5/certs
-  accountservice:
-    usingUnsecureSSL: true
-    url: ${ACCOUNT_SERVICE_URL}
-  loginMethod: keycloak
 spring:
   rabbitmq:
     host: localhost
