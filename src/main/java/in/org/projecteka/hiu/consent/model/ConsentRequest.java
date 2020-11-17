@@ -23,4 +23,5 @@ public class ConsentRequest {
     private ConsentStatus status;
     private LocalDateTime createdDate;
     private HIP hip;
+    private List<CareContext> careContexts;
 }
