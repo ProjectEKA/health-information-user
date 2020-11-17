@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum HIType {
+    //A Superset of all HITypes,
+    // the applicable HITypes will be a subset coming from corresponding valuesets.json
     CONDITION("Condition"),
     OBSERVATION("Observation"),
     DIAGNOSTIC_REPORT("DiagnosticReport"),

@@ -70,7 +70,7 @@ public class SecurityConfiguration {
             Map.entry(HttpMethod.POST, API_PATH_FETCH_PATIENT_HEALTH_INFO),
             Map.entry(HttpMethod.POST, API_PATH_GET_HEALTH_INFO_STATUS));
     private static final String[] ALLOWED_LISTS = new String[]{"/**.json",
-                                                               "/ValueSet/**.json",
+                                                               "/ValueSet",
                                                                "/**.html",
                                                                "/**.js",
                                                                "/**.yaml",
