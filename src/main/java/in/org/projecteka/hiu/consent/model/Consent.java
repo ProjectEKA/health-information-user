@@ -29,6 +29,7 @@ public class Consent {
     private Permission permission;
     @Valid
     private String hipId;
+    private List<CareContext> careContexts;
 
 
     public in.org.projecteka.hiu.consent.model.consentmanager.Consent to(String requesterId,
@@ -49,7 +50,7 @@ public class Consent {
                         getPermission().getDateRange(),
                         getPermission().getDataEraseAt(),
                         ONE_HOUR),
-                hip);
+                hip, careContexts);
     }
 
     public ConsentRequest toConsentRequest(String id, String requesterId) {
@@ -64,6 +65,7 @@ public class Consent {
                 .status(ConsentStatus.REQUESTED)
                 .createdDate(LocalDateTime.now())
                 .hip(hip)
+                .careContexts(getCareContexts())
                 .build();
     }
 
@@ -80,6 +82,7 @@ public class Consent {
                 .hiu(HIU.builder().id(hiuId).build())
                 .requester(new Requester(requesterId))
                 .hiTypes(getHiTypes())
+                .careContexts(careContexts)
                 .permission(new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
                         AccessMode.VIEW,
                         getPermission().getDateRange(),
