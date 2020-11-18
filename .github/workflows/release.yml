@@ -1,9 +1,9 @@
-name: HIU master build
+name: GitHub Actions
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - '*'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,14 +15,8 @@ jobs:
           java-version: 11
       - name: Build and unit tests
         run: ./gradlew clean build
-      - name: Code coverage
-        run: ./gradlew jacocoTestReport
-      - name: Sonarcube Analysis
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew sonarqube
       - name: Set env
-        run: echo "RELEASE_VERSION=$(echo $GITHUB_SHA | head -c7)" >> $GITHUB_ENV
+        run: echo "RELEASE_VERSION=${GITHUB_REF:10}" >> $GITHUB_ENV
       - name: Docker Registry
         env:
           DOCKER_REGISTRY_URL: docker.io
@@ -32,9 +26,9 @@ jobs:
       - name: Build docker image
         env:
           CONTAINER_REPO_NAME: health-information-user
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_NHA_USERNAME }}
         run: docker build -t $DOCKER_USERNAME/$CONTAINER_REPO_NAME:$RELEASE_VERSION .
-      - name: Push Docker Container to Registry
+      - name: Push Docker Image to Registry
         env:
           CONTAINER_REPO_NAME: health-information-user
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
