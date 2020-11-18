@@ -1,0 +1,76 @@
+[
+  {
+    "resourceType": "ValueSet",
+    "id": "health-information-purpose-of-use",
+    "version": "1",
+    "name": "Purpose of use codes for Health Information",
+    "status": "active",
+    "date": "2020-01-01",
+    "publisher": "National Cancer Grid of India",
+    "description": "This is the value set that includes all the purpose codes that a Health Information User must specify for accessing Health Information",
+    "compose": {
+      "include": [
+        {
+          "system": "http://projecteka.in/ValueSet/purpose-of-use",
+          "concept": [
+            {
+              "code": "CAREMGT",
+              "display": "Care Management"
+            },
+            {
+              "code": "BTG",
+              "display": "Break the Glass"
+            },
+            {
+              "code": "PUBHLTH",
+              "display": "Public Health"
+            },
+            {
+              "code": "DSRCH",
+              "display": "Disease Specific Healthcare Research"
+            },
+            {
+              "code": "PATRQT",
+              "display": "Self Requested"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "ValueSet",
+    "id": "health-information-type",
+    "version": "1",
+    "name": "Types of Health Information Type",
+    "status": "active",
+    "date": "2020-01-01",
+    "publisher": "National Cancer Grid of India",
+    "description": "This is the value set that includes the health information types that may be consented by the patient to share",
+    "compose": {
+      "include": [
+        {
+          "system": "http://projecteka.in/ValueSet/health-info-type",
+          "concept": [
+            {
+              "code": "OPConsultation",
+              "display": "OP Consultation"
+            },
+            {
+              "code": "DiagnosticReport",
+              "display": "Diagnostic Reports"
+            },
+            {
+              "code": "DischargeSummary",
+              "display": "Discharge Summary"
+            },
+            {
+              "code": "Prescription",
+              "display": "Prescription"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

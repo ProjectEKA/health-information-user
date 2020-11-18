@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent.model.consentmanager;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import in.org.projecteka.hiu.consent.model.CareContext;
 import in.org.projecteka.hiu.consent.model.HIType;
 import in.org.projecteka.hiu.consent.model.Patient;
 import lombok.AllArgsConstructor;
@@ -25,4 +26,5 @@ public class Consent {
     private Permission permission;
     @Valid
     private HIP hip;
+    List<CareContext> careContexts;
 }

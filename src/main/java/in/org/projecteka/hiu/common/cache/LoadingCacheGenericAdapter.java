@@ -29,6 +29,6 @@ public class LoadingCacheGenericAdapter<T> implements CacheAdapter<String, T> {
 
     @Override
     public Mono<Boolean> exists(String key) {
-        return fromCallable(() -> loadingCache.getIfPresent(key) != fallbackValue);
+        return fromCallable(() -> loadingCache.getIfPresent(key) != null);
     }
 }

@@ -24,6 +24,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_PURPOSE_OF_USE;
@@ -133,7 +135,7 @@ public class PatientConsentService {
 
     private Mono<ConsentRequestData> buildConsentRequest(String requesterId, String hipId, LocalDateTime dateFrom) {
         return just(ConsentRequestData.builder().consent(Consent.builder()
-                .hiTypes(List.of(HIType.class.getEnumConstants()))
+                .hiTypes(getAllApplicableHITypes())
                 .patient(Patient.builder().id(requesterId).build())
                 .permission(Permission.builder().dataEraseAt(now(UTC)
                         .plusMonths(consentServiceProperties.getConsentExpiryInMonths()))
@@ -145,6 +147,13 @@ public class PatientConsentService {
                 .hipId(hipId)
                 .build())
                 .build());
+    }
+
+    private List<HIType> getAllApplicableHITypes() {
+        List<String> hiTypeCodes = conceptValidator.getHITypeCodes();
+        return Arrays.stream(HIType.class.getEnumConstants())
+                .filter(hiType -> hiTypeCodes.contains(hiType.getValue()))
+                .collect(Collectors.toList());
     }
 
     private Mono<String> generateConsentRequestForSelf(ConsentRequestData consentRequestData) {
