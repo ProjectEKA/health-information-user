@@ -14,17 +14,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import static in.org.projecteka.hiu.ErrorCode.INVALID_REQUEST;
 import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_CONFIRM;
 import static in.org.projecteka.hiu.common.Constants.PATH_ON_AUTH_INIT;
-import static net.logstash.logback.argument.StructuredArguments.keyValue;
+import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
-import static org.springframework.http.HttpStatus.ACCEPTED;
 
 @RestController
 @AllArgsConstructor
