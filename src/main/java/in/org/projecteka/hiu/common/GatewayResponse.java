@@ -2,11 +2,13 @@ package in.org.projecteka.hiu.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.Getter;
 
-@Value
 @Builder
+@Getter
 @AllArgsConstructor
+@Data
 public class GatewayResponse {
     String requestId;
 }

@@ -71,6 +71,7 @@ hiu:
     password: ${REDIS_PASSWORD:password}
     keep-alive-enabled: ${KEEP_ALIVE_ENABLED:false}
     retry: ${REDIS_RETRY:0}
+    use-default-client-config: ${USE_DEFAULT_CLIENT_CONFIG:true}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}

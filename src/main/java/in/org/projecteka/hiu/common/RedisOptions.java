@@ -17,4 +17,9 @@ public class RedisOptions {
     private final String password;
     private final boolean keepAliveEnabled;
     private final int retry;
+    private final boolean useDefaultClientConfig;
+
+    public boolean useDefaultClientConfig() {
+        return useDefaultClientConfig;
+    }
 }

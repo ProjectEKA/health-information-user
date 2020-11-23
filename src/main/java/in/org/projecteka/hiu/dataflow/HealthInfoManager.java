@@ -99,7 +99,10 @@ public class HealthInfoManager {
         return healthInformationRepository.getHealthInformation(transactionIds, limit, offset)
                 .map(healthInfo -> dataEntries.get(healthInfo.get("transaction_id").toString())
                         .status(toStatus((String) healthInfo.get(STATUS)))
-                        .data(healthInfo.get("data")).build())
+                        .data(healthInfo.get("data"))
+                        .docId((String) healthInfo.get("doc_id"))
+                        .docSourceId((String) healthInfo.get("doc_source"))
+                        .build())
                 .collectList()
                 .zipWith(healthInformationRepository.getTotalCountOfEntries(transactionIds));
     }
@@ -119,7 +122,6 @@ public class HealthInfoManager {
                 .flatMapMany(patientDataRequestDetails -> {
                     var detailsByDataReqId = patientDataRequestDetails.stream()
                             .collect(Collectors.groupingBy(PatientDataRequestDetail::getDataRequestId));
-
                     var patientHealthInfoStatuses = new ArrayList<PatientHealthInfoStatus>();
                     detailsByDataReqId.forEach((dataReqId, dataRequestDetails) -> {
                         var dataRequestDetail = dataRequestDetails.get(0);
@@ -219,7 +221,7 @@ public class HealthInfoManager {
     }
 
     private boolean isPartial(List<HealthInfoStatus> statuses) {
-        return statuses.stream().anyMatch(status -> status.equals(PARTIAL));
+        return statuses.stream().anyMatch(status -> status.equals(PARTIAL) || status.equals(HealthInfoStatus.ERRORED));
     }
 
     private boolean isErrored(List<HealthInfoStatus> statuses) {
@@ -251,6 +253,8 @@ public class HealthInfoManager {
                         .hipName(hipName)
                         .status(toStatus((String) healthInfo.get(STATUS)))
                         .data(healthInfo.get("data"))
+                        .docId((String) healthInfo.get("doc_id"))
+                        .docSourceId((String) healthInfo.get("doc_source"))
                         .build());
     }
 
