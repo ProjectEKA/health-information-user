@@ -68,7 +68,7 @@ Note, in the above case, remember to set the **gatewayservice.clientId** appropr
 
 To run the tests
 ```
-./gradlew test
+./gradlew clean test
 ```
 
 ## Dev setup
