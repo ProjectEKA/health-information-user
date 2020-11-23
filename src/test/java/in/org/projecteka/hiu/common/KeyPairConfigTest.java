@@ -22,14 +22,23 @@ class KeyPairConfigTest {
 
     @SuppressWarnings("unused")
     @MockBean
+    @Qualifier("centralRegistryJWKSet")
+    private JWKSet centralRegistryJWKSet;
+
+    @SuppressWarnings("unused")
+    @MockBean
     @Qualifier("identityServiceJWKSet")
     private JWKSet identityServiceJWKSet;
 
+    @MockBean
+    @Qualifier("userAuthenticator")
+    private Authenticator userAuthenticator;
+
     @Test
     void shouldCreateSignConsentRequestKeyPair() {
-        KeyPair signArtefactKeyPair = keyPairConfig.createSignConsentRequestKeyPair();
-        assertThat(signArtefactKeyPair).isNotNull();
-        assertThat(signArtefactKeyPair.getPublic()).isNotNull();
-        assertThat(signArtefactKeyPair.getPrivate()).isNotNull();
+        KeyPair signConsentRequestKeyPair = keyPairConfig.createSignConsentRequestKeyPair();
+        assertThat(signConsentRequestKeyPair).isNotNull();
+        assertThat(signConsentRequestKeyPair.getPublic()).isNotNull();
+        assertThat(signConsentRequestKeyPair.getPrivate()).isNotNull();
     }
 }
