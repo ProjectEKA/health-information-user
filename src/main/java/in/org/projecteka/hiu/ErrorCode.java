@@ -24,7 +24,8 @@ public enum ErrorCode {
     PATIENT_NOT_FOUND(4407),
     NETWORK_SERVICE_ERROR(4505),
     INVALID_TOKEN(4402),
-    SERVICE_DOWN(4503);
+    SERVICE_DOWN(4503),
+    UNABLE_TO_PARSE_KEY(4504);
 
     private final int value;
 

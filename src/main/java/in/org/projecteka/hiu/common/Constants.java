@@ -26,6 +26,8 @@ public class Constants {
     public static final String PATH_CONSENT_REQUEST_ON_STATUS = CURRENT_VERSION + "/consent-requests/on-status";
     public static final String PATH_ON_AUTH_INIT = CURRENT_VERSION + "/users/auth/on-init";
     public static final String PATH_ON_AUTH_CONFIRM = CURRENT_VERSION + "/users/auth/on-confirm";
+    public static final String GET_CONSENT_CERT = "/certs";
+
 
     public static final String STATUS = "status";
     public static final String DELIMITER = "@";

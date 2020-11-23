@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
 import in.org.projecteka.hiu.HiuProperties;
+import in.org.projecteka.hiu.consent.model.CertResponse;
 import in.org.projecteka.hiu.consent.model.ConsentArtefact;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactReference;
 import in.org.projecteka.hiu.consent.model.ConsentArtefactResponse;
@@ -90,5 +91,9 @@ public class TestBuilders {
 
     public static ConsentStatusDetail.ConsentStatusDetailBuilder consentStatusDetail() {
         return easyRandom.nextObject(ConsentStatusDetail.ConsentStatusDetailBuilder.class);
+    }
+
+    public static CertResponse.CertResponseBuilder certResponse() {
+        return easyRandom.nextObject(CertResponse.CertResponseBuilder.class);
     }
 }

@@ -5,6 +5,7 @@ import in.org.projecteka.hiu.clients.GatewayServiceClient;
 import in.org.projecteka.hiu.common.cache.CacheAdapter;
 import in.org.projecteka.hiu.consent.model.ConsentRequestData;
 import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
+import in.org.projecteka.hiu.consent.model.consentmanager.Consent;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
 import in.org.projecteka.hiu.dataflow.HealthInfoManager;
 import in.org.projecteka.hiu.dataflow.model.DataRequestStatus;
@@ -81,6 +82,10 @@ class PatientConsentServiceTest {
     @Mock
     private HealthInfoManager healthInfoManager;
 
+    @Mock
+    private PatientConsentCertService patientConsentCertService;
+
+
     private PatientConsentService consentService;
 
 
@@ -97,7 +102,8 @@ class PatientConsentServiceTest {
                 consentRepository,
                 patientConsentRepository,
                 gatewayServiceClient,
-                healthInfoStatus);
+                healthInfoStatus,
+                patientConsentCertService);
     }
 
     @Test
@@ -160,7 +166,7 @@ class PatientConsentServiceTest {
         when(patientConsentRepository.insertPatientConsentRequest(any(), eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
         when(healthInfoManager.fetchHealthInformationStatus(any(), eq(requesterId))).thenReturn(Flux.empty());
         when(patientRequestCache.put(any(), any())).thenReturn(Mono.empty());
-
+        when(patientConsentCertService.signConsentRequest(any(Consent.class))).thenReturn("signature");
 
         Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,
                 new PatientConsentRequest(List.of(hipId), false));
@@ -192,6 +198,7 @@ class PatientConsentServiceTest {
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(empty());
         when(patientConsentRepository.insertPatientConsentRequest(any(UUID.class), eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
         when(patientRequestCache.put(anyString(), anyString())).thenReturn(Mono.empty());
+        when(patientConsentCertService.signConsentRequest(any(Consent.class))).thenReturn("signature");
 
         Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,
                 new PatientConsentRequest(List.of(hipId), false));
@@ -202,6 +209,7 @@ class PatientConsentServiceTest {
         verify(gatewayServiceClient, times(1)).sendConsentRequest(eq("ncg"), capture.capture());
         assertEquals(hipId, capture.getValue().getConsent().getHip().getId());
         assertEquals(requesterId, capture.getValue().getConsent().getPatient().getId());
+        verify(patientConsentCertService, times(1)).signConsentRequest(any(Consent.class));
     }
 
     @Test
