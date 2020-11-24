@@ -316,7 +316,7 @@ public class HiuConfiguration {
     @Bean
     @ConditionalOnProperty(value = "keystore", matchIfMissing = true)
     public KeyPair keyPair() {
-        return new KeyPair(null, null);
+        return new KeyPair(null, null);  //Generating an empty key-pair in case of HIU
     }
 
     @SneakyThrows
