@@ -43,7 +43,7 @@ import in.org.projecteka.hiu.consent.ConsentServiceProperties;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
-import in.org.projecteka.hiu.consent.PatientConsentCertService;
+import in.org.projecteka.hiu.consent.PatientHIUCertService;
 import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.consent.PatientConsentService;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
@@ -293,7 +293,7 @@ public class HiuConfiguration {
             ConsentServiceProperties consentServiceProperties,
             @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
             HealthInfoManager healthInfoManager,
-            PatientConsentCertService patientConsentCertService) {
+            PatientHIUCertService patientHIUCertService) {
 
         BiFunction<List<String>, String, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         return new PatientConsentService(
@@ -305,12 +305,18 @@ public class HiuConfiguration {
                 patientConsentRepository,
                 gatewayServiceClient,
                 healthInfoStatus,
-                patientConsentCertService);
+                patientHIUCertService);
     }
 
     @Bean
-    public PatientConsentCertService hiuConsentCertService(KeyPair keyPair) {
-        return new PatientConsentCertService(keyPair);
+    public PatientHIUCertService hiuConsentCertService(@Qualifier("keyPair") KeyPair keyPair) {
+        return new PatientHIUCertService(keyPair);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "keystore", matchIfMissing = true)
+    public KeyPair keyPair() {
+        return new KeyPair(null, null);
     }
 
     @SneakyThrows

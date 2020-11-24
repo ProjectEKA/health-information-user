@@ -19,7 +19,7 @@ import javax.validation.Valid;
 import java.util.Map;
 
 import static in.org.projecteka.hiu.common.Constants.APP_PATH_PATIENT_CONSENT_REQUEST;
-import static in.org.projecteka.hiu.common.Constants.GET_CONSENT_CERT;
+import static in.org.projecteka.hiu.common.Constants.GET_CERT;
 import static in.org.projecteka.hiu.common.Constants.INTERNAL_PATH_PATIENT_CARE_CONTEXT_INFO;
 
 
@@ -27,7 +27,7 @@ import static in.org.projecteka.hiu.common.Constants.INTERNAL_PATH_PATIENT_CARE_
 @AllArgsConstructor
 public class PatientConsentController {
     private final PatientConsentService patientConsentService;
-    private final PatientConsentCertService patientConsentCertService;
+    private final PatientHIUCertService patientHIUCertService;
 
     @PostMapping(APP_PATH_PATIENT_CONSENT_REQUEST)
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -47,8 +47,8 @@ public class PatientConsentController {
                 .map(DataTransferStatusResponse::new);
     }
 
-    @GetMapping(value = GET_CONSENT_CERT)
+    @GetMapping(value = GET_CERT)
     public Mono<CertResponse> getCert(){
-        return patientConsentCertService.getCert();
+        return patientHIUCertService.getCert();
     }
 }

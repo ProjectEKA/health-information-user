@@ -18,11 +18,13 @@ import java.security.Signature;
 import java.util.ArrayList;
 import java.util.Base64;
 
+import static in.org.projecteka.hiu.ErrorCode.NO_CERT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.UNABLE_TO_PARSE_KEY;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @AllArgsConstructor
-public class PatientConsentCertService {
+public class PatientHIUCertService {
 
     public static final String SHA_256_WITH_RSA = "SHA256withRSA";
     private final KeyPair keyPair;
@@ -51,6 +53,10 @@ public class PatientConsentCertService {
     }
 
     public Mono<CertResponse> getCert(){
+        if(keyPair.getPublic() == null) {
+            return Mono.error(new ClientError(NOT_FOUND,
+                    new ErrorRepresentation(new Error(NO_CERT_FOUND, "Certs not found"))));
+        }
         try {
             CertDetails certDetails = CertDetails.builder()
                     .publicKey(Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()))

@@ -83,7 +83,7 @@ class PatientConsentServiceTest {
     private HealthInfoManager healthInfoManager;
 
     @Mock
-    private PatientConsentCertService patientConsentCertService;
+    private PatientHIUCertService patientHIUCertService;
 
 
     private PatientConsentService consentService;
@@ -103,7 +103,7 @@ class PatientConsentServiceTest {
                 patientConsentRepository,
                 gatewayServiceClient,
                 healthInfoStatus,
-                patientConsentCertService);
+                patientHIUCertService);
     }
 
     @Test
@@ -166,7 +166,7 @@ class PatientConsentServiceTest {
         when(patientConsentRepository.insertPatientConsentRequest(any(), eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
         when(healthInfoManager.fetchHealthInformationStatus(any(), eq(requesterId))).thenReturn(Flux.empty());
         when(patientRequestCache.put(any(), any())).thenReturn(Mono.empty());
-        when(patientConsentCertService.signConsentRequest(any(Consent.class))).thenReturn("signature");
+        when(patientHIUCertService.signConsentRequest(any(Consent.class))).thenReturn("signature");
 
         Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,
                 new PatientConsentRequest(List.of(hipId), false));
@@ -198,7 +198,7 @@ class PatientConsentServiceTest {
         when(consentRepository.insertConsentRequestToGateway(any())).thenReturn(empty());
         when(patientConsentRepository.insertPatientConsentRequest(any(UUID.class), eq(hipId), eq(requesterId))).thenReturn(Mono.empty());
         when(patientRequestCache.put(anyString(), anyString())).thenReturn(Mono.empty());
-        when(patientConsentCertService.signConsentRequest(any(Consent.class))).thenReturn("signature");
+        when(patientHIUCertService.signConsentRequest(any(Consent.class))).thenReturn("signature");
 
         Mono<Map<String, String>> request = consentService.handlePatientConsentRequest(requesterId,
                 new PatientConsentRequest(List.of(hipId), false));
@@ -209,7 +209,7 @@ class PatientConsentServiceTest {
         verify(gatewayServiceClient, times(1)).sendConsentRequest(eq("ncg"), capture.capture());
         assertEquals(hipId, capture.getValue().getConsent().getHip().getId());
         assertEquals(requesterId, capture.getValue().getConsent().getPatient().getId());
-        verify(patientConsentCertService, times(1)).signConsentRequest(any(Consent.class));
+        verify(patientHIUCertService, times(1)).signConsentRequest(any(Consent.class));
     }
 
     @Test

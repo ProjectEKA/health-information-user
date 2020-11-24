@@ -25,7 +25,8 @@ public enum ErrorCode {
     NETWORK_SERVICE_ERROR(4505),
     INVALID_TOKEN(4402),
     SERVICE_DOWN(4503),
-    UNABLE_TO_PARSE_KEY(4504);
+    UNABLE_TO_PARSE_KEY(4504),
+    NO_CERT_FOUND(4505);
 
     private final int value;
 

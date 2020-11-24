@@ -57,7 +57,7 @@ public class PatientConsentService {
     private final PatientConsentRepository patientConsentRepository;
     private final GatewayServiceClient gatewayServiceClient;
     private BiFunction<List<String>, String, Flux<PatientHealthInfoStatus>> healthInfoStatus;
-    private final PatientConsentCertService patientConsentCertService;
+    private final PatientHIUCertService patientHIUCertService;
 
     public Mono<List<Map<String, Object>>> getLatestCareContextResourceDates(String patientId, String hipId) {
         return patientConsentRepository.getLatestResourceDateByHipCareContext(patientId, hipId);
@@ -185,7 +185,7 @@ public class PatientConsentService {
             ConsentRequestData hiRequest,
             UUID gatewayRequestId) {
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
-        var encodedSign = patientConsentCertService.signConsentRequest(reqInfo);
+        var encodedSign = patientHIUCertService.signConsentRequest(reqInfo);
         var requesterIdentifier = Identifier.builder().value(encodedSign).build();
         reqInfo = reqInfo.toBuilder()
                 .requester(Requester.builder()
