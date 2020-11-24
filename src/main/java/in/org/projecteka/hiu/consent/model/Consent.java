@@ -43,7 +43,7 @@ public class Consent {
                         getPurpose().getCode()),
                 getPatient(),
                 new HIU(hiuId, hiuName),
-                new Requester(requesterId),
+                Requester.builder().name(requesterId).build(),
                 getHiTypes(),
                 new in.org.projecteka.hiu.consent.model.consentmanager.Permission(
                         AccessMode.VIEW,
@@ -80,7 +80,7 @@ public class Consent {
                         getPurpose().getCode()))
                 .patient(getPatient())
                 .hiu(HIU.builder().id(hiuId).build())
-                .requester(new Requester(requesterId))
+                .requester(Requester.builder().name(requesterId).build())
                 .hiTypes(getHiTypes())
                 .careContexts(careContexts)
                 .permission(new in.org.projecteka.hiu.consent.model.consentmanager.Permission(

@@ -16,6 +16,8 @@ import in.org.projecteka.hiu.consent.model.PatientConsentRequest;
 import in.org.projecteka.hiu.consent.model.Permission;
 import in.org.projecteka.hiu.consent.model.Purpose;
 import in.org.projecteka.hiu.consent.model.consentmanager.ConsentRequest;
+import in.org.projecteka.hiu.consent.model.consentmanager.Identifier;
+import in.org.projecteka.hiu.consent.model.consentmanager.Requester;
 import in.org.projecteka.hiu.dataflow.model.DataRequestStatus;
 import in.org.projecteka.hiu.dataflow.model.PatientDataRequestDetail;
 import in.org.projecteka.hiu.dataflow.model.PatientHealthInfoStatus;
@@ -55,6 +57,7 @@ public class PatientConsentService {
     private final PatientConsentRepository patientConsentRepository;
     private final GatewayServiceClient gatewayServiceClient;
     private BiFunction<List<String>, String, Flux<PatientHealthInfoStatus>> healthInfoStatus;
+    private final PatientHIUCertService patientHIUCertService;
 
     public Mono<List<Map<String, Object>>> getLatestCareContextResourceDates(String patientId, String hipId) {
         return patientConsentRepository.getLatestResourceDateByHipCareContext(patientId, hipId);
@@ -182,6 +185,14 @@ public class PatientConsentService {
             ConsentRequestData hiRequest,
             UUID gatewayRequestId) {
         var reqInfo = hiRequest.getConsent().to(requesterId, hiuProperties.getId(), conceptValidator);
+        var encodedSign = patientHIUCertService.signConsentRequest(reqInfo);
+        var requesterIdentifier = Identifier.builder().value(encodedSign).build();
+        reqInfo = reqInfo.toBuilder()
+                .requester(Requester.builder()
+                        .name(reqInfo.getRequester().getName())
+                        .identifier(requesterIdentifier)
+                        .build())
+                .build();
         var patientId = hiRequest.getConsent().getPatient().getId();
         var consentRequest = ConsentRequest.builder()
                 .requestId(gatewayRequestId)
