@@ -40,8 +40,7 @@ public class PatientHIUCertService {
         byte[] messageBytes = Serializer.from(verificationMessage).getBytes();
         signature.update(messageBytes);
         byte[] digitalSignature = signature.sign();
-        var encodedSign = Base64.getEncoder().encodeToString(digitalSignature);
-        return encodedSign;
+        return Base64.getEncoder().encodeToString(digitalSignature);
     }
 
     private VerificationConsentRequest getVerificationMessage(Consent consentRequest) {
