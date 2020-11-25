@@ -2,6 +2,7 @@ package in.org.projecteka.hiu;
 
 import in.org.projecteka.hiu.auth.IDPProperties;
 import in.org.projecteka.hiu.common.CacheMethodProperty;
+import in.org.projecteka.hiu.common.KeyPairConfig;
 import in.org.projecteka.hiu.common.RedisOptions;
 import in.org.projecteka.hiu.common.heartbeat.RabbitMQOptions;
 import org.springframework.boot.SpringApplication;
@@ -15,7 +16,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
                                 CacheMethodProperty.class,
                                 RedisOptions.class,
                                 WebClientOptions.class,
-                                IDPProperties.class})
+                                IDPProperties.class,
+                                KeyPairConfig.class})
 public class HiuApplication {
 
     public static void main(String[] args) {

@@ -50,6 +50,12 @@ hiu:
     clientId: 10000002
     clientSecret: ${CLIENT_SECRET}
     jwkUrl: http://localhost:8000/v0.5/certs
+keystore:
+  file-path: "phiu-local-keystore.p12"
+  password: password
+  sign-consent-request-keypair:
+    store-type: PKCS12
+    alias: phiu-sign-cr
 spring:
   rabbitmq:
     host: localhost

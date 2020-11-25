@@ -25,5 +25,11 @@ hiu:
   authorization:
     header: authorization
     useCMAsIDP: true
+keystore:
+  file-path: "./src/test/resources/test-phiu-local-keystore.p12"
+  password: password
+  sign-consent-request-keypair:
+    store-type: PKCS12
+    alias: test-phiu-sign-cr
 webclient:
   use-connection-pool: ${USE_HTTP_CONNECTION_POOL:false} 

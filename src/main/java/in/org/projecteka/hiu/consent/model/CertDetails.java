@@ -1,4 +1,4 @@
-package in.org.projecteka.hiu.consent.model.consentmanager;
+package in.org.projecteka.hiu.consent.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -7,11 +7,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@AllArgsConstructor
+@Data
 @Builder
 @NoArgsConstructor
-@Data
-public class Requester {
-    private String name;
-    private Identifier identifier;
+@AllArgsConstructor
+public class CertDetails {
+    private String publicKey;
+    private String startDate;
 }
