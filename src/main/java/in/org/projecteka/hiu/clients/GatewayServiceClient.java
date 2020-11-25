@@ -57,8 +57,8 @@ public class GatewayServiceClient {
                         .body(just(request), ConsentRequest.class)
                         .retrieve()
                         .onStatus(not(HttpStatus::is2xxSuccessful),
-                                clientResponse -> clientResponse.bodyToMono(Properties.class)
-                                        .doOnNext(properties -> logger.error(properties.toString()))
+                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                        .doOnNext(logger::error)
                                         .then(error(creationFailed())))
                         .toBodilessEntity()
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
@@ -109,8 +109,8 @@ public class GatewayServiceClient {
                         .body(just(request), ConsentOnNotifyRequest.class)
                         .retrieve()
                         .onStatus(not(HttpStatus::is2xxSuccessful),
-                                clientResponse -> clientResponse.bodyToMono(Properties.class)
-                                        .doOnNext(properties -> logger.error(properties.toString()))
+                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                        .doOnNext(logger::error)
                                         .then(error(creationFailed())))
                         .toBodilessEntity()
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
