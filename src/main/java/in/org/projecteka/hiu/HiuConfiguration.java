@@ -313,15 +313,12 @@ public class HiuConfiguration {
         return new PatientHIUCertService(keyPair);
     }
 
-    @Bean
-    @ConditionalOnProperty(value = "keystore", matchIfMissing = true)
-    public KeyPair keyPair() {
-        return new KeyPair(null, null);  //Generating an empty key-pair in case of HIU
-    }
-
     @SneakyThrows
     @Bean
     public KeyPair keyPair(KeyPairConfig keyPairConfig) {
+        if(keyPairConfig.getKeyStoreFilePath().equals("")) {
+            return new KeyPair(null, null);
+        }
         return keyPairConfig.createSignConsentRequestKeyPair();
     }
 
