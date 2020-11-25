@@ -317,7 +317,7 @@ public class HiuConfiguration {
     @Bean
     public KeyPair keyPair(KeyPairConfig keyPairConfig) {
         if(keyPairConfig.getKeyStoreFilePath().equals("")) {
-            return new KeyPair(null, null);
+            return new KeyPair(null, null); //Generating an empty key-pair in case of HIU
         }
         return keyPairConfig.createSignConsentRequestKeyPair();
     }
