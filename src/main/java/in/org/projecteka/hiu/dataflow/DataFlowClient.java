@@ -33,8 +33,8 @@ public class DataFlowClient {
                 .body(Mono.just(dataFlowRequest), GatewayDataFlowRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
-                        clientResponse -> clientResponse.bodyToMono(Properties.class)
-                                .doOnNext(properties -> logger.error(properties.toString()))
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                                .doOnNext(logger::error)
                                 .then(error(failedToInitiateDataFlowRequest())))
                 .toBodilessEntity()
                 .then();

@@ -26,6 +26,7 @@ import in.org.projecteka.hiu.common.CMPatientAuthenticator;
 import in.org.projecteka.hiu.common.CacheMethodProperty;
 import in.org.projecteka.hiu.common.Gateway;
 import in.org.projecteka.hiu.common.GatewayTokenVerifier;
+import in.org.projecteka.hiu.common.KeyPairConfig;
 import in.org.projecteka.hiu.common.RabbitQueueNames;
 import in.org.projecteka.hiu.common.RedisOptions;
 import in.org.projecteka.hiu.common.UserAuthenticator;
@@ -42,6 +43,7 @@ import in.org.projecteka.hiu.consent.ConsentServiceProperties;
 import in.org.projecteka.hiu.consent.DataFlowDeletePublisher;
 import in.org.projecteka.hiu.consent.DataFlowRequestPublisher;
 import in.org.projecteka.hiu.consent.HealthInformationPublisher;
+import in.org.projecteka.hiu.consent.PatientHIUCertService;
 import in.org.projecteka.hiu.consent.PatientConsentRepository;
 import in.org.projecteka.hiu.consent.PatientConsentService;
 import in.org.projecteka.hiu.dataflow.DataAvailabilityPublisher;
@@ -72,6 +74,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
+import lombok.SneakyThrows;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Binding;
@@ -125,6 +128,7 @@ import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.URL;
 import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -288,7 +292,8 @@ public class HiuConfiguration {
             PatientConsentRepository patientConsentRepository,
             ConsentServiceProperties consentServiceProperties,
             @Qualifier("patientRequestCache") CacheAdapter<String, String> patientRequestCache,
-            HealthInfoManager healthInfoManager) {
+            HealthInfoManager healthInfoManager,
+            PatientHIUCertService patientHIUCertService) {
 
         BiFunction<List<String>, String, Flux<PatientHealthInfoStatus>> healthInfoStatus = healthInfoManager::fetchHealthInformationStatus;
         return new PatientConsentService(
@@ -299,8 +304,25 @@ public class HiuConfiguration {
                 consentRepository,
                 patientConsentRepository,
                 gatewayServiceClient,
-                healthInfoStatus);
+                healthInfoStatus,
+                patientHIUCertService);
+    }
 
+    @Bean
+    public PatientHIUCertService hiuConsentCertService(@Qualifier("keyPair") KeyPair keyPair) {
+        return new PatientHIUCertService(keyPair);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "keystore", matchIfMissing = true)
+    public KeyPair keyPair() {
+        return new KeyPair(null, null);  //Generating an empty key-pair in case of HIU
+    }
+
+    @SneakyThrows
+    @Bean
+    public KeyPair keyPair(KeyPairConfig keyPairConfig) {
+        return keyPairConfig.createSignConsentRequestKeyPair();
     }
 
     @Bean

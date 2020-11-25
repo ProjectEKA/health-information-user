@@ -1,17 +1,14 @@
 package in.org.projecteka.hiu.consent.model.consentmanager;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@AllArgsConstructor
 @Builder
-@NoArgsConstructor
 @Data
-public class Requester {
-    private String name;
-    private Identifier identifier;
+public class Identifier {
+    private String value;
+    private String type;
+    private String system;
 }

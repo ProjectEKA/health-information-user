@@ -34,8 +34,8 @@ public class GatewayAuthenticationClient {
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(requestWith(clientId, clientSecret)))
                 .retrieve()
-                .onStatus(HttpStatus::isError, clientResponse -> clientResponse.bodyToMono(Properties.class)
-                        .doOnNext(properties -> logger.error(properties.toString()))
+                .onStatus(HttpStatus::isError, clientResponse -> clientResponse.bodyToMono(String.class)
+                        .doOnNext(logger::error)
                         .thenReturn(ClientError.authenticationFailed()))
                 .bodyToMono(Properties.class)
                 .map(properties -> new Token(format("Bearer %s", properties.getProperty("accessToken"))));

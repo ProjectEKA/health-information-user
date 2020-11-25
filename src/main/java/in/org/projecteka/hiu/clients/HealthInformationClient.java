@@ -37,16 +37,16 @@ public class HealthInformationClient {
                 .header(CORRELATION_ID, MDC.get(CORRELATION_ID))
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus == NOT_FOUND,
-                        clientResponse -> clientResponse.bodyToMono(Properties.class)
-                                .doOnNext(properties -> logger.error(properties.toString()))
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                                .doOnNext(logger::error)
                                 .then(error(new Throwable("Health information not found"))))
                 .onStatus(httpStatus -> httpStatus == UNAUTHORIZED,
-                        clientResponse -> clientResponse.bodyToMono(Properties.class)
-                                .doOnNext(properties -> logger.error(properties.toString()))
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                                .doOnNext(logger::error)
                                 .then(error(new Throwable("Unauthorized"))))
                 .onStatus(not(HttpStatus::is2xxSuccessful),
-                        clientResponse -> clientResponse.bodyToMono(Properties.class)
-                                .doOnNext(properties -> logger.error(properties.toString()))
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                                .doOnNext(logger::error)
                                 .then(error(new Throwable("Unknown error occurred"))))
                 .bodyToMono(HealthInformation.class);
     }
@@ -63,8 +63,8 @@ public class HealthInformationClient {
                 .body(Mono.just(notificationRequest), HealthInfoNotificationRequest.class)
                 .retrieve()
                 .onStatus(not(HttpStatus::is2xxSuccessful),
-                        clientResponse -> clientResponse.bodyToMono(Properties.class)
-                                .doOnNext(properties -> logger.error(properties.toString()))
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                                .doOnNext(logger::error)
                                 .then(error(failedToNotifyCM())))
                 .toBodilessEntity().then();
     }
