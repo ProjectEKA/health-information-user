@@ -73,11 +73,11 @@ hiu:
     retry: ${REDIS_RETRY:0}
     use-default-client-config: ${USE_DEFAULT_CLIENT_CONFIG:true}
 keystore:
-  file-path: ${PHIU_KEYSTORE_PATH}
-  password: ${PHIU_KEYSTORE_PASSWORD}
+  file-path: ${PHIU_KEYSTORE_PATH:}
+  password: ${PHIU_KEYSTORE_PASSWORD:}
   sign-consent-request-keypair:
     store-type: PKCS12
-    alias: ${SIGN_PHIU_CR_ALIAS}
+    alias: ${SIGN_PHIU_CR_ALIAS:}
 spring:
   rabbitmq:
     host: ${RABBITMQ_HOST}
