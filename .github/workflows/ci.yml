@@ -34,7 +34,7 @@ jobs:
           CONTAINER_REPO_NAME: health-information-user
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         run: docker build -t $DOCKER_USERNAME/$CONTAINER_REPO_NAME:$RELEASE_VERSION .
-      - name: Push Docker Container to Registry
+      - name: Push Docker Image to Registry
         env:
           CONTAINER_REPO_NAME: health-information-user
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
