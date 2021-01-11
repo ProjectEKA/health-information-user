@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu;
 
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
@@ -20,7 +21,10 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 import static in.org.projecteka.hiu.ClientError.unknownError;
+import static in.org.projecteka.hiu.common.Constants.CORRELATION_ID;
 import static java.lang.String.format;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.web.reactive.function.BodyInserters.fromValue;
@@ -41,12 +45,7 @@ public class GlobalExceptionHandler extends AbstractErrorWebExceptionHandler {
     }
 
     private Mono<ServerResponse> renderErrorResponse(ServerRequest request) {
-        Throwable error = getError(request);
-        var message = format("Error happened for path: %s, method: %s, message: %s",
-                request.path(),
-                request.method(),
-                error.getMessage());
-        logger.error(message, error);
+        Throwable error = extractAndLogError(request);
         // Default error response
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         BodyInserter<Object, ReactiveHttpOutputMessage> bodyInserter = fromValue(unknownError().getError());
@@ -82,4 +81,16 @@ public class GlobalExceptionHandler extends AbstractErrorWebExceptionHandler {
 
         return ServerResponse.status(status).contentType(MediaType.APPLICATION_JSON).body(bodyInserter);
     }
-}
+
+    private Throwable extractAndLogError(ServerRequest request) {
+        String correlationId = request.attribute(CORRELATION_ID).orElse(UUID.randomUUID()).toString();
+        MDC.put(CORRELATION_ID, correlationId);
+        Throwable error = getError(request);
+        var message = format("Error happened for path: %s, method: %s, message: %s",
+                request.path(),
+                request.method(),
+                error.getMessage());
+        logger.error(message, error);
+        MDC.clear();
+        return error;
+    }}
