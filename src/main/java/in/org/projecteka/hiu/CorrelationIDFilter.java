@@ -36,7 +36,7 @@ public class CorrelationIDFilter implements WebFilter {
                         correlationId = generateRandomCorrelationId();
                     }
                     MDC.put(CORRELATION_ID, correlationId);
-                    if (!path.endsWith("/heartbeat")){
+                    if (!path.endsWith("/heartbeat") && !path.endsWith("/readiness")){
                         logger.info("Received a request for path: {}, method: {}", path, requestMethod);
                     }
                     Context contextTmp = context.put(CORRELATION_ID, correlationId);
