@@ -79,6 +79,10 @@
             {
               "code": "OPConsultation",
               "display": "OPD Consultation"
+            },
+            {
+              "code": "ImmunizationRecord",
+              "display": "Immunization Record"
             }
           ]
         }
