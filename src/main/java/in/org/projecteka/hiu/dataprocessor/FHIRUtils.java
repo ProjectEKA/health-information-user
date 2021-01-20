@@ -22,6 +22,7 @@ public class FHIRUtils {
         put("371530004", HIType.OP_CONSULTATION);
         put("373942005", HIType.DISCHARGE_SUMMARY);
         put("440545006", HIType.PRESCRIPTION);
+        put("41000179103", HIType.IMMUNIZATION_RECORD);
     }};
 
     public static String getHiTypeForCode(String code) {

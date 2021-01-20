@@ -67,6 +67,10 @@
             {
               "code": "Prescription",
               "display": "Prescription"
+            },
+            {
+              "code": "ImmunizationRecord",
+              "display": "Immunization Record"
             }
           ]
         }

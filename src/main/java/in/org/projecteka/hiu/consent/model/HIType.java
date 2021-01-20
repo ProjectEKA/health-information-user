@@ -14,6 +14,7 @@ public enum HIType {
     MEDICATION_REQUEST("MedicationRequest"),
     DOCUMENT_REFERENCE("DocumentReference"),
     PRESCRIPTION("Prescription"),
+    IMMUNIZATION_RECORD("ImmunizationRecord"),
     DISCHARGE_SUMMARY("DischargeSummary"),
     OP_CONSULTATION("OPConsultation");
 
