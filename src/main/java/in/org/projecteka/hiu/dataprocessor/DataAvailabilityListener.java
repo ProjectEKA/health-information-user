@@ -98,7 +98,9 @@ public class DataAvailabilityListener {
                 new MedicationRequestResourceProcessor(),
                 new ConditionResourceProcessor(),
                 new ObservationResourceProcessor(),
-                new BinaryResourceProcessor());
+                new BinaryResourceProcessor(),
+                new ImmunizationResourceProcessor(),
+                new ImmunizationRecommendationProcessor());
     }
 
     @SneakyThrows
