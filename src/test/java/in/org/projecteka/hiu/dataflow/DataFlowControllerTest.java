@@ -2,6 +2,8 @@ package in.org.projecteka.hiu.dataflow;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import in.org.projecteka.hiu.DestinationsConfig;
+import in.org.projecteka.hiu.ErrorCode;
+import in.org.projecteka.hiu.ErrorRepresentation;
 import in.org.projecteka.hiu.common.Authenticator;
 import in.org.projecteka.hiu.dataprocessor.DataAvailabilityListener;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,8 +106,11 @@ class DataFlowControllerTest {
                 .exchange()
                 .expectStatus()
                 .isBadRequest()
-                .expectBody()
-                .json("{\"error\":{\"code\":4400,\"message\":\"Multi page data transfer is not supported yet.\"}}");
+                .expectBody(ErrorRepresentation.class)
+                .value(response -> {
+                    assertEquals(ErrorCode.INVALID_REQUEST, response.getError().getCode());
+                    assertEquals("Multi page data transfer is not supported yet.", response.getError().getMessage());
+                });
 
     }
 }
