@@ -1,5 +1,6 @@
 package in.org.projecteka.hiu.dataflow;
 
+import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.common.Constants;
 import in.org.projecteka.hiu.dataflow.model.DataFlowRequestResult;
 import in.org.projecteka.hiu.dataflow.model.DataNotificationRequest;
@@ -21,6 +22,9 @@ public class DataFlowController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     @PostMapping(Constants.PATH_DATA_TRANSFER)
     public Mono<Void> dataNotification(@RequestBody DataNotificationRequest dataNotificationRequest) {
+        if (dataNotificationRequest.getPageCount() > 1){
+            return Mono.error(ClientError.paginationNotSupported());
+        }
         return dataFlowService.handleNotification(dataNotificationRequest);
     }
 
