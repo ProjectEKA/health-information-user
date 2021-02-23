@@ -12,6 +12,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 public class DataNotificationRequest {
+    private int pageNumber;
+    private int pageCount;
     private String transactionId;
     private List<Entry> entries;
     private KeyMaterial keyMaterial;

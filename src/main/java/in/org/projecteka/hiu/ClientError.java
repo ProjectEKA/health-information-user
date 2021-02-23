@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_ARTEFACT_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.CONSENT_REQUEST_NOT_FOUND;
 import static in.org.projecteka.hiu.ErrorCode.FAILED_TO_NOTIFY_CM;
+import static in.org.projecteka.hiu.ErrorCode.INVALID_REQUEST;
 import static in.org.projecteka.hiu.ErrorCode.INVALID_TOKEN;
 import static in.org.projecteka.hiu.ErrorCode.NETWORK_SERVICE_ERROR;
 import static in.org.projecteka.hiu.ErrorCode.NO_RESULT_FROM_GATEWAY;
@@ -124,5 +125,10 @@ public class ClientError extends Throwable {
     public static ClientError networkServiceCallFailed() {
         return new ClientError(INTERNAL_SERVER_ERROR,
                 new ErrorRepresentation(new Error(NETWORK_SERVICE_ERROR, CANNOT_PROCESS_REQUEST_TRY_LATER)));
+    }
+
+    public static ClientError paginationNotSupported() {
+        return new ClientError(BAD_REQUEST,
+                new ErrorRepresentation(new Error(INVALID_REQUEST, "Multi page data transfer is not supported yet.")));
     }
 }
