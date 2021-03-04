@@ -1,6 +1,7 @@
 package in.org.projecteka.hiu;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -23,16 +24,13 @@ public class CorrelationIDFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        Map<String, String> headers = exchange.getRequest().getHeaders().toSingleValueMap();
         var path = exchange.getRequest().getPath().toString();
         var requestMethod = exchange.getRequest().getMethod();
 
         return chain.filter(exchange)
                 .subscriberContext(context -> {
-                    var correlationId = "";
-                    if (headers.containsKey(CORRELATION_ID)) {
-                        correlationId = headers.get(CORRELATION_ID);
-                    } else {
+                    String correlationId = exchange.getRequest().getHeaders().getFirst(CORRELATION_ID);
+                    if (StringUtils.isBlank(correlationId)) {
                         correlationId = generateRandomCorrelationId();
                     }
                     MDC.put(CORRELATION_ID, correlationId);
