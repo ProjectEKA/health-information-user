@@ -1,5 +1,7 @@
 package in.org.projecteka.hiu.consent;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.org.projecteka.hiu.ClientError;
 import in.org.projecteka.hiu.Error;
 import in.org.projecteka.hiu.ErrorRepresentation;
@@ -124,6 +126,7 @@ public class ConsentService {
     }
 
     public Mono<Void> updatePostedRequest(ConsentRequestInitResponse response) {
+        logger.debug("Consent Request response {}", stringify(response));
         var requestId = response.getResp().getRequestId();
         if (response.getError() != null) {
             logger.error("[ConsentService] Received error response from consent-request. HIU " +
@@ -152,6 +155,14 @@ public class ConsentService {
         }
 
         return error(ClientError.invalidDataFromGateway());
+    }
+
+    private String stringify(ConsentRequestInitResponse response) {
+        try {
+            return new ObjectMapper().writeValueAsString(response);
+        } catch (JsonProcessingException e) {
+            return "";
+        }
     }
 
     private Mono<Void> updateConsentRequestStatus(ConsentRequestInitResponse consentRequestInitResponse,
