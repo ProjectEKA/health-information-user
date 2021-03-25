@@ -7,7 +7,7 @@
 ## :muscle: Motivation
 
 > HIU Service acts as requester of patient's health information. When consent is granted, it needs to manage and maintain the
-> health information provided  in secure and safe manner andd in compliance with terms of the
+> health information provided  in secure and safe manner and in compliance with terms of the
 > consent granted by the patient.
 
 ## Build Status
@@ -80,7 +80,7 @@ docker-compose -f docker-compose-infra-lite.yml up -d
 CLIENTREGISTRY_CLIENTSECRET=${CLIENTREGISTRY_CLIENTSECRET} ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
-#### setup users
+#### Setup users
 Create an admin user for HIU first. You need to create an admin account for HIU first. 
 This is done manually by creating an entry in the “user” table. 
 
