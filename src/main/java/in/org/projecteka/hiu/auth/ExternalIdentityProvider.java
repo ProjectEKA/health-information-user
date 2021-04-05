@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import static in.org.projecteka.hiu.ClientError.networkServiceCallFailed;
 import static in.org.projecteka.hiu.ClientError.unAuthorized;
@@ -36,6 +37,7 @@ public class ExternalIdentityProvider implements IdentityProvider {
                         .header(AUTHORIZATION, String.format("Bearer %s", token))
                         .retrieve()
                         .bodyToMono(String.class)
+                        .publishOn(Schedulers.elastic())
                         .doOnSubscribe(subscription -> logger.info("About to fetch certificate"))
                         .map(this::extractPublicKey));
     }
@@ -61,6 +63,7 @@ public class ExternalIdentityProvider implements IdentityProvider {
                         .doOnNext(logger::error)
                         .then(Mono.error(networkServiceCallFailed())))
                 .bodyToMono(Session.class)
+                .publishOn(Schedulers.elastic())
                 .map(Session::getAccessToken)
                 .doOnSubscribe(subscription -> logger.info("About to call gateway to get access token"));
     }

@@ -7,6 +7,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Properties;
 
@@ -48,7 +49,8 @@ public class HealthInformationClient {
                         clientResponse -> clientResponse.bodyToMono(String.class)
                                 .doOnNext(logger::error)
                                 .then(error(new Throwable("Unknown error occurred"))))
-                .bodyToMono(HealthInformation.class);
+                .bodyToMono(HealthInformation.class)
+                .publishOn(Schedulers.elastic());
     }
 
     public Mono<Void> notifyHealthInfo(HealthInfoNotificationRequest notificationRequest,
@@ -66,6 +68,8 @@ public class HealthInformationClient {
                         clientResponse -> clientResponse.bodyToMono(String.class)
                                 .doOnNext(logger::error)
                                 .then(error(failedToNotifyCM())))
-                .toBodilessEntity().then();
+                .toBodilessEntity()
+                .publishOn(Schedulers.elastic())
+                .then();
     }
 }

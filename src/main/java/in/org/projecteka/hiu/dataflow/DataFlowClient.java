@@ -8,6 +8,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Properties;
 
@@ -37,6 +38,7 @@ public class DataFlowClient {
                                 .doOnNext(logger::error)
                                 .then(error(failedToInitiateDataFlowRequest())))
                 .toBodilessEntity()
+                .publishOn(Schedulers.elastic())
                 .then();
     }
 }

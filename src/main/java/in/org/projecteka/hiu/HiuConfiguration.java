@@ -189,6 +189,7 @@ public class HiuConfiguration {
             return new LettuceConnectionFactory(configuration);
         }
         var clientOptions = ClientOptions.builder()
+                .publishOnScheduler(true)
                 .socketOptions(SocketOptions.builder().keepAlive(redisOptions.isKeepAliveEnabled()).build())
                 .build();
         var clientConfiguration =

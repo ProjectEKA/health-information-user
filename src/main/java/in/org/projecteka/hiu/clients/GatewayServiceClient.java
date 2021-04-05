@@ -11,6 +11,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Properties;
 
@@ -61,6 +62,7 @@ public class GatewayServiceClient {
                                         .doOnNext(logger::error)
                                         .then(error(creationFailed())))
                         .toBodilessEntity()
+                        .publishOn(Schedulers.elastic())
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
     }
@@ -78,6 +80,7 @@ public class GatewayServiceClient {
                         .onStatus(httpStatus -> httpStatus == NOT_FOUND, clientResponse -> error(notFound()))
                         .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(unknown()))
                         .toBodilessEntity()
+                        .publishOn(Schedulers.elastic())
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout()))
                         .thenReturn(Boolean.TRUE));
     }
@@ -94,6 +97,7 @@ public class GatewayServiceClient {
                         .retrieve()
                         .onStatus(not(HttpStatus::is2xxSuccessful), clientResponse -> error(creationFailed()))
                         .toBodilessEntity()
+                        .publishOn(Schedulers.elastic())
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
     }
@@ -113,6 +117,7 @@ public class GatewayServiceClient {
                                         .doOnNext(logger::error)
                                         .then(error(creationFailed())))
                         .toBodilessEntity()
+                        .publishOn(Schedulers.elastic())
                         .timeout(ofMillis(gatewayProperties.getRequestTimeout())))
                 .then();
     }

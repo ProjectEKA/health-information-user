@@ -5,8 +5,14 @@
                 <includeMdcKeyName>CORRELATION-ID</includeMdcKeyName>
             </encoder>
         </appender>
-        <root level="INFO">
+        <appender name="async-console" class="ch.qos.logback.classic.AsyncAppender">
+            <queueSize>10000</queueSize>
+            <neverBlock>true</neverBlock>
+            <discardingThreshold>0</discardingThreshold>
             <appender-ref ref="console"/>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="async-console"/>
         </root>
     </springProfile>
     <logger name="org.springframework">
@@ -24,8 +30,14 @@
                 </Pattern>
             </layout>
         </appender>
-        <root level="INFO">
+        <appender name="async-console" class="ch.qos.logback.classic.AsyncAppender">
+            <queueSize>10000</queueSize>
+            <neverBlock>true</neverBlock>
+            <discardingThreshold>0</discardingThreshold>
             <appender-ref ref="console"/>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="async-console"/>
         </root>
     </springProfile>
 </configuration>
