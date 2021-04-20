@@ -16,9 +16,7 @@ public enum HIType {
     PRESCRIPTION("Prescription"),
     IMMUNIZATION_RECORD("ImmunizationRecord"),
     DISCHARGE_SUMMARY("DischargeSummary"),
-    OP_CONSULTATION("OPConsultation"),
-    HEALTH_DOCUMENT_RECORD("HealthDocumentRecord"),
-    WELLNESS_RECORD("WellnessRecord");
+    OP_CONSULTATION("OPConsultation");
 
     private final String resourceType;
     HIType(String value) {

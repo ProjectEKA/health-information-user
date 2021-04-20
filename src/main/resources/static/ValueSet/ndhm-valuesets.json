@@ -71,14 +71,6 @@
             {
               "code": "ImmunizationRecord",
               "display": "Immunization Record"
-            },
-            {
-              "code": "HealthDocumentRecord",
-              "display": "Health Document Record"
-            },
-            {
-              "code": "WellnessRecord",
-              "display": "Wellness Record"
             }
           ]
         }
