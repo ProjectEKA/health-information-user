@@ -1,0 +1,47 @@
+version: 2
+updates:
+- package-ecosystem: gradle
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "23:30"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: ca.uhn.hapi.fhir:hapi-fhir-structures-r4
+    versions:
+    - 5.2.1
+    - 5.3.0
+    - 5.3.2
+  - dependency-name: ca.uhn.hapi.fhir:hapi-fhir-base
+    versions:
+    - 5.2.1
+    - 5.3.0
+    - 5.3.2
+  - dependency-name: com.nimbusds:nimbus-jose-jwt
+    versions:
+    - 9.4.2
+    - "9.5"
+    - "9.7"
+    - "9.8"
+    - 9.8.1
+  - dependency-name: io.lettuce:lettuce-core
+    versions:
+    - 6.0.2.RELEASE
+    - 6.0.3.RELEASE
+    - 6.1.0.RELEASE
+  - dependency-name: org.springframework.boot
+    versions:
+    - 2.4.2
+    - 2.4.3
+    - 2.4.4
+  - dependency-name: io.vertx:vertx-pg-client
+    versions:
+    - 4.0.0
+    - 4.0.1
+    - 4.0.2
+  - dependency-name: com.squareup.okhttp3:mockwebserver
+    versions:
+    - 4.9.0
+  - dependency-name: com.squareup.okhttp3:okhttp
+    versions:
+    - 4.9.0
